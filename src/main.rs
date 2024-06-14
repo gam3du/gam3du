@@ -4,7 +4,7 @@
 
 // TODO enable hand-picked clippy lints from the `restriction` group
 
-mod cube;
+mod scene;
 mod framework;
 mod logging;
 

@@ -9,7 +9,7 @@ use winit::{
     window::Window,
 };
 
-use crate::{cube::Scene, logging::init_logger};
+use crate::{scene::Scene, logging::init_logger};
 
 // Initialize logging in platform dependant ways.
 
