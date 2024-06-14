@@ -1,8 +1,6 @@
-mod framework;
-
 use bytemuck::{Pod, Zeroable};
 use std::{borrow::Cow, f32::consts, mem};
-use wgpu::util::DeviceExt;
+use wgpu::{util::DeviceExt, PipelineCompilationOptions};
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -13,8 +11,8 @@ struct Vertex {
 
 fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
     Vertex {
-        _pos: [pos[0] as f32, pos[1] as f32, pos[2] as f32, 1.0],
-        _tex_coord: [tc[0] as f32, tc[1] as f32],
+        _pos: [f32::from(pos[0]), f32::from(pos[1]), f32::from(pos[2]), 1.0],
+        _tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
     }
 }
 
@@ -65,6 +63,8 @@ fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
 }
 
 fn create_texels(size: usize) -> Vec<u8> {
+    // testure doesn't need to be precise
+    #[allow(clippy::cast_precision_loss)]
     (0..size * size)
         .map(|id| {
             // get high five for recognizing this ;)
@@ -82,7 +82,7 @@ fn create_texels(size: usize) -> Vec<u8> {
         .collect()
 }
 
-struct Example {
+pub(crate) struct RotatingCube {
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
     index_count: usize,
@@ -92,7 +92,7 @@ struct Example {
     pipeline_wire: Option<wgpu::RenderPipeline>,
 }
 
-impl Example {
+impl RotatingCube {
     fn generate_matrix(aspect_ratio: f32) -> glam::Mat4 {
         let projection = glam::Mat4::perspective_rh(consts::FRAC_PI_4, aspect_ratio, 1.0, 10.0);
         let view = glam::Mat4::look_at_rh(
@@ -104,11 +104,13 @@ impl Example {
     }
 }
 
-impl crate::framework::Example for Example {
+impl crate::framework::Example for RotatingCube {
     fn optional_features() -> wgpu::Features {
         wgpu::Features::POLYGON_MODE_LINE
     }
 
+    // TODO partition this function into smaller parts
+    #[allow(clippy::too_many_lines)]
     fn init(
         config: &wgpu::SurfaceConfiguration,
         _adapter: &wgpu::Adapter,
@@ -246,13 +248,13 @@ impl crate::framework::Example for Example {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                compilation_options: Default::default(),
+                compilation_options: PipelineCompilationOptions::default(),
                 buffers: &vertex_buffers,
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: "fs_main",
-                compilation_options: Default::default(),
+                compilation_options: PipelineCompilationOptions::default(),
                 targets: &[Some(config.view_formats[0].into())],
             }),
             primitive: wgpu::PrimitiveState {
@@ -275,13 +277,13 @@ impl crate::framework::Example for Example {
                 vertex: wgpu::VertexState {
                     module: &shader,
                     entry_point: "vs_main",
-                    compilation_options: Default::default(),
+                    compilation_options: PipelineCompilationOptions::default(),
                     buffers: &vertex_buffers,
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &shader,
                     entry_point: "fs_wire",
-                    compilation_options: Default::default(),
+                    compilation_options: PipelineCompilationOptions::default(),
                     targets: &[Some(wgpu::ColorTargetState {
                         format: config.view_formats[0],
                         blend: Some(wgpu::BlendState {
@@ -312,7 +314,7 @@ impl crate::framework::Example for Example {
         };
 
         // Done
-        Example {
+        RotatingCube {
             vertex_buf,
             index_buf,
             index_count: index_data.len(),
@@ -368,10 +370,10 @@ impl crate::framework::Example for Example {
             rpass.set_vertex_buffer(0, self.vertex_buf.slice(..));
             rpass.pop_debug_group();
             rpass.insert_debug_marker("Draw!");
-            rpass.draw_indexed(0..self.index_count as u32, 0, 0..1);
+            rpass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
             if let Some(ref pipe) = self.pipeline_wire {
                 rpass.set_pipeline(pipe);
-                rpass.draw_indexed(0..self.index_count as u32, 0, 0..1);
+                rpass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
             }
         }
 
@@ -379,6 +381,6 @@ impl crate::framework::Example for Example {
     }
 }
 
-pub fn main() {
-    crate::framework::run::<Example>("cube");
-}
+// pub fn main() {
+//     crate::framework::run::<Example>("cube");
+// }

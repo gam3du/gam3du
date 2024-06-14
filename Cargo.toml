@@ -3,10 +3,6 @@ name = "_3du"
 version = "0.1.0"
 edition = "2021"
 
-[[bin]]
-name = "cube"
-path = "src/cube.rs"
-
 [dependencies]
 # Python interpreter
 rustpython-vm = "0.3.1"

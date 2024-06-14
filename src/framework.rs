@@ -353,6 +353,8 @@ impl FrameCounter {
         self.frame_count += 1;
         let new_instant = web_time::Instant::now();
         let elapsed_secs = (new_instant - self.last_printed_instant).as_secs_f32();
+        // calculation of frame rate doesn't need to be precise
+        #[allow(clippy::cast_precision_loss)]
         if elapsed_secs > 1.0 {
             let elapsed_ms = elapsed_secs * 1000.0;
             let frame_time = elapsed_ms / self.frame_count as f32;
