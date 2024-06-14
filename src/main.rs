@@ -10,7 +10,6 @@ mod logging;
 
 use std::{fs::read_to_string, path::Path, thread};
 
-use cube::RotatingCube;
 use rustpython_vm::{self as vm, Settings};
 
 fn python_runner(source_path: &(impl AsRef<Path> + ToString)) {
@@ -34,7 +33,7 @@ fn main() {
     let source_path = "src/test.py";
     let python_tread = thread::spawn(move || python_runner(&source_path));
 
-    framework::run::<RotatingCube>("cube");
+    framework::run("cube");
 
     python_tread.join().unwrap();
 }

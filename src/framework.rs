@@ -9,49 +9,7 @@ use winit::{
     window::Window,
 };
 
-use crate::logging::init_logger;
-
-pub(crate) trait Example: 'static + Sized {
-    const SRGB: bool = true;
-
-    fn optional_features() -> wgpu::Features {
-        wgpu::Features::empty()
-    }
-
-    fn required_features() -> wgpu::Features {
-        wgpu::Features::empty()
-    }
-
-    fn required_downlevel_capabilities() -> wgpu::DownlevelCapabilities {
-        wgpu::DownlevelCapabilities {
-            flags: wgpu::DownlevelFlags::empty(),
-            shader_model: wgpu::ShaderModel::Sm5,
-            ..wgpu::DownlevelCapabilities::default()
-        }
-    }
-
-    fn required_limits() -> wgpu::Limits {
-        wgpu::Limits::downlevel_webgl2_defaults() // These downlevel limits will allow the code to run on all possible hardware
-    }
-
-    fn init(
-        config: &wgpu::SurfaceConfiguration,
-        adapter: &wgpu::Adapter,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-    ) -> Self;
-
-    fn resize(
-        &mut self,
-        config: &wgpu::SurfaceConfiguration,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-    );
-
-    fn update(&mut self, event: WindowEvent);
-
-    fn render(&mut self, view: &wgpu::TextureView, device: &wgpu::Device, queue: &wgpu::Queue);
-}
+use crate::{cube::Scene, logging::init_logger};
 
 // Initialize logging in platform dependant ways.
 
@@ -201,7 +159,7 @@ struct ExampleContext {
 }
 impl ExampleContext {
     /// Initializes the example context.
-    async fn init_async<E: Example>(surface: &mut SurfaceWrapper) -> Self {
+    async fn init_async(surface: &mut SurfaceWrapper) -> Self {
         log::info!("Initializing wgpu...");
 
         let backends = wgpu::util::backend_bits_from_env().unwrap_or_default();
@@ -221,8 +179,8 @@ impl ExampleContext {
         let adapter_info = adapter.get_info();
         log::info!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
-        let optional_features = E::optional_features();
-        let required_features = E::required_features();
+        let optional_features = Scene::optional_features();
+        let required_features = Scene::required_features();
         let adapter_features = adapter.features();
         assert!(
             adapter_features.contains(required_features),
@@ -230,7 +188,7 @@ impl ExampleContext {
             required_features - adapter_features
         );
 
-        let required_downlevel_capabilities = E::required_downlevel_capabilities();
+        let required_downlevel_capabilities = Scene::required_downlevel_capabilities();
         let downlevel_capabilities = adapter.get_downlevel_capabilities();
         assert!(
             downlevel_capabilities.shader_model >= required_downlevel_capabilities.shader_model,
@@ -246,7 +204,7 @@ impl ExampleContext {
         );
 
         // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the surface.
-        let needed_limits = E::required_limits().using_resolution(adapter.limits());
+        let needed_limits = Scene::required_limits().using_resolution(adapter.limits());
 
         let trace_dir = std::env::var("WGPU_TRACE");
         let (device, queue) = adapter
@@ -303,11 +261,11 @@ impl FrameCounter {
     }
 }
 
-async fn start<E: Example>(title: &str) {
+async fn start(title: &str) {
     init_logger();
     let window_loop = EventLoopWrapper::new(title);
     let mut surface = SurfaceWrapper::new();
-    let context = ExampleContext::init_async::<E>(&mut surface).await;
+    let context = ExampleContext::init_async(&mut surface).await;
     let mut frame_counter = FrameCounter::new();
 
     // We wait to create the example until we have a valid surface.
@@ -323,11 +281,11 @@ async fn start<E: Example>(title: &str) {
         move |event: Event<()>, target: &EventLoopWindowTarget<()>| {
             match event {
                 ref e if SurfaceWrapper::start_condition(e) => {
-                    surface.resume(&context, window_loop.window.clone(), E::SRGB);
+                    surface.resume(&context, window_loop.window.clone(), Scene::SRGB);
 
                     // If we haven't created the example yet, do so now.
                     if example.is_none() {
-                        example = Some(E::init(
+                        example = Some(Scene::init(
                             surface.config(),
                             &context.adapter,
                             &context.device,
@@ -404,6 +362,6 @@ async fn start<E: Example>(title: &str) {
     );
 }
 
-pub(crate) fn run<E: Example>(title: &'static str) {
-    pollster::block_on(start::<E>(title));
+pub(crate) fn run(title: &'static str) {
+    pollster::block_on(start(title));
 }

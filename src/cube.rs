@@ -82,7 +82,7 @@ fn create_texels(size: usize) -> Vec<u8> {
         .collect()
 }
 
-pub(crate) struct RotatingCube {
+pub(crate) struct Scene {
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
     index_count: usize,
@@ -92,7 +92,25 @@ pub(crate) struct RotatingCube {
     pipeline_wire: Option<wgpu::RenderPipeline>,
 }
 
-impl RotatingCube {
+impl Scene {
+    pub(crate) const SRGB: bool = true;
+
+    pub(crate) fn required_features() -> wgpu::Features {
+        wgpu::Features::empty()
+    }
+
+    pub(crate) fn required_downlevel_capabilities() -> wgpu::DownlevelCapabilities {
+        wgpu::DownlevelCapabilities {
+            flags: wgpu::DownlevelFlags::empty(),
+            shader_model: wgpu::ShaderModel::Sm5,
+            ..wgpu::DownlevelCapabilities::default()
+        }
+    }
+
+    pub(crate) fn required_limits() -> wgpu::Limits {
+        wgpu::Limits::downlevel_webgl2_defaults() // These downlevel limits will allow the code to run on all possible hardware
+    }
+
     fn generate_matrix(aspect_ratio: f32) -> glam::Mat4 {
         let projection = glam::Mat4::perspective_rh(consts::FRAC_PI_4, aspect_ratio, 1.0, 10.0);
         let view = glam::Mat4::look_at_rh(
@@ -102,16 +120,14 @@ impl RotatingCube {
         );
         projection * view
     }
-}
 
-impl crate::framework::Example for RotatingCube {
-    fn optional_features() -> wgpu::Features {
+    pub(crate) fn optional_features() -> wgpu::Features {
         wgpu::Features::POLYGON_MODE_LINE
     }
 
     // TODO partition this function into smaller parts
     #[allow(clippy::too_many_lines)]
-    fn init(
+    pub(crate) fn init(
         config: &wgpu::SurfaceConfiguration,
         _adapter: &wgpu::Adapter,
         device: &wgpu::Device,
@@ -314,7 +330,7 @@ impl crate::framework::Example for RotatingCube {
         };
 
         // Done
-        RotatingCube {
+        Scene {
             vertex_buf,
             index_buf,
             index_count: index_data.len(),
@@ -325,11 +341,13 @@ impl crate::framework::Example for RotatingCube {
         }
     }
 
-    fn update(&mut self, _event: winit::event::WindowEvent) {
+    // TODO this was a trait function; review whether this is a useful method to keep
+    #[allow(clippy::unused_self, clippy::needless_pass_by_value)]
+    pub(crate) fn update(&mut self, _event: winit::event::WindowEvent) {
         //empty
     }
 
-    fn resize(
+    pub(crate) fn resize(
         &mut self,
         config: &wgpu::SurfaceConfiguration,
         _device: &wgpu::Device,
@@ -340,7 +358,12 @@ impl crate::framework::Example for RotatingCube {
         queue.write_buffer(&self.uniform_buf, 0, bytemuck::cast_slice(mx_ref));
     }
 
-    fn render(&mut self, view: &wgpu::TextureView, device: &wgpu::Device, queue: &wgpu::Queue) {
+    pub(crate) fn render(
+        &mut self,
+        view: &wgpu::TextureView,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) {
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
