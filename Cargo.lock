@@ -18,7 +18,6 @@ dependencies = [
  "log",
  "pollster",
  "rustpython-vm",
- "web-time",
  "wgpu",
  "winit",
 ]

@@ -4,12 +4,13 @@
 
 // TODO enable hand-picked clippy lints from the `restriction` group
 
-mod scene;
 mod framework;
 mod logging;
+mod scene;
 
 use std::{fs::read_to_string, path::Path, thread};
 
+use logging::init_logger;
 use rustpython_vm::{self as vm, Settings};
 
 fn python_runner(source_path: &(impl AsRef<Path> + ToString)) {
@@ -30,10 +31,12 @@ fn python_runner(source_path: &(impl AsRef<Path> + ToString)) {
 }
 
 fn main() {
+    init_logger();
+
     let source_path = "src/test.py";
     let python_tread = thread::spawn(move || python_runner(&source_path));
 
-    framework::run("cube");
+    pollster::block_on(framework::start("my scene"));
 
     python_tread.join().unwrap();
 }

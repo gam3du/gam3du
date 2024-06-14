@@ -9,9 +9,7 @@ use winit::{
     window::Window,
 };
 
-use crate::{scene::Scene, logging::init_logger};
-
-// Initialize logging in platform dependant ways.
+use crate::scene::Scene;
 
 struct EventLoopWrapper {
     event_loop: EventLoop<()>,
@@ -228,45 +226,10 @@ impl ExampleContext {
     }
 }
 
-struct FrameCounter {
-    // Instant of the last time we printed the frame time.
-    last_printed_instant: web_time::Instant,
-    // Number of frames since the last time we printed the frame time.
-    frame_count: u32,
-}
-
-impl FrameCounter {
-    fn new() -> Self {
-        Self {
-            last_printed_instant: web_time::Instant::now(),
-            frame_count: 0,
-        }
-    }
-
-    fn update(&mut self) {
-        self.frame_count += 1;
-        let new_instant = web_time::Instant::now();
-        let elapsed_secs = (new_instant - self.last_printed_instant).as_secs_f32();
-        // calculation of frame rate doesn't need to be precise
-        #[allow(clippy::cast_precision_loss)]
-        if elapsed_secs > 1.0 {
-            let elapsed_ms = elapsed_secs * 1000.0;
-            let frame_time = elapsed_ms / self.frame_count as f32;
-            let fps = self.frame_count as f32 / elapsed_secs;
-            log::info!("Frame time {:.2}ms ({:.1} FPS)", frame_time, fps);
-
-            self.last_printed_instant = new_instant;
-            self.frame_count = 0;
-        }
-    }
-}
-
-async fn start(title: &str) {
-    init_logger();
+pub(crate) async fn start(title: &str) {
     let window_loop = EventLoopWrapper::new(title);
     let mut surface = SurfaceWrapper::new();
     let context = ExampleContext::init_async(&mut surface).await;
-    let mut frame_counter = FrameCounter::new();
 
     // We wait to create the example until we have a valid surface.
     let mut example = None;
@@ -337,8 +300,6 @@ async fn start(title: &str) {
                             return;
                         }
 
-                        frame_counter.update();
-
                         let frame = surface.acquire(&context);
                         let view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
                             format: Some(surface.config().view_formats[0]),
@@ -360,8 +321,4 @@ async fn start(title: &str) {
             }
         },
     );
-}
-
-pub(crate) fn run(title: &'static str) {
-    pollster::block_on(start(title));
 }
