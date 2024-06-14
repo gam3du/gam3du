@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wgpu::{Instance, Surface};
+use wgpu::Surface;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, KeyEvent, StartCause, WindowEvent},
@@ -9,7 +9,9 @@ use winit::{
     window::Window,
 };
 
-pub trait Example: 'static + Sized {
+use crate::logging::init_logger;
+
+pub(crate) trait Example: 'static + Sized {
     const SRGB: bool = true;
 
     fn optional_features() -> wgpu::Features {
@@ -52,42 +54,6 @@ pub trait Example: 'static + Sized {
 }
 
 // Initialize logging in platform dependant ways.
-fn init_logger() {
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            // As we don't have an environment to pull logging level from, we use the query string.
-            let query_string = web_sys::window().unwrap().location().search().unwrap();
-            let query_level: Option<log::LevelFilter> = parse_url_query_string(&query_string, "RUST_LOG")
-                .and_then(|x| x.parse().ok());
-
-            // We keep wgpu at Error level, as it's very noisy.
-            let base_level = query_level.unwrap_or(log::LevelFilter::Info);
-            let wgpu_level = query_level.unwrap_or(log::LevelFilter::Error);
-
-            // On web, we use fern, as console_log doesn't have filtering on a per-module level.
-            fern::Dispatch::new()
-                .level(base_level)
-                .level_for("wgpu_core", wgpu_level)
-                .level_for("wgpu_hal", wgpu_level)
-                .level_for("naga", wgpu_level)
-                .chain(fern::Output::call(console_log::log))
-                .apply()
-                .unwrap();
-            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
-        } else {
-            // parse_default_env will read the RUST_LOG environment variable and apply it on top
-            // of these default filters.
-            env_logger::builder()
-                .filter_level(log::LevelFilter::Info)
-                // We keep wgpu at Error level, as it's very noisy.
-                .filter_module("wgpu_core", log::LevelFilter::Info)
-                .filter_module("wgpu_hal", log::LevelFilter::Error)
-                .filter_module("naga", log::LevelFilter::Error)
-                .parse_default_env()
-                .init();
-        }
-    }
-}
 
 struct EventLoopWrapper {
     event_loop: EventLoop<()>,
@@ -95,23 +61,9 @@ struct EventLoopWrapper {
 }
 
 impl EventLoopWrapper {
-    pub fn new(title: &str) -> Self {
+    pub(crate) fn new(title: &str) -> Self {
         let event_loop = EventLoop::new().unwrap();
         let mut builder = winit::window::WindowBuilder::new();
-        #[cfg(target_arch = "wasm32")]
-        {
-            use wasm_bindgen::JsCast;
-            use winit::platform::web::WindowBuilderExtWebSys;
-            let canvas = web_sys::window()
-                .unwrap()
-                .document()
-                .unwrap()
-                .get_element_by_id("canvas")
-                .unwrap()
-                .dyn_into::<web_sys::HtmlCanvasElement>()
-                .unwrap();
-            builder = builder.with_canvas(Some(canvas));
-        }
         builder = builder.with_title(title);
         let window = Arc::new(builder.build(&event_loop).unwrap());
 
@@ -133,19 +85,6 @@ impl SurfaceWrapper {
         Self {
             surface: None,
             config: None,
-        }
-    }
-
-    /// Called after the instance is created, but before we request an adapter.
-    ///
-    /// On wasm, we need to create the surface here, as the WebGL backend needs
-    /// a surface (and hence a canvas) to be present to create the adapter.
-    ///
-    /// We cannot unconditionally create a surface here, as Android requires
-    /// us to wait until we receive the `Resumed` event to do so.
-    fn pre_adapter(&mut self, instance: &Instance, window: Arc<Window>) {
-        if cfg!(target_arch = "wasm32") {
-            self.surface = Some(instance.create_surface(window).unwrap());
         }
     }
 
@@ -174,9 +113,7 @@ impl SurfaceWrapper {
         log::info!("Surface resume {window_size:?}");
 
         // We didn't create the surface in pre_adapter, so we need to do so now.
-        if !cfg!(target_arch = "wasm32") {
-            self.surface = Some(context.instance.create_surface(window).unwrap());
-        }
+        self.surface = Some(context.instance.create_surface(window).unwrap());
 
         // From here on, self.surface should be Some.
 
@@ -264,7 +201,7 @@ struct ExampleContext {
 }
 impl ExampleContext {
     /// Initializes the example context.
-    async fn init_async<E: Example>(surface: &mut SurfaceWrapper, window: Arc<Window>) -> Self {
+    async fn init_async<E: Example>(surface: &mut SurfaceWrapper) -> Self {
         log::info!("Initializing wgpu...");
 
         let backends = wgpu::util::backend_bits_from_env().unwrap_or_default();
@@ -277,7 +214,6 @@ impl ExampleContext {
             dx12_shader_compiler,
             gles_minor_version,
         });
-        surface.pre_adapter(&instance, window);
         let adapter = wgpu::util::initialize_adapter_from_env_or_default(&instance, surface.get())
             .await
             .expect("No suitable GPU adapters found on the system!");
@@ -371,20 +307,13 @@ async fn start<E: Example>(title: &str) {
     init_logger();
     let window_loop = EventLoopWrapper::new(title);
     let mut surface = SurfaceWrapper::new();
-    let context = ExampleContext::init_async::<E>(&mut surface, window_loop.window.clone()).await;
+    let context = ExampleContext::init_async::<E>(&mut surface).await;
     let mut frame_counter = FrameCounter::new();
 
     // We wait to create the example until we have a valid surface.
     let mut example = None;
 
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            use winit::platform::web::EventLoopExtWebSys;
-            let event_loop_function = EventLoop::spawn;
-        } else {
-            let event_loop_function = EventLoop::run;
-        }
-    }
+    let event_loop_function = EventLoop::run;
 
     log::info!("Entering event loop...");
     // On native this is a result, but on wasm it's a unit type.
@@ -431,7 +360,6 @@ async fn start<E: Example>(title: &str) {
                     | WindowEvent::CloseRequested => {
                         target.exit();
                     }
-                    #[cfg(not(target_arch = "wasm32"))]
                     WindowEvent::KeyboardInput {
                         event:
                             KeyEvent {
@@ -476,31 +404,6 @@ async fn start<E: Example>(title: &str) {
     );
 }
 
-pub fn run<E: Example>(title: &'static str) {
-    cfg_if::cfg_if! {
-        if #[cfg(target_arch = "wasm32")] {
-            wasm_bindgen_futures::spawn_local(async move { start::<E>(title).await })
-        } else {
-            pollster::block_on(start::<E>(title));
-        }
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-/// Parse the query string as returned by `web_sys::window()?.location().search()?` and get a
-/// specific key out of it.
-pub fn parse_url_query_string<'a>(query: &'a str, search_key: &str) -> Option<&'a str> {
-    let query_string = query.strip_prefix('?')?;
-
-    for pair in query_string.split('&') {
-        let mut pair = pair.split('=');
-        let key = pair.next()?;
-        let value = pair.next()?;
-
-        if key == search_key {
-            return Some(value);
-        }
-    }
-
-    None
+pub(crate) fn run<E: Example>(title: &'static str) {
+    pollster::block_on(start::<E>(title));
 }

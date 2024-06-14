@@ -13,7 +13,6 @@ name = "_3du"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
- "cfg-if",
  "env_logger",
  "glam",
  "log",
