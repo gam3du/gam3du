@@ -341,12 +341,6 @@ impl Scene {
         }
     }
 
-    // TODO this was a trait function; review whether this is a useful method to keep
-    #[allow(clippy::unused_self, clippy::needless_pass_by_value)]
-    pub(crate) fn update(&mut self, _event: winit::event::WindowEvent) {
-        //empty
-    }
-
     pub(crate) fn resize(
         &mut self,
         config: &wgpu::SurfaceConfiguration,

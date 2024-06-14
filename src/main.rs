@@ -36,7 +36,7 @@ fn main() {
     let source_path = "src/test.py";
     let python_tread = thread::spawn(move || python_runner(&source_path));
 
-    pollster::block_on(framework::start("my scene"));
+    pollster::block_on(framework::start("demo scene".into()));
 
     python_tread.join().unwrap();
 }
