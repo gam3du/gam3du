@@ -1,0 +1,7 @@
+[package]
+name = "_3du"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rustpython-vm = "0.3.1"
