@@ -397,7 +397,3 @@ impl Scene {
         queue.submit(Some(encoder.finish()));
     }
 }
-
-// pub fn main() {
-//     crate::framework::run::<Example>("cube");
-// }

@@ -464,15 +464,17 @@ impl ApplicationHandler for Application {
                 trace!("DeviceEvent::Removed");
             }
             DeviceEvent::MouseMotion {
-                delta: (delta_x, delta_y),
+                delta: (_delta_x, _delta_y),
             } => {
-                trace!("DeviceEvent::MouseMotion({delta_x}, {delta_y})");
+                // these are super-noisy
+                // trace!("DeviceEvent::MouseMotion({delta_x}, {delta_y})");
             }
             DeviceEvent::MouseWheel { delta } => {
                 trace!("DeviceEvent::MouseWheel({delta:?})");
             }
-            DeviceEvent::Motion { axis, value } => {
-                trace!("DeviceEvent::Motion({axis}, {value})");
+            DeviceEvent::Motion { axis: _, value: _ } => {
+                // these are super-noisy
+                // trace!("DeviceEvent::Motion({axis}, {value})");
             }
             DeviceEvent::Button { button, state } => {
                 trace!("DeviceEvent::Button({button}, {state:?})");
