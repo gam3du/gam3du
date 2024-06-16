@@ -4,6 +4,7 @@
 
 // TODO enable hand-picked clippy lints from the `restriction` group
 
+//mod application_state;
 mod framework;
 mod logging;
 mod scene;
