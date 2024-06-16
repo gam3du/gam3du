@@ -9,6 +9,8 @@ pub(crate) fn init_logger() {
         .filter_module("wgpu_hal", log::LevelFilter::Info)
         .filter_module("naga", log::LevelFilter::Info)
         .filter_module("calloop", log::LevelFilter::Info)
+        .filter_module("rustpython_codegen", log::LevelFilter::Debug)
+        .filter_module("rustpython_parser", log::LevelFilter::Debug)
         .parse_default_env()
         .init();
 }
