@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use log::trace;
-use wgpu::Surface;
+use wgpu::{Features, Surface};
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -152,8 +152,7 @@ impl ExampleContext {
         let adapter_info = adapter.get_info();
         log::info!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
-        let optional_features = Scene::optional_features();
-        let required_features = Scene::required_features();
+        let required_features = Features::empty();
         let adapter_features = adapter.features();
         assert!(
             adapter_features.contains(required_features),
@@ -161,7 +160,11 @@ impl ExampleContext {
             required_features - adapter_features
         );
 
-        let required_downlevel_capabilities = Scene::required_downlevel_capabilities();
+        let required_downlevel_capabilities = wgpu::DownlevelCapabilities {
+            flags: wgpu::DownlevelFlags::empty(),
+            shader_model: wgpu::ShaderModel::Sm5,
+            ..wgpu::DownlevelCapabilities::default()
+        };
         let downlevel_capabilities = adapter.get_downlevel_capabilities();
         assert!(
             downlevel_capabilities.shader_model >= required_downlevel_capabilities.shader_model,
@@ -177,14 +180,15 @@ impl ExampleContext {
         );
 
         // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the surface.
-        let needed_limits = Scene::required_limits().using_resolution(adapter.limits());
+        let needed_limits =
+            wgpu::Limits::downlevel_webgl2_defaults().using_resolution(adapter.limits());
 
         let trace_dir = std::env::var("WGPU_TRACE");
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
-                    required_features: (optional_features & adapter_features) | required_features,
+                    required_features: adapter_features | required_features,
                     required_limits: needed_limits,
                 },
                 trace_dir.ok().as_ref().map(std::path::Path::new),

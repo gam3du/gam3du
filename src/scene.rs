@@ -101,7 +101,6 @@ pub(crate) struct Scene {
     start_time: Instant,
     rotation: Mat4,
     projection: Projection,
-    matrix: Mat4,
     camera: Camera,
 }
 
@@ -116,55 +115,10 @@ fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {
 }
 
 impl Scene {
-    pub(crate) fn required_features() -> wgpu::Features {
-        wgpu::Features::empty()
-    }
-
-    pub(crate) fn required_downlevel_capabilities() -> wgpu::DownlevelCapabilities {
-        wgpu::DownlevelCapabilities {
-            flags: wgpu::DownlevelFlags::empty(),
-            shader_model: wgpu::ShaderModel::Sm5,
-            ..wgpu::DownlevelCapabilities::default()
-        }
-    }
-
-    pub(crate) fn required_limits() -> wgpu::Limits {
-        wgpu::Limits::downlevel_webgl2_defaults() // These downlevel limits will allow the code to run on all possible hardware
-    }
-
-    fn generate_rotation() -> glam::Mat4 {
-        let rotation = ROTATION.load(Ordering::Relaxed);
-        glam::Mat4::from_rotation_x(f32::from(rotation).to_radians())
-    }
-
-    fn update_rotation(&mut self, queue: &wgpu::Queue) {
-        self.rotation = Self::generate_rotation();
-        self.update_matrix(queue);
-    }
-
-    fn generate_matrix(
-        projection: glam::Mat4,
-        view: glam::Mat4,
-        rotation: glam::Mat4,
-    ) -> glam::Mat4 {
-        projection * view * rotation
-    }
-
-    fn update_matrix(&mut self, queue: &wgpu::Queue) {
-        self.matrix = self.projection.matrix() * self.camera.matrix() * self.rotation;
-
-        let mx_ref: &[f32; 16] = self.matrix.as_ref();
-        queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
-    }
-
-    pub(crate) fn optional_features() -> wgpu::Features {
-        wgpu::Features::POLYGON_MODE_LINE
-    }
-
     // TODO partition this function into smaller parts
     #[allow(clippy::too_many_lines)]
     pub(crate) fn init(
-        config: &wgpu::SurfaceConfiguration,
+        surface: &wgpu::SurfaceConfiguration,
         _adapter: &wgpu::Adapter,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -259,7 +213,7 @@ impl Scene {
 
         let camera = Camera::new(glam::Vec3::new(1.5f32, -5.0, 3.0), glam::Vec3::ZERO);
         let projection = Projection::new_perspective(
-            (config.width, config.height),
+            (surface.width, surface.height),
             45_f32.to_radians(),
             1.0..10.0,
         );
@@ -343,7 +297,7 @@ impl Scene {
                 module: &shader,
                 entry_point: "fs_main",
                 compilation_options: PipelineCompilationOptions::default(),
-                targets: &[Some(config.view_formats[0].into())],
+                targets: &[Some(surface.view_formats[0].into())],
             }),
             primitive: wgpu::PrimitiveState {
                 cull_mode: Some(wgpu::Face::Back),
@@ -373,7 +327,7 @@ impl Scene {
                     entry_point: "fs_wire",
                     compilation_options: PipelineCompilationOptions::default(),
                     targets: &[Some(wgpu::ColorTargetState {
-                        format: config.view_formats[0],
+                        format: surface.view_formats[0],
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent {
                                 operation: wgpu::BlendOperation::Add,
@@ -414,9 +368,37 @@ impl Scene {
             start_time,
             rotation,
             projection,
-            matrix,
             camera,
         }
+    }
+
+    fn generate_rotation() -> glam::Mat4 {
+        let rotation = ROTATION.load(Ordering::Relaxed);
+        glam::Mat4::from_rotation_x(f32::from(rotation).to_radians())
+    }
+
+    fn update_rotation(&mut self, queue: &wgpu::Queue) {
+        self.rotation = Self::generate_rotation();
+        self.update_matrix(queue);
+    }
+
+    fn generate_matrix(
+        projection: glam::Mat4,
+        view: glam::Mat4,
+        rotation: glam::Mat4,
+    ) -> glam::Mat4 {
+        projection * view * rotation
+    }
+
+    fn update_matrix(&mut self, queue: &wgpu::Queue) {
+        let matrix = Self::generate_matrix(
+            self.projection.matrix(),
+            self.camera.matrix(),
+            self.rotation,
+        );
+
+        let mx_ref: &[f32; 16] = matrix.as_ref();
+        queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
     }
 
     pub(crate) fn resize(
