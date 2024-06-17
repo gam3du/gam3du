@@ -1,9 +1,11 @@
 use bytemuck::{Pod, Zeroable};
+use camera::Camera;
 use glam::Mat4;
 use std::{borrow::Cow, f32::consts, mem, sync::atomic::Ordering, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions};
 
 use crate::ROTATION;
+mod camera;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -95,10 +97,10 @@ pub(crate) struct Scene {
     pipeline: wgpu::RenderPipeline,
     pipeline_wire: Option<wgpu::RenderPipeline>,
     start_time: Instant,
-    view: Mat4,
     rotation: Mat4,
     projection: Mat4,
     matrix: Mat4,
+    camera: Camera,
 }
 
 fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {
@@ -112,8 +114,6 @@ fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {
 }
 
 impl Scene {
-    pub(crate) const SRGB: bool = true;
-
     pub(crate) fn required_features() -> wgpu::Features {
         wgpu::Features::empty()
     }
@@ -149,14 +149,6 @@ impl Scene {
         self.update_matrix(queue);
     }
 
-    fn generate_view() -> glam::Mat4 {
-        glam::Mat4::look_at_rh(
-            glam::Vec3::new(1.5f32, -5.0, 3.0),
-            glam::Vec3::ZERO,
-            glam::Vec3::Z,
-        )
-    }
-
     // fn update_view(&mut self, queue: &wgpu::Queue) {
     //     self.view = Self::generate_view();
     //     self.update_matrix(queue);
@@ -171,7 +163,7 @@ impl Scene {
     }
 
     fn update_matrix(&mut self, queue: &wgpu::Queue) {
-        self.matrix = self.projection * self.view * self.rotation;
+        self.matrix = self.projection * self.camera.view_matrix() * self.rotation;
 
         let mx_ref: &[f32; 16] = self.matrix.as_ref();
         queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
@@ -291,7 +283,8 @@ impl Scene {
             texture_extent,
         );
 
-        let view = Self::generate_view();
+        let camera = Camera::new(glam::Vec3::new(1.5f32, -5.0, 3.0), glam::Vec3::ZERO);
+        let view = camera.view_matrix();
         let projection = Self::generate_projection(config.width as f32 / config.height as f32);
         let rotation = Self::generate_rotation();
         let matrix = Self::generate_matrix(projection, view, rotation);
@@ -442,10 +435,10 @@ impl Scene {
             pipeline,
             pipeline_wire,
             start_time,
-            view,
             rotation,
             projection,
             matrix,
+            camera,
         }
     }
 

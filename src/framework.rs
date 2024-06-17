@@ -231,8 +231,7 @@ impl ApplicationHandler for Application {
 
         let window = Arc::new(event_loop.create_window(attributes).unwrap());
 
-        self.surface
-            .resume(&self.context, window.clone(), Scene::SRGB);
+        self.surface.resume(&self.context, window.clone(), true);
 
         self.window = Some(window);
 
