@@ -1,11 +1,13 @@
 use bytemuck::{Pod, Zeroable};
 use camera::Camera;
 use glam::Mat4;
-use std::{borrow::Cow, f32::consts, mem, sync::atomic::Ordering, time::Instant};
+use projection::Projection;
+use std::{borrow::Cow, mem, sync::atomic::Ordering, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions};
 
 use crate::ROTATION;
 mod camera;
+mod projection;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
@@ -98,7 +100,7 @@ pub(crate) struct Scene {
     pipeline_wire: Option<wgpu::RenderPipeline>,
     start_time: Instant,
     rotation: Mat4,
-    projection: Mat4,
+    projection: Projection,
     matrix: Mat4,
     camera: Camera,
 }
@@ -130,15 +132,6 @@ impl Scene {
         wgpu::Limits::downlevel_webgl2_defaults() // These downlevel limits will allow the code to run on all possible hardware
     }
 
-    fn generate_projection(aspect_ratio: f32) -> glam::Mat4 {
-        glam::Mat4::perspective_rh(consts::FRAC_PI_4, aspect_ratio, 1.0, 10.0)
-    }
-
-    fn update_projection(&mut self, aspect_ratio: f32, queue: &wgpu::Queue) {
-        self.projection = Self::generate_projection(aspect_ratio);
-        self.update_matrix(queue);
-    }
-
     fn generate_rotation() -> glam::Mat4 {
         let rotation = ROTATION.load(Ordering::Relaxed);
         glam::Mat4::from_rotation_x(f32::from(rotation).to_radians())
@@ -149,11 +142,6 @@ impl Scene {
         self.update_matrix(queue);
     }
 
-    // fn update_view(&mut self, queue: &wgpu::Queue) {
-    //     self.view = Self::generate_view();
-    //     self.update_matrix(queue);
-    // }
-
     fn generate_matrix(
         projection: glam::Mat4,
         view: glam::Mat4,
@@ -163,25 +151,11 @@ impl Scene {
     }
 
     fn update_matrix(&mut self, queue: &wgpu::Queue) {
-        self.matrix = self.projection * self.camera.view_matrix() * self.rotation;
+        self.matrix = self.projection.matrix() * self.camera.matrix() * self.rotation;
 
         let mx_ref: &[f32; 16] = self.matrix.as_ref();
         queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
     }
-
-    // fn generate_matrix(aspect_ratio: f32) -> glam::Mat4 {
-    //     self.projection = glam::Mat4::perspective_rh(consts::FRAC_PI_4, aspect_ratio, 1.0, 10.0);
-    //     let rotation = ROTATION.load(Ordering::Relaxed);
-    //     // good enough for scripting
-    //     #[allow(clippy::cast_possible_truncation)]
-    //     let rotation = glam::Mat4::from_rotation_x(f32::from(rotation).to_radians());
-    //     let view = glam::Mat4::look_at_rh(
-    //         glam::Vec3::new(1.5f32, -5.0, 3.0),
-    //         glam::Vec3::ZERO,
-    //         glam::Vec3::Z,
-    //     );
-    //     self.projection * view * rotation
-    // }
 
     pub(crate) fn optional_features() -> wgpu::Features {
         wgpu::Features::POLYGON_MODE_LINE
@@ -284,10 +258,13 @@ impl Scene {
         );
 
         let camera = Camera::new(glam::Vec3::new(1.5f32, -5.0, 3.0), glam::Vec3::ZERO);
-        let view = camera.view_matrix();
-        let projection = Self::generate_projection(config.width as f32 / config.height as f32);
+        let projection = Projection::new_perspective(
+            (config.width, config.height),
+            45_f32.to_radians(),
+            1.0..10.0,
+        );
         let rotation = Self::generate_rotation();
-        let matrix = Self::generate_matrix(projection, view, rotation);
+        let matrix = Self::generate_matrix(projection.matrix(), camera.matrix(), rotation);
 
         // Create other resources
         // let mx_total = Self::generate_matrix(config.width as f32 / config.height as f32);
@@ -448,7 +425,9 @@ impl Scene {
         _device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) {
-        self.update_projection(config.width as f32 / config.height as f32, queue);
+        self.projection
+            .set_surface_dimensions((config.width, config.height));
+        self.update_matrix(queue);
     }
 
     pub(crate) fn render(

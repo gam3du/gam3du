@@ -17,7 +17,7 @@ impl Camera {
     }
 
     #[must_use]
-    pub(super) fn view_matrix(&self) -> Mat4 {
+    pub(super) fn matrix(&self) -> Mat4 {
         Mat4::look_at_rh(self.position, self.look_at, self.up)
     }
 }
