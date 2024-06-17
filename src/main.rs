@@ -10,10 +10,12 @@ mod logging;
 mod python;
 mod scene;
 
-use std::thread;
+use std::{sync::atomic::AtomicU16, thread};
 
 use logging::init_logger;
 use python::python_runner;
+
+pub(crate) static ROTATION: AtomicU16 = AtomicU16::new(0);
 
 fn main() {
     init_logger();

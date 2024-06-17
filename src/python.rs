@@ -79,6 +79,10 @@ pub(crate) fn python_runner(source_path: &(impl AsRef<Path> + ToString)) {
     clippy::unused_self
 )]
 mod rust_py_module {
+    use std::sync::atomic::Ordering;
+
+    use crate::ROTATION;
+
     use super::{pyclass, PyObject, PyPayload, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython::vm::{builtins::PyList, convert::ToPyObject, PyObjectRef};
 
@@ -99,6 +103,12 @@ python_person.name: {}",
         Ok(RustStruct {
             numbers: NumVec(vec![1, 2, 3, 4]),
         })
+    }
+
+    #[pyfunction]
+    fn rotate_cube(angle: u16) {
+        println!("angle {angle}");
+        ROTATION.store(angle, Ordering::Relaxed);
     }
 
     #[derive(Debug, Clone)]

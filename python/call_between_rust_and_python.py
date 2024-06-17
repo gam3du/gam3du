@@ -1,4 +1,5 @@
-from rust_py_module import RustStruct, rust_function
+from rust_py_module import RustStruct, rust_function, rotate_cube
+import time
 
 
 class PythonPerson:
@@ -18,3 +19,7 @@ def take_string(string):
 
 
 print("Hello World!")
+
+for x in range(100):
+    rotate_cube(x)
+    time.sleep(0.020)
