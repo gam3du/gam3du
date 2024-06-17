@@ -1,5 +1,5 @@
 use bytemuck::{Pod, Zeroable};
-use std::{borrow::Cow, f32::consts, mem};
+use std::{borrow::Cow, f32::consts, mem, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions};
 
 #[repr(C)]
@@ -87,9 +87,21 @@ pub(crate) struct Scene {
     index_buf: wgpu::Buffer,
     index_count: usize,
     bind_group: wgpu::BindGroup,
-    uniform_buf: wgpu::Buffer,
+    matrix_buf: wgpu::Buffer,
+    time_buf: wgpu::Buffer,
     pipeline: wgpu::RenderPipeline,
     pipeline_wire: Option<wgpu::RenderPipeline>,
+    start_time: Instant,
+}
+
+fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {
+    let elapsed = start_time.elapsed();
+    let seconds = u32::try_from(elapsed.as_secs()).unwrap();
+    let subsec_nanos = u64::from(elapsed.subsec_nanos());
+    // map range of nanoseconds to value range of u32 with rounding
+    let subseconds = ((subsec_nanos << u32::BITS) + 500_000_000) / 1_000_000_000;
+
+    [seconds, u32::try_from(subseconds).unwrap()]
 }
 
 impl Scene {
@@ -173,6 +185,16 @@ impl Scene {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(8),
+                    },
+                    count: None,
+                },
             ],
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -214,9 +236,22 @@ impl Scene {
         // Create other resources
         let mx_total = Self::generate_matrix(config.width as f32 / config.height as f32);
         let mx_ref: &[f32; 16] = mx_total.as_ref();
-        let uniform_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
             contents: bytemuck::cast_slice(mx_ref),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let start_time = Instant::now();
+        let elapsed_vec = elapsed_as_vec(start_time);
+        let mut elapsed_bytes = [0; 64];
+        elapsed_bytes
+            .iter_mut()
+            .zip(elapsed_vec)
+            .for_each(|(target, source)| *target = source);
+        let time_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Time Uniform Buffer"),
+            contents: bytemuck::cast_slice(&elapsed_bytes),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -226,11 +261,15 @@ impl Scene {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: uniform_buf.as_entire_binding(),
+                    resource: matrix_buf.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: time_buf.as_entire_binding(),
                 },
             ],
             label: None,
@@ -335,9 +374,11 @@ impl Scene {
             index_buf,
             index_count: index_data.len(),
             bind_group,
-            uniform_buf,
+            matrix_buf,
+            time_buf,
             pipeline,
             pipeline_wire,
+            start_time,
         }
     }
 
@@ -349,7 +390,7 @@ impl Scene {
     ) {
         let mx_total = Self::generate_matrix(config.width as f32 / config.height as f32);
         let mx_ref: &[f32; 16] = mx_total.as_ref();
-        queue.write_buffer(&self.uniform_buf, 0, bytemuck::cast_slice(mx_ref));
+        queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
     }
 
     pub(crate) fn render(
@@ -358,6 +399,12 @@ impl Scene {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) {
+        let mut elapsed_bytes = [0; 64];
+        elapsed_bytes
+            .iter_mut()
+            .zip(elapsed_as_vec(self.start_time))
+            .for_each(|(target, source)| *target = source);
+        queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&elapsed_bytes));
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         {
