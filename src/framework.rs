@@ -1,6 +1,9 @@
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
-use log::trace;
+use log::{debug, trace};
 use wgpu::{Features, Surface};
 use winit::{
     application::ApplicationHandler,
@@ -212,6 +215,8 @@ struct Application {
     // window: Arc<Window>,
     window: Option<Arc<Window>>,
     title: String,
+    frame_counter: u32,
+    frame_time: Instant,
 }
 
 impl Application {
@@ -225,6 +230,8 @@ impl Application {
             context,
             window: None,
             title,
+            frame_counter: 0,
+            frame_time: Instant::now(),
         }
     }
 }
@@ -447,6 +454,17 @@ impl ApplicationHandler for Application {
                 );
 
                 frame.present();
+
+                self.frame_counter += 1;
+                let span = self.frame_time.elapsed();
+                if span >= Duration::from_secs(1) {
+                    debug!(
+                        "{} fps",
+                        ((self.frame_counter as f32) / span.as_secs_f32()).round()
+                    );
+                    self.frame_counter = 0;
+                    self.frame_time += span;
+                }
 
                 self.window.as_ref().unwrap().request_redraw();
             }
