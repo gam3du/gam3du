@@ -24,7 +24,7 @@ impl Cube {
     #[allow(clippy::too_many_lines)]
     #[must_use]
     pub(super) fn new(device: &wgpu::Device, queue: &Queue, view_format: TextureFormat) -> Self {
-        let (vertex_data, index_data) = create_vertices();
+        let (vertex_data, index_data) = Self::create_vertices();
 
         let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -37,9 +37,6 @@ impl Cube {
             contents: bytemuck::cast_slice(&index_data),
             usage: wgpu::BufferUsages::INDEX,
         });
-
-        // Create the vertex and index buffers
-        let vertex_size = size_of::<Vertex>();
 
         // Create pipeline layout
         let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -128,7 +125,7 @@ impl Cube {
         });
 
         let vertex_buffers = [wgpu::VertexBufferLayout {
-            array_stride: vertex_size as wgpu::BufferAddress,
+            array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
@@ -229,29 +226,34 @@ impl Cube {
         vertex_buffers: &[wgpu::VertexBufferLayout; 1],
         view_format: TextureFormat,
     ) -> wgpu::RenderPipeline {
+        let vertex = wgpu::VertexState {
+            module: shader,
+            entry_point: "vs_main",
+            compilation_options: PipelineCompilationOptions::default(),
+            buffers: vertex_buffers,
+        };
+
+        let fragment_state = wgpu::FragmentState {
+            module: shader,
+            entry_point: "fs_main",
+            compilation_options: PipelineCompilationOptions::default(),
+            targets: &[Some(view_format.into())],
+        };
+
+        let primitive = wgpu::PrimitiveState {
+            cull_mode: Some(wgpu::Face::Back),
+            ..Default::default()
+        };
+
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: shader,
-                entry_point: "vs_main",
-                compilation_options: PipelineCompilationOptions::default(),
-                buffers: vertex_buffers,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: shader,
-                entry_point: "fs_main",
-                compilation_options: PipelineCompilationOptions::default(),
-                targets: &[Some(view_format.into())],
-            }),
-            primitive: wgpu::PrimitiveState {
-                cull_mode: Some(wgpu::Face::Back),
-                ..Default::default()
-            },
+            vertex,
+            fragment: Some(fragment_state),
+            primitive,
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            // cache: None,
         })
     }
 
@@ -262,49 +264,54 @@ impl Cube {
         vertex_buffers: &[wgpu::VertexBufferLayout; 1],
         view_format: TextureFormat,
     ) -> wgpu::RenderPipeline {
+        let vertex = wgpu::VertexState {
+            module: shader,
+            entry_point: "vs_main",
+            compilation_options: PipelineCompilationOptions::default(),
+            buffers: vertex_buffers,
+        };
+
+        let fragment_state = wgpu::FragmentState {
+            module: shader,
+            entry_point: "fs_wire",
+            compilation_options: PipelineCompilationOptions::default(),
+            targets: &[Some(wgpu::ColorTargetState {
+                format: view_format,
+                blend: Some(wgpu::BlendState {
+                    color: wgpu::BlendComponent {
+                        operation: wgpu::BlendOperation::Add,
+                        src_factor: wgpu::BlendFactor::SrcAlpha,
+                        dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                    },
+                    alpha: wgpu::BlendComponent::REPLACE,
+                }),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+        };
+
+        let primitive = wgpu::PrimitiveState {
+            front_face: wgpu::FrontFace::Ccw,
+            cull_mode: Some(wgpu::Face::Back),
+            polygon_mode: wgpu::PolygonMode::Line,
+            ..Default::default()
+        };
+
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: shader,
-                entry_point: "vs_main",
-                compilation_options: PipelineCompilationOptions::default(),
-                buffers: vertex_buffers,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: shader,
-                entry_point: "fs_wire",
-                compilation_options: PipelineCompilationOptions::default(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: view_format,
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            operation: wgpu::BlendOperation::Add,
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                        },
-                        alpha: wgpu::BlendComponent::REPLACE,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Line,
-                ..Default::default()
-            },
+            vertex,
+            fragment: Some(fragment_state),
+            primitive,
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            // cache: None,
         })
     }
 
     fn create_texture_view(device: &wgpu::Device, queue: &Queue) -> wgpu::TextureView {
         // Create the texture
         let size = 256u32;
-        let texels = create_texels(size as usize);
+        let texels = Self::create_texels(size as usize);
         let texture_extent = wgpu::Extent3d {
             width: size,
             height: size,
@@ -333,6 +340,72 @@ impl Cube {
         );
         texture_view
     }
+
+    fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
+        let vertex_data = [
+            // top (0, 0, 1)
+            vertex([-1, -1, 1], [0, 0]),
+            vertex([1, -1, 1], [1, 0]),
+            vertex([1, 1, 1], [1, 1]),
+            vertex([-1, 1, 1], [0, 1]),
+            // bottom (0, 0, -1)
+            vertex([-1, 1, -1], [1, 0]),
+            vertex([1, 1, -1], [0, 0]),
+            vertex([1, -1, -1], [0, 1]),
+            vertex([-1, -1, -1], [1, 1]),
+            // right (1, 0, 0)
+            vertex([1, -1, -1], [0, 0]),
+            vertex([1, 1, -1], [1, 0]),
+            vertex([1, 1, 1], [1, 1]),
+            vertex([1, -1, 1], [0, 1]),
+            // left (-1, 0, 0)
+            vertex([-1, -1, 1], [1, 0]),
+            vertex([-1, 1, 1], [0, 0]),
+            vertex([-1, 1, -1], [0, 1]),
+            vertex([-1, -1, -1], [1, 1]),
+            // front (0, 1, 0)
+            vertex([1, 1, -1], [1, 0]),
+            vertex([-1, 1, -1], [0, 0]),
+            vertex([-1, 1, 1], [0, 1]),
+            vertex([1, 1, 1], [1, 1]),
+            // back (0, -1, 0)
+            vertex([1, -1, 1], [0, 0]),
+            vertex([-1, -1, 1], [1, 0]),
+            vertex([-1, -1, -1], [1, 1]),
+            vertex([1, -1, -1], [0, 1]),
+        ];
+
+        let index_data: &[u16] = &[
+            0, 1, 2, 2, 3, 0, // top
+            4, 5, 6, 6, 7, 4, // bottom
+            8, 9, 10, 10, 11, 8, // right
+            12, 13, 14, 14, 15, 12, // left
+            16, 17, 18, 18, 19, 16, // front
+            20, 21, 22, 22, 23, 20, // back
+        ];
+
+        (vertex_data.to_vec(), index_data.to_vec())
+    }
+
+    fn create_texels(size: usize) -> Vec<u8> {
+        // testure doesn't need to be precise
+        #[allow(clippy::cast_precision_loss)]
+        (0..size * size)
+            .map(|id| {
+                // get high five for recognizing this ;)
+                let cx = 3.0 * (id % size) as f32 / (size - 1) as f32 - 2.0;
+                let cy = 2.0 * (id / size) as f32 / (size - 1) as f32 - 1.0;
+                let (mut x, mut y, mut count) = (cx, cy, 0);
+                while count < 0xFF && x * x + y * y < 4.0 {
+                    let old_x = x;
+                    x = x * x - y * y + cx;
+                    y = 2.0 * old_x * y + cy;
+                    count += 1;
+                }
+                count
+            })
+            .collect()
+    }
 }
 
 #[repr(C)]
@@ -347,70 +420,4 @@ fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
         _pos: [f32::from(pos[0]), f32::from(pos[1]), f32::from(pos[2]), 1.0],
         _tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
     }
-}
-
-fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
-    let vertex_data = [
-        // top (0, 0, 1)
-        vertex([-1, -1, 1], [0, 0]),
-        vertex([1, -1, 1], [1, 0]),
-        vertex([1, 1, 1], [1, 1]),
-        vertex([-1, 1, 1], [0, 1]),
-        // bottom (0, 0, -1)
-        vertex([-1, 1, -1], [1, 0]),
-        vertex([1, 1, -1], [0, 0]),
-        vertex([1, -1, -1], [0, 1]),
-        vertex([-1, -1, -1], [1, 1]),
-        // right (1, 0, 0)
-        vertex([1, -1, -1], [0, 0]),
-        vertex([1, 1, -1], [1, 0]),
-        vertex([1, 1, 1], [1, 1]),
-        vertex([1, -1, 1], [0, 1]),
-        // left (-1, 0, 0)
-        vertex([-1, -1, 1], [1, 0]),
-        vertex([-1, 1, 1], [0, 0]),
-        vertex([-1, 1, -1], [0, 1]),
-        vertex([-1, -1, -1], [1, 1]),
-        // front (0, 1, 0)
-        vertex([1, 1, -1], [1, 0]),
-        vertex([-1, 1, -1], [0, 0]),
-        vertex([-1, 1, 1], [0, 1]),
-        vertex([1, 1, 1], [1, 1]),
-        // back (0, -1, 0)
-        vertex([1, -1, 1], [0, 0]),
-        vertex([-1, -1, 1], [1, 0]),
-        vertex([-1, -1, -1], [1, 1]),
-        vertex([1, -1, -1], [0, 1]),
-    ];
-
-    let index_data: &[u16] = &[
-        0, 1, 2, 2, 3, 0, // top
-        4, 5, 6, 6, 7, 4, // bottom
-        8, 9, 10, 10, 11, 8, // right
-        12, 13, 14, 14, 15, 12, // left
-        16, 17, 18, 18, 19, 16, // front
-        20, 21, 22, 22, 23, 20, // back
-    ];
-
-    (vertex_data.to_vec(), index_data.to_vec())
-}
-
-fn create_texels(size: usize) -> Vec<u8> {
-    // testure doesn't need to be precise
-    #[allow(clippy::cast_precision_loss)]
-    (0..size * size)
-        .map(|id| {
-            // get high five for recognizing this ;)
-            let cx = 3.0 * (id % size) as f32 / (size - 1) as f32 - 2.0;
-            let cy = 2.0 * (id / size) as f32 / (size - 1) as f32 - 1.0;
-            let (mut x, mut y, mut count) = (cx, cy, 0);
-            while count < 0xFF && x * x + y * y < 4.0 {
-                let old_x = x;
-                x = x * x - y * y + cx;
-                y = 2.0 * old_x * y + cy;
-                count += 1;
-            }
-            count
-        })
-        .collect()
 }
