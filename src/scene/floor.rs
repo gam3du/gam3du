@@ -20,7 +20,7 @@ impl Floor {
     // TODO partition this function into smaller parts
     #[allow(clippy::too_many_lines)]
     #[must_use]
-    pub(super) fn new(device: &wgpu::Device, queue: &Queue, view_format: TextureFormat) -> Self {
+    pub(super) fn new(device: &wgpu::Device, _queue: &Queue, view_format: TextureFormat) -> Self {
         let (vertex_data, index_data) = Self::create_vertices();
 
         let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -50,16 +50,6 @@ impl Floor {
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        sample_type: wgpu::TextureSampleType::Uint,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
                     binding: 2,
                     visibility: wgpu::ShaderStages::VERTEX,
                     ty: wgpu::BindingType::Buffer {
@@ -76,8 +66,6 @@ impl Floor {
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
-
-        let texture_view = Self::create_texture_view(device, queue);
 
         // Create other resources
         // let mx_total = Self::generate_matrix(config.width as f32 / config.height as f32);
@@ -103,10 +91,6 @@ impl Floor {
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: matrix_buf.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
@@ -231,39 +215,6 @@ impl Floor {
         })
     }
 
-    fn create_texture_view(device: &wgpu::Device, queue: &Queue) -> wgpu::TextureView {
-        // Create the texture
-        let size = 256u32;
-        let texels = Self::create_texels(size as usize);
-        let texture_extent = wgpu::Extent3d {
-            width: size,
-            height: size,
-            depth_or_array_layers: 1,
-        };
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: None,
-            size: texture_extent,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::R8Uint,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        queue.write_texture(
-            texture.as_image_copy(),
-            &texels,
-            wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(size),
-                rows_per_image: None,
-            },
-            texture_extent,
-        );
-        texture_view
-    }
-
     fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
         let mut vertex_data = Vec::new();
         let mut index_data = Vec::new();
@@ -296,26 +247,6 @@ impl Floor {
         }
 
         (vertex_data, index_data)
-    }
-
-    fn create_texels(size: usize) -> Vec<u8> {
-        // testure doesn't need to be precise
-        #[allow(clippy::cast_precision_loss)]
-        (0..size * size)
-            .map(|id| {
-                // get high five for recognizing this ;)
-                let cx = 3.0 * (id % size) as f32 / (size - 1) as f32 - 2.0;
-                let cy = 2.0 * (id / size) as f32 / (size - 1) as f32 - 1.0;
-                let (mut x, mut y, mut count) = (cx, cy, 0);
-                while count < 0xFF && x * x + y * y < 4.0 {
-                    let old_x = x;
-                    x = x * x - y * y + cx;
-                    y = 2.0 * old_x * y + cy;
-                    count += 1;
-                }
-                count
-            })
-            .collect()
     }
 }
 
