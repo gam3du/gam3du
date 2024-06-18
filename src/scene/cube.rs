@@ -1,10 +1,9 @@
-use std::mem::size_of;
+use std::{f32::consts::TAU, mem::size_of};
 
 use bytemuck::{Pod, Zeroable};
-use std::{borrow::Cow, sync::atomic::Ordering, time::Instant};
+use glam::{Mat4, Quat, Vec3};
+use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
-
-use crate::ROTATION;
 
 use super::{camera::Camera, elapsed_as_vec, projection::Projection, DepthTexture};
 
@@ -17,6 +16,8 @@ pub(super) struct Cube {
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
+    position: Vec3,
+    recent_time: Instant,
 }
 
 impl Cube {
@@ -82,9 +83,6 @@ impl Cube {
 
         let texture_view = Self::create_texture_view(device, queue);
 
-        // Create other resources
-        // let mx_total = Self::generate_matrix(config.width as f32 / config.height as f32);
-        //let mx_ref: &[f32; 16] = matrix.as_ref();
         let mx_ref = &[0_u8; size_of::<[f32; 16]>()];
         let matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -99,7 +97,6 @@ impl Cube {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        // Create bind group
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
             entries: &[
@@ -171,24 +168,32 @@ impl Cube {
             matrix_buf,
             pipeline,
             pipeline_wire: wireframe_pipeline,
+            position: Vec3::new(0.0, 0.0, 0.25),
+            recent_time: Instant::now(),
         }
     }
 
-    fn generate_rotation() -> glam::Mat4 {
-        let rotation = ROTATION.load(Ordering::Relaxed);
-        glam::Mat4::from_rotation_x(f32::from(rotation).to_radians())
-    }
-
     pub(super) fn render<'pipeline>(
-        &'pipeline self,
+        &'pipeline mut self,
         queue: &Queue,
         render_pass: &mut RenderPass<'pipeline>,
         camera: &Camera,
         projection: &Projection,
         start_time: Instant,
     ) {
+        let time = Instant::now();
+        let dt = time.duration_since(self.recent_time);
+        // this is just a demo
+        #[allow(clippy::cast_possible_truncation)]
+        let rotation = (start_time.elapsed().as_secs_f64() * 0.5).sin() as f32 * TAU;
+        let (dy, dx) = rotation.sin_cos();
+        self.position += Vec3::new(dx * dt.as_secs_f32(), dy * dt.as_secs_f32(), 0.0);
+
+        let position =
+            glam::Mat4::from_rotation_translation(Quat::from_rotation_z(rotation), self.position);
+
         self.update_time(start_time, queue);
-        self.update_matrix(projection, camera, queue);
+        self.update_matrix(projection, camera, queue, position);
 
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);
@@ -203,10 +208,18 @@ impl Cube {
             render_pass.set_pipeline(pipe);
             render_pass.draw_indexed(0..self.index_count, 0, 0..1);
         }
+
+        self.recent_time += dt;
     }
 
-    fn update_matrix(&self, projection: &Projection, camera: &Camera, queue: &Queue) {
-        let matrix = projection.matrix() * camera.matrix() * Self::generate_rotation();
+    fn update_matrix(
+        &self,
+        projection: &Projection,
+        camera: &Camera,
+        queue: &Queue,
+        position: Mat4,
+    ) {
+        let matrix = projection.matrix() * camera.matrix() * position;
         let mx_ref: &[f32; 16] = matrix.as_ref();
         queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
     }
@@ -414,7 +427,12 @@ struct Vertex {
 
 fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
     Vertex {
-        _pos: [f32::from(pos[0]), f32::from(pos[1]), f32::from(pos[2]), 1.0],
+        _pos: [
+            f32::from(pos[0]) * 0.25,
+            f32::from(pos[1]) * 0.25,
+            f32::from(pos[2]) * 0.25,
+            1.0,
+        ],
         _tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
     }
 }
