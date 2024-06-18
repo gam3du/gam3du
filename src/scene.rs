@@ -48,21 +48,6 @@ impl Scene {
 
         let start_time = Instant::now();
 
-        // let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-        //     // 4.
-        //     address_mode_u: wgpu::AddressMode::ClampToEdge,
-        //     address_mode_v: wgpu::AddressMode::ClampToEdge,
-        //     address_mode_w: wgpu::AddressMode::ClampToEdge,
-        //     mag_filter: wgpu::FilterMode::Linear,
-        //     min_filter: wgpu::FilterMode::Linear,
-        //     mipmap_filter: wgpu::FilterMode::Nearest,
-        //     compare: Some(wgpu::CompareFunction::LessEqual), // 5.
-        //     lod_min_clamp: 0.0,
-        //     lod_max_clamp: 100.0,
-        //     ..Default::default()
-        // });
-
-        // let depth_view = Self::create_depth_map(device, surface);
         let depth_map = DepthTexture::create_depth_texture(device, surface, "depth_map");
 
         Scene {
@@ -73,32 +58,6 @@ impl Scene {
             cube,
             floor,
         }
-    }
-
-    fn create_depth_map(
-        device: &wgpu::Device,
-        surface: &wgpu::SurfaceConfiguration,
-    ) -> wgpu::TextureView {
-        let size = wgpu::Extent3d {
-            // 2.
-            width: surface.width,
-            height: surface.height,
-            depth_or_array_layers: 1,
-        };
-        let desc = wgpu::TextureDescriptor {
-            label: Some("depth_map"),
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT // 3.
-                | wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        };
-        let texture = device.create_texture(&desc);
-
-        texture.create_view(&wgpu::TextureViewDescriptor::default())
     }
 
     pub(crate) fn resize(
@@ -121,105 +80,112 @@ impl Scene {
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
+        self.render_cube(texture_view, &mut encoder, queue);
+
+        self.render_floor(texture_view, &mut encoder, queue);
+
+        queue.submit(Some(encoder.finish()));
+    }
+
+    fn render_cube(
+        &mut self,
+        texture_view: &wgpu::TextureView,
+        encoder: &mut wgpu::CommandEncoder,
+        queue: &wgpu::Queue,
+    ) {
         let clear_color = wgpu::Color {
             r: 0.1,
             g: 0.2,
             b: 0.3,
             a: 1.0,
         };
-
+        let render_pass_color_attachment = wgpu::RenderPassColorAttachment {
+            view: texture_view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Clear(clear_color),
+                store: wgpu::StoreOp::Store,
+            },
+        };
+        let color_attachments = [Some(render_pass_color_attachment)];
+        let render_pass_depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
+            view: &self.depth_map.view,
+            depth_ops: Some(wgpu::Operations {
+                load: wgpu::LoadOp::Clear(1.0),
+                store: wgpu::StoreOp::Store,
+            }),
+            stencil_ops: None,
+        };
+        let render_pass_descriptor = wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &color_attachments,
+            depth_stencil_attachment: Some(render_pass_depth_stencil_attachment.clone()),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        };
         {
-            let render_pass_color_attachment = wgpu::RenderPassColorAttachment {
-                view: texture_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(clear_color),
-                    store: wgpu::StoreOp::Store,
-                },
-            };
+            let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
 
-            let color_attachments = [Some(render_pass_color_attachment)];
-
-            let render_pass_depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
-                view: &self.depth_map.view,
-                depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(1.0),
-                    store: wgpu::StoreOp::Store,
-                }),
-                stencil_ops: None,
-            };
-
-            let render_pass_descriptor = wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &color_attachments,
-                depth_stencil_attachment: Some(render_pass_depth_stencil_attachment.clone()),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            };
-
-            {
-                let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
-
-                self.cube.render(
-                    queue,
-                    &mut render_pass,
-                    &self.camera,
-                    &self.projection,
-                    self.start_time,
-                );
-            }
+            self.cube.render(
+                queue,
+                &mut render_pass,
+                &self.camera,
+                &self.projection,
+                self.start_time,
+            );
         }
+    }
 
+    fn render_floor(
+        &mut self,
+        texture_view: &wgpu::TextureView,
+        encoder: &mut wgpu::CommandEncoder,
+        queue: &wgpu::Queue,
+    ) {
+        let render_pass_color_attachment = wgpu::RenderPassColorAttachment {
+            view: texture_view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Load,
+                store: wgpu::StoreOp::Store,
+            },
+        };
+        let color_attachments = [Some(render_pass_color_attachment)];
+
+        let render_pass_depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
+            view: &self.depth_map.view,
+            depth_ops: Some(wgpu::Operations {
+                load: wgpu::LoadOp::Load,
+                store: wgpu::StoreOp::Store,
+            }),
+            stencil_ops: None,
+        };
+
+        let render_pass_descriptor = wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &color_attachments,
+            depth_stencil_attachment: Some(render_pass_depth_stencil_attachment),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        };
         {
-            let render_pass_color_attachment = wgpu::RenderPassColorAttachment {
-                view: texture_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: wgpu::StoreOp::Store,
-                },
-            };
+            let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
 
-            let color_attachments = [Some(render_pass_color_attachment)];
-
-            let render_pass_depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
-                view: &self.depth_map.view,
-                depth_ops: Some(wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
-                    store: wgpu::StoreOp::Store,
-                }),
-                stencil_ops: None,
-            };
-
-            let render_pass_descriptor = wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &color_attachments,
-                depth_stencil_attachment: Some(render_pass_depth_stencil_attachment),
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            };
-
-            {
-                let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
-
-                self.floor.render(
-                    queue,
-                    &mut render_pass,
-                    &self.camera,
-                    &self.projection,
-                    self.start_time,
-                );
-            }
+            self.floor.render(
+                queue,
+                &mut render_pass,
+                &self.camera,
+                &self.projection,
+                self.start_time,
+            );
         }
-
-        queue.submit(Some(encoder.finish()));
     }
 }
 
 struct DepthTexture {
-    texture: wgpu::Texture,
+    _texture: wgpu::Texture,
     view: wgpu::TextureView,
-    sampler: wgpu::Sampler,
+    _sampler: wgpu::Sampler,
 }
 
 impl DepthTexture {
@@ -265,9 +231,19 @@ impl DepthTexture {
         });
 
         Self {
-            texture,
+            _texture: texture,
             view,
-            sampler,
+            _sampler: sampler,
+        }
+    }
+
+    fn depth_stencil_state() -> wgpu::DepthStencilState {
+        wgpu::DepthStencilState {
+            format: DepthTexture::DEPTH_FORMAT,
+            depth_write_enabled: true,
+            depth_compare: wgpu::CompareFunction::Less, // 1.
+            stencil: wgpu::StencilState::default(),     // 2.
+            bias: wgpu::DepthBiasState::default(),
         }
     }
 }

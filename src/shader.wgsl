@@ -66,3 +66,14 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
 fn fs_wire(vertex: VertexOutput) -> @location(0) vec4<f32> {
     return vec4<f32>(0.0, 0.5, 0.0, 0.5);
 }
+
+
+@fragment
+fn fs_floor_tile(vertex: VertexOutput) -> @location(0) vec4<f32> {
+    if (vertex.tex_coord.x > 0.05 && vertex.tex_coord.x < 0.95 &&vertex.tex_coord.y > 0.05 && vertex.tex_coord.y < 0.95) {
+        return vec4<f32>(vertex.tex_coord.x, vertex.tex_coord.y, 0.5, 1.0);
+    } else {
+        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    }
+
+}

@@ -1,16 +1,13 @@
 use std::mem::size_of;
 
 use bytemuck::{Pod, Zeroable};
-use std::{borrow::Cow, sync::atomic::Ordering, time::Instant};
+use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
-use crate::ROTATION;
-
-use super::{camera::Camera, elapsed_as_vec, projection::Projection};
+use super::{camera::Camera, elapsed_as_vec, projection::Projection, DepthTexture};
 
 pub(super) struct Floor {
     pipeline: wgpu::RenderPipeline,
-    // pipeline_wire: Option<wgpu::RenderPipeline>,
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
     index_count: usize,
@@ -149,19 +146,6 @@ impl Floor {
             view_format,
         );
 
-        // let wireframe_pipeline = device
-        //     .features()
-        //     .contains(wgpu::Features::POLYGON_MODE_LINE)
-        //     .then(|| {
-        //         Self::create_wireframe_pipeline(
-        //             device,
-        //             &pipeline_layout,
-        //             &shader,
-        //             &vertex_buffers,
-        //             view_format,
-        //         )
-        //     });
-
         Self {
             vertex_buf,
             index_buf,
@@ -170,13 +154,7 @@ impl Floor {
             bind_group,
             matrix_buf,
             pipeline,
-            // pipeline_wire: wireframe_pipeline,
         }
-    }
-
-    fn generate_rotation() -> glam::Mat4 {
-        let rotation = u16::MAX - ROTATION.load(Ordering::Relaxed).wrapping_add(20);
-        glam::Mat4::from_rotation_x(f32::from(rotation).to_radians())
     }
 
     pub(super) fn render<'pipeline>(
@@ -198,15 +176,10 @@ impl Floor {
         render_pass.pop_debug_group();
         render_pass.insert_debug_marker("Draw!");
         render_pass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
-
-        // if let Some(ref pipe) = self.pipeline_wire {
-        //     render_pass.set_pipeline(pipe);
-        //     render_pass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
-        // }
     }
 
     fn update_matrix(&self, projection: &Projection, camera: &Camera, queue: &Queue) {
-        let matrix = projection.matrix() * camera.matrix() * Self::generate_rotation();
+        let matrix = projection.matrix() * camera.matrix();
         let mx_ref: &[f32; 16] = matrix.as_ref();
         queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
     }
@@ -236,22 +209,14 @@ impl Floor {
 
         let fragment_state = wgpu::FragmentState {
             module: shader,
-            entry_point: "fs_main",
+            entry_point: "fs_floor_tile",
             compilation_options: PipelineCompilationOptions::default(),
             targets: &[Some(view_format.into())],
         };
 
         let primitive = wgpu::PrimitiveState {
-            cull_mode: Some(wgpu::Face::Back),
+            cull_mode: None, //Some(wgpu::Face::Back),
             ..Default::default()
-        };
-
-        let depth_stencil_state = wgpu::DepthStencilState {
-            format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less, // 1.
-            stencil: wgpu::StencilState::default(),     // 2.
-            bias: wgpu::DepthBiasState::default(),
         };
 
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -260,62 +225,11 @@ impl Floor {
             vertex,
             fragment: Some(fragment_state),
             primitive,
-            depth_stencil: Some(depth_stencil_state),
+            depth_stencil: Some(DepthTexture::depth_stencil_state()),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         })
     }
-
-    // fn create_wireframe_pipeline(
-    //     device: &wgpu::Device,
-    //     pipeline_layout: &wgpu::PipelineLayout,
-    //     shader: &wgpu::ShaderModule,
-    //     vertex_buffers: &[wgpu::VertexBufferLayout; 1],
-    //     view_format: TextureFormat,
-    // ) -> wgpu::RenderPipeline {
-    //     let vertex = wgpu::VertexState {
-    //         module: shader,
-    //         entry_point: "vs_main",
-    //         compilation_options: PipelineCompilationOptions::default(),
-    //         buffers: vertex_buffers,
-    //     };
-
-    //     let fragment_state = wgpu::FragmentState {
-    //         module: shader,
-    //         entry_point: "fs_wire",
-    //         compilation_options: PipelineCompilationOptions::default(),
-    //         targets: &[Some(wgpu::ColorTargetState {
-    //             format: view_format,
-    //             blend: Some(wgpu::BlendState {
-    //                 color: wgpu::BlendComponent {
-    //                     operation: wgpu::BlendOperation::Add,
-    //                     src_factor: wgpu::BlendFactor::SrcAlpha,
-    //                     dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-    //                 },
-    //                 alpha: wgpu::BlendComponent::REPLACE,
-    //             }),
-    //             write_mask: wgpu::ColorWrites::ALL,
-    //         })],
-    //     };
-
-    //     let primitive = wgpu::PrimitiveState {
-    //         front_face: wgpu::FrontFace::Ccw,
-    //         cull_mode: Some(wgpu::Face::Back),
-    //         polygon_mode: wgpu::PolygonMode::Line,
-    //         ..Default::default()
-    //     };
-
-    //     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-    //         label: None,
-    //         layout: Some(pipeline_layout),
-    //         vertex,
-    //         fragment: Some(fragment_state),
-    //         primitive,
-    //         depth_stencil: None,
-    //         multisample: wgpu::MultisampleState::default(),
-    //         multiview: None,
-    //     })
-    // }
 
     fn create_texture_view(device: &wgpu::Device, queue: &Queue) -> wgpu::TextureView {
         // Create the texture
@@ -351,49 +265,37 @@ impl Floor {
     }
 
     fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
-        let vertex_data = [
-            // top (0, 0, 1)
-            vertex([-1, -1, 1], [0, 0]),
-            vertex([1, -1, 1], [1, 0]),
-            vertex([1, 1, 1], [1, 1]),
-            vertex([-1, 1, 1], [0, 1]),
-            // bottom (0, 0, -1)
-            vertex([-1, 1, -1], [1, 0]),
-            vertex([1, 1, -1], [0, 0]),
-            vertex([1, -1, -1], [0, 1]),
-            vertex([-1, -1, -1], [1, 1]),
-            // right (1, 0, 0)
-            vertex([1, -1, -1], [0, 0]),
-            vertex([1, 1, -1], [1, 0]),
-            vertex([1, 1, 1], [1, 1]),
-            vertex([1, -1, 1], [0, 1]),
-            // left (-1, 0, 0)
-            vertex([-1, -1, 1], [1, 0]),
-            vertex([-1, 1, 1], [0, 0]),
-            vertex([-1, 1, -1], [0, 1]),
-            vertex([-1, -1, -1], [1, 1]),
-            // front (0, 1, 0)
-            vertex([1, 1, -1], [1, 0]),
-            vertex([-1, 1, -1], [0, 0]),
-            vertex([-1, 1, 1], [0, 1]),
-            vertex([1, 1, 1], [1, 1]),
-            // back (0, -1, 0)
-            vertex([1, -1, 1], [0, 0]),
-            vertex([-1, -1, 1], [1, 0]),
-            vertex([-1, -1, -1], [1, 1]),
-            vertex([1, -1, -1], [0, 1]),
-        ];
+        let mut vertex_data = Vec::new();
+        let mut index_data = Vec::new();
+        for y in -5_i16..5 {
+            let bottom = f32::from(y) + 0.1;
+            let top = f32::from(y + 1) - 0.1;
+            for x in -5_i16..5 {
+                let left = f32::from(x) + 0.1;
+                let right = f32::from(x + 1) - 0.1;
+                let index = u16::try_from(vertex_data.len()).unwrap();
+                vertex_data.push(vertex([left, bottom, 0.0], [0, 0]));
+                vertex_data.push(vertex([right, bottom, 0.0], [1, 0]));
+                vertex_data.push(vertex([left, top, 0.0], [0, 1]));
+                vertex_data.push(vertex([right, top, 0.0], [1, 1]));
 
-        let index_data: &[u16] = &[
-            0, 1, 2, 2, 3, 0, // top
-            4, 5, 6, 6, 7, 4, // bottom
-            8, 9, 10, 10, 11, 8, // right
-            12, 13, 14, 14, 15, 12, // left
-            16, 17, 18, 18, 19, 16, // front
-            20, 21, 22, 22, 23, 20, // back
-        ];
+                // 2         3
+                // +---------+
+                // | \       |
+                // |   \     |
+                // |     \   |
+                // |       \ |
+                // +---------+
+                // 0         1
 
-        (vertex_data.to_vec(), index_data.to_vec())
+                // for symmetry
+                #[allow(clippy::identity_op)]
+                index_data.extend([index + 0, index + 1, index + 2]);
+                index_data.extend([index + 3, index + 2, index + 1]);
+            }
+        }
+
+        (vertex_data, index_data)
     }
 
     fn create_texels(size: usize) -> Vec<u8> {
@@ -424,9 +326,9 @@ struct Vertex {
     _tex_coord: [f32; 2],
 }
 
-fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
+fn vertex(pos: [f32; 3], tc: [i8; 2]) -> Vertex {
     Vertex {
-        _pos: [f32::from(pos[0]), f32::from(pos[1]), f32::from(pos[2]), 1.0],
+        _pos: [pos[0], pos[1], pos[2], 1.0],
         _tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
     }
 }

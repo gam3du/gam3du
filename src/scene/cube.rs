@@ -6,7 +6,7 @@ use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, Textu
 
 use crate::ROTATION;
 
-use super::{camera::Camera, elapsed_as_vec, projection::Projection};
+use super::{camera::Camera, elapsed_as_vec, projection::Projection, DepthTexture};
 
 pub(super) struct Cube {
     pipeline: wgpu::RenderPipeline,
@@ -246,21 +246,13 @@ impl Cube {
             ..Default::default()
         };
 
-        let depth_stencil_state = wgpu::DepthStencilState {
-            format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less, // 1.
-            stencil: wgpu::StencilState::default(),     // 2.
-            bias: wgpu::DepthBiasState::default(),
-        };
-
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(pipeline_layout),
             vertex,
             fragment: Some(fragment_state),
             primitive,
-            depth_stencil: Some(depth_stencil_state),
+            depth_stencil: Some(DepthTexture::depth_stencil_state()),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         })
@@ -305,21 +297,13 @@ impl Cube {
             ..Default::default()
         };
 
-        let depth_stencil_state = wgpu::DepthStencilState {
-            format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less, // 1.
-            stencil: wgpu::StencilState::default(),     // 2.
-            bias: wgpu::DepthBiasState::default(),
-        };
-
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(pipeline_layout),
             vertex,
             fragment: Some(fragment_state),
             primitive,
-            depth_stencil: Some(depth_stencil_state),
+            depth_stencil: Some(DepthTexture::depth_stencil_state()),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         })

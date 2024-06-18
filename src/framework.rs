@@ -440,11 +440,6 @@ impl ApplicationHandler for Application {
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
-                // let depth_view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
-                //     format: Some(wgpu::TextureFormat::Depth32Float),
-                //     ..wgpu::TextureViewDescriptor::default()
-                // });
-
                 self.example.as_mut().unwrap().render(
                     &texture_view,
                     &self.context.device,
