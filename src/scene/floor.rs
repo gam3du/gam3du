@@ -8,9 +8,9 @@ use crate::ROTATION;
 
 use super::{camera::Camera, elapsed_as_vec, projection::Projection};
 
-pub(super) struct Cube {
+pub(super) struct Floor {
     pipeline: wgpu::RenderPipeline,
-    pipeline_wire: Option<wgpu::RenderPipeline>,
+    // pipeline_wire: Option<wgpu::RenderPipeline>,
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
     index_count: usize,
@@ -19,7 +19,7 @@ pub(super) struct Cube {
     matrix_buf: wgpu::Buffer,
 }
 
-impl Cube {
+impl Floor {
     // TODO partition this function into smaller parts
     #[allow(clippy::too_many_lines)]
     #[must_use]
@@ -149,18 +149,18 @@ impl Cube {
             view_format,
         );
 
-        let wireframe_pipeline = device
-            .features()
-            .contains(wgpu::Features::POLYGON_MODE_LINE)
-            .then(|| {
-                Self::create_wireframe_pipeline(
-                    device,
-                    &pipeline_layout,
-                    &shader,
-                    &vertex_buffers,
-                    view_format,
-                )
-            });
+        // let wireframe_pipeline = device
+        //     .features()
+        //     .contains(wgpu::Features::POLYGON_MODE_LINE)
+        //     .then(|| {
+        //         Self::create_wireframe_pipeline(
+        //             device,
+        //             &pipeline_layout,
+        //             &shader,
+        //             &vertex_buffers,
+        //             view_format,
+        //         )
+        //     });
 
         Self {
             vertex_buf,
@@ -170,12 +170,12 @@ impl Cube {
             bind_group,
             matrix_buf,
             pipeline,
-            pipeline_wire: wireframe_pipeline,
+            // pipeline_wire: wireframe_pipeline,
         }
     }
 
     fn generate_rotation() -> glam::Mat4 {
-        let rotation = ROTATION.load(Ordering::Relaxed);
+        let rotation = u16::MAX - ROTATION.load(Ordering::Relaxed).wrapping_add(20);
         glam::Mat4::from_rotation_x(f32::from(rotation).to_radians())
     }
 
@@ -199,10 +199,10 @@ impl Cube {
         render_pass.insert_debug_marker("Draw!");
         render_pass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
 
-        if let Some(ref pipe) = self.pipeline_wire {
-            render_pass.set_pipeline(pipe);
-            render_pass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
-        }
+        // if let Some(ref pipe) = self.pipeline_wire {
+        //     render_pass.set_pipeline(pipe);
+        //     render_pass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
+        // }
     }
 
     fn update_matrix(&self, projection: &Projection, camera: &Camera, queue: &Queue) {
@@ -266,64 +266,56 @@ impl Cube {
         })
     }
 
-    fn create_wireframe_pipeline(
-        device: &wgpu::Device,
-        pipeline_layout: &wgpu::PipelineLayout,
-        shader: &wgpu::ShaderModule,
-        vertex_buffers: &[wgpu::VertexBufferLayout; 1],
-        view_format: TextureFormat,
-    ) -> wgpu::RenderPipeline {
-        let vertex = wgpu::VertexState {
-            module: shader,
-            entry_point: "vs_main",
-            compilation_options: PipelineCompilationOptions::default(),
-            buffers: vertex_buffers,
-        };
+    // fn create_wireframe_pipeline(
+    //     device: &wgpu::Device,
+    //     pipeline_layout: &wgpu::PipelineLayout,
+    //     shader: &wgpu::ShaderModule,
+    //     vertex_buffers: &[wgpu::VertexBufferLayout; 1],
+    //     view_format: TextureFormat,
+    // ) -> wgpu::RenderPipeline {
+    //     let vertex = wgpu::VertexState {
+    //         module: shader,
+    //         entry_point: "vs_main",
+    //         compilation_options: PipelineCompilationOptions::default(),
+    //         buffers: vertex_buffers,
+    //     };
 
-        let fragment_state = wgpu::FragmentState {
-            module: shader,
-            entry_point: "fs_wire",
-            compilation_options: PipelineCompilationOptions::default(),
-            targets: &[Some(wgpu::ColorTargetState {
-                format: view_format,
-                blend: Some(wgpu::BlendState {
-                    color: wgpu::BlendComponent {
-                        operation: wgpu::BlendOperation::Add,
-                        src_factor: wgpu::BlendFactor::SrcAlpha,
-                        dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                    },
-                    alpha: wgpu::BlendComponent::REPLACE,
-                }),
-                write_mask: wgpu::ColorWrites::ALL,
-            })],
-        };
+    //     let fragment_state = wgpu::FragmentState {
+    //         module: shader,
+    //         entry_point: "fs_wire",
+    //         compilation_options: PipelineCompilationOptions::default(),
+    //         targets: &[Some(wgpu::ColorTargetState {
+    //             format: view_format,
+    //             blend: Some(wgpu::BlendState {
+    //                 color: wgpu::BlendComponent {
+    //                     operation: wgpu::BlendOperation::Add,
+    //                     src_factor: wgpu::BlendFactor::SrcAlpha,
+    //                     dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+    //                 },
+    //                 alpha: wgpu::BlendComponent::REPLACE,
+    //             }),
+    //             write_mask: wgpu::ColorWrites::ALL,
+    //         })],
+    //     };
 
-        let primitive = wgpu::PrimitiveState {
-            front_face: wgpu::FrontFace::Ccw,
-            cull_mode: Some(wgpu::Face::Back),
-            polygon_mode: wgpu::PolygonMode::Line,
-            ..Default::default()
-        };
+    //     let primitive = wgpu::PrimitiveState {
+    //         front_face: wgpu::FrontFace::Ccw,
+    //         cull_mode: Some(wgpu::Face::Back),
+    //         polygon_mode: wgpu::PolygonMode::Line,
+    //         ..Default::default()
+    //     };
 
-        let depth_stencil_state = wgpu::DepthStencilState {
-            format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less, // 1.
-            stencil: wgpu::StencilState::default(),     // 2.
-            bias: wgpu::DepthBiasState::default(),
-        };
-
-        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(pipeline_layout),
-            vertex,
-            fragment: Some(fragment_state),
-            primitive,
-            depth_stencil: Some(depth_stencil_state),
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-        })
-    }
+    //     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    //         label: None,
+    //         layout: Some(pipeline_layout),
+    //         vertex,
+    //         fragment: Some(fragment_state),
+    //         primitive,
+    //         depth_stencil: None,
+    //         multisample: wgpu::MultisampleState::default(),
+    //         multiview: None,
+    //     })
+    // }
 
     fn create_texture_view(device: &wgpu::Device, queue: &Queue) -> wgpu::TextureView {
         // Create the texture

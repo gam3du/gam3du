@@ -435,13 +435,18 @@ impl ApplicationHandler for Application {
                 }
 
                 let frame = self.surface.acquire(&self.context);
-                let view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
+                let texture_view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
                     format: Some(self.surface.config().view_formats[0]),
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
+                // let depth_view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
+                //     format: Some(wgpu::TextureFormat::Depth32Float),
+                //     ..wgpu::TextureViewDescriptor::default()
+                // });
+
                 self.example.as_mut().unwrap().render(
-                    &view,
+                    &texture_view,
                     &self.context.device,
                     &self.context.queue,
                 );
