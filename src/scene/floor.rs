@@ -8,12 +8,11 @@ use super::{camera::Camera, elapsed_as_vec, projection::Projection, DepthTexture
 
 pub(super) struct Floor {
     pipeline: wgpu::RenderPipeline,
-    vertex_buf: wgpu::Buffer,
-    index_buf: wgpu::Buffer,
-    index_count: u32,
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
+    vertex_buf: wgpu::Buffer,
+    tile_count: u32,
 }
 
 impl Floor {
@@ -21,18 +20,12 @@ impl Floor {
     #[allow(clippy::too_many_lines)]
     #[must_use]
     pub(super) fn new(device: &wgpu::Device, _queue: &Queue, view_format: TextureFormat) -> Self {
-        let (vertex_data, index_data) = Self::create_vertices();
+        let vertex_data = Self::create_vertices();
 
         let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertex_data),
             usage: wgpu::BufferUsages::VERTEX,
-        });
-
-        let index_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(&index_data),
-            usage: wgpu::BufferUsages::INDEX,
         });
 
         // Create pipeline layout
@@ -104,12 +97,11 @@ impl Floor {
 
         Self {
             vertex_buf,
-            index_buf,
-            index_count: u32::try_from(index_data.len()).unwrap(),
             time_buf,
             bind_group,
             matrix_buf,
             pipeline,
+            tile_count: u32::try_from(vertex_data.len()).unwrap(),
         }
     }
 
@@ -127,11 +119,10 @@ impl Floor {
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
-        render_pass.set_index_buffer(self.index_buf.slice(..), wgpu::IndexFormat::Uint16);
         render_pass.set_vertex_buffer(0, self.vertex_buf.slice(..));
         render_pass.pop_debug_group();
         render_pass.insert_debug_marker("Draw!");
-        render_pass.draw_indexed(0..4, 0, 0..(self.index_count));
+        render_pass.draw(0..4, 0..self.tile_count);
     }
 
     fn update_matrix(&self, projection: &Projection, camera: &Camera, queue: &Queue) {
@@ -185,39 +176,17 @@ impl Floor {
         })
     }
 
-    fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
+    fn create_vertices() -> Vec<Vertex> {
         let mut vertex_data = Vec::new();
-        let mut index_data = Vec::new();
         for y in -5_i16..5 {
-            let bottom = f32::from(y) + 0.1;
-            let top = f32::from(y + 1) - 0.1;
+            let bottom = f32::from(y);
             for x in -5_i16..5 {
-                let left = f32::from(x) + 0.1;
-                let right = f32::from(x + 1) - 0.1;
-                let index = u16::try_from(vertex_data.len()).unwrap();
+                let left = f32::from(x);
                 vertex_data.push(vertex([left, bottom, 0.0], [0, 0]));
-                // vertex_data.push(vertex([right, bottom, 0.0], [1, 0]));
-                // vertex_data.push(vertex([left, top, 0.0], [0, 1]));
-                // vertex_data.push(vertex([right, top, 0.0], [1, 1]));
-
-                // 2         3
-                // +---------+
-                // | \       |
-                // |   \     |
-                // |     \   |
-                // |       \ |
-                // +---------+
-                // 0         1
-
-                // for symmetry
-                #[allow(clippy::identity_op)]
-                index_data.push(index);
-                // index_data.extend([index + 0, index + 1, index + 2]);
-                // index_data.extend([index + 3, index + 2, index + 1]);
             }
         }
 
-        (vertex_data, index_data)
+        vertex_data
     }
 
     fn create_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
