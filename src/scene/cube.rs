@@ -83,38 +83,7 @@ impl Cube {
             push_constant_ranges: &[],
         });
 
-        let texture_view;
-        {
-            // Create the texture
-            let size = 256u32;
-            let texels = create_texels(size as usize);
-            let texture_extent = wgpu::Extent3d {
-                width: size,
-                height: size,
-                depth_or_array_layers: 1,
-            };
-            let texture = device.create_texture(&wgpu::TextureDescriptor {
-                label: None,
-                size: texture_extent,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::R8Uint,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                view_formats: &[],
-            });
-            texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-            queue.write_texture(
-                texture.as_image_copy(),
-                &texels,
-                wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: Some(size),
-                    rows_per_image: None,
-                },
-                texture_extent,
-            );
-        }
+        let texture_view = Self::create_texture_view(device, queue);
 
         // Create other resources
         // let mx_total = Self::generate_matrix(config.width as f32 / config.height as f32);
@@ -126,12 +95,7 @@ impl Cube {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        // let elapsed_vec = elapsed_as_vec(start_time);
         let elapsed_bytes = [0; 64];
-        // elapsed_bytes
-        //     .iter_mut()
-        //     .zip(elapsed_vec)
-        //     .for_each(|(target, source)| *target = source);
         let time_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Time Uniform Buffer"),
             contents: bytemuck::cast_slice(&elapsed_bytes),
@@ -180,76 +144,26 @@ impl Cube {
             ],
         }];
 
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: "vs_main",
-                compilation_options: PipelineCompilationOptions::default(),
-                buffers: &vertex_buffers,
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: "fs_main",
-                compilation_options: PipelineCompilationOptions::default(),
-                targets: &[Some(view_format.into())],
-            }),
-            primitive: wgpu::PrimitiveState {
-                cull_mode: Some(wgpu::Face::Back),
-                ..Default::default()
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-            // cache: None,
-        });
+        let pipeline = Self::create_pipeline(
+            device,
+            &pipeline_layout,
+            &shader,
+            &vertex_buffers,
+            view_format,
+        );
 
-        let pipeline_wire = if device
+        let wireframe_pipeline = device
             .features()
             .contains(wgpu::Features::POLYGON_MODE_LINE)
-        {
-            let pipeline_wire = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                label: None,
-                layout: Some(&pipeline_layout),
-                vertex: wgpu::VertexState {
-                    module: &shader,
-                    entry_point: "vs_main",
-                    compilation_options: PipelineCompilationOptions::default(),
-                    buffers: &vertex_buffers,
-                },
-                fragment: Some(wgpu::FragmentState {
-                    module: &shader,
-                    entry_point: "fs_wire",
-                    compilation_options: PipelineCompilationOptions::default(),
-                    targets: &[Some(wgpu::ColorTargetState {
-                        format: view_format,
-                        blend: Some(wgpu::BlendState {
-                            color: wgpu::BlendComponent {
-                                operation: wgpu::BlendOperation::Add,
-                                src_factor: wgpu::BlendFactor::SrcAlpha,
-                                dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            },
-                            alpha: wgpu::BlendComponent::REPLACE,
-                        }),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    })],
-                }),
-                primitive: wgpu::PrimitiveState {
-                    front_face: wgpu::FrontFace::Ccw,
-                    cull_mode: Some(wgpu::Face::Back),
-                    polygon_mode: wgpu::PolygonMode::Line,
-                    ..Default::default()
-                },
-                depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
-                multiview: None,
-                // cache: None,
+            .then(|| {
+                Self::create_wireframe_pipeline(
+                    device,
+                    &pipeline_layout,
+                    &shader,
+                    &vertex_buffers,
+                    view_format,
+                )
             });
-            Some(pipeline_wire)
-        } else {
-            None
-        };
 
         Self {
             vertex_buf,
@@ -259,7 +173,7 @@ impl Cube {
             bind_group,
             matrix_buf,
             pipeline,
-            pipeline_wire,
+            pipeline_wire: wireframe_pipeline,
         }
     }
 
@@ -276,16 +190,8 @@ impl Cube {
         projection: &Projection,
         start_time: Instant,
     ) {
-        let mut elapsed_bytes = [0; 64];
-        elapsed_bytes
-            .iter_mut()
-            .zip(elapsed_as_vec(start_time))
-            .for_each(|(target, source)| *target = source);
-        queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&elapsed_bytes));
-
-        let matrix = projection.matrix() * camera.matrix() * Self::generate_rotation();
-        let mx_ref: &[f32; 16] = matrix.as_ref();
-        queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
+        self.update_time(start_time, queue);
+        self.update_matrix(projection, camera, queue);
 
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
@@ -299,8 +205,133 @@ impl Cube {
             render_pass.set_pipeline(pipe);
             render_pass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
         }
+    }
 
-        //
+    fn update_matrix(&self, projection: &Projection, camera: &Camera, queue: &Queue) {
+        let matrix = projection.matrix() * camera.matrix() * Self::generate_rotation();
+        let mx_ref: &[f32; 16] = matrix.as_ref();
+        queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
+    }
+
+    fn update_time(&self, start_time: Instant, queue: &Queue) {
+        let mut elapsed_bytes = [0; 64];
+        elapsed_bytes
+            .iter_mut()
+            .zip(elapsed_as_vec(start_time))
+            .for_each(|(target, source)| *target = source);
+        queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&elapsed_bytes));
+    }
+
+    fn create_pipeline(
+        device: &wgpu::Device,
+        pipeline_layout: &wgpu::PipelineLayout,
+        shader: &wgpu::ShaderModule,
+        vertex_buffers: &[wgpu::VertexBufferLayout; 1],
+        view_format: TextureFormat,
+    ) -> wgpu::RenderPipeline {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: shader,
+                entry_point: "vs_main",
+                compilation_options: PipelineCompilationOptions::default(),
+                buffers: vertex_buffers,
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: shader,
+                entry_point: "fs_main",
+                compilation_options: PipelineCompilationOptions::default(),
+                targets: &[Some(view_format.into())],
+            }),
+            primitive: wgpu::PrimitiveState {
+                cull_mode: Some(wgpu::Face::Back),
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            // cache: None,
+        })
+    }
+
+    fn create_wireframe_pipeline(
+        device: &wgpu::Device,
+        pipeline_layout: &wgpu::PipelineLayout,
+        shader: &wgpu::ShaderModule,
+        vertex_buffers: &[wgpu::VertexBufferLayout; 1],
+        view_format: TextureFormat,
+    ) -> wgpu::RenderPipeline {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: shader,
+                entry_point: "vs_main",
+                compilation_options: PipelineCompilationOptions::default(),
+                buffers: vertex_buffers,
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: shader,
+                entry_point: "fs_wire",
+                compilation_options: PipelineCompilationOptions::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: view_format,
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            operation: wgpu::BlendOperation::Add,
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                        },
+                        alpha: wgpu::BlendComponent::REPLACE,
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                polygon_mode: wgpu::PolygonMode::Line,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            // cache: None,
+        })
+    }
+
+    fn create_texture_view(device: &wgpu::Device, queue: &Queue) -> wgpu::TextureView {
+        // Create the texture
+        let size = 256u32;
+        let texels = create_texels(size as usize);
+        let texture_extent = wgpu::Extent3d {
+            width: size,
+            height: size,
+            depth_or_array_layers: 1,
+        };
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: None,
+            size: texture_extent,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::R8Uint,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        queue.write_texture(
+            texture.as_image_copy(),
+            &texels,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(size),
+                rows_per_image: None,
+            },
+            texture_extent,
+        );
+        texture_view
     }
 }
 
