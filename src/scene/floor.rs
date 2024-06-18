@@ -79,7 +79,7 @@ impl Floor {
 
         let vertex_buffers = [wgpu::VertexBufferLayout {
             array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
+            step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 wgpu::VertexAttribute {
                     format: wgpu::VertexFormat::Float32x4,
@@ -131,7 +131,7 @@ impl Floor {
         render_pass.set_vertex_buffer(0, self.vertex_buf.slice(..));
         render_pass.pop_debug_group();
         render_pass.insert_debug_marker("Draw!");
-        render_pass.draw_indexed(0..self.index_count, 0, 0..1);
+        render_pass.draw_indexed(0..4, 0, 0..(self.index_count));
     }
 
     fn update_matrix(&self, projection: &Projection, camera: &Camera, queue: &Queue) {
@@ -155,7 +155,7 @@ impl Floor {
     ) -> wgpu::RenderPipeline {
         let vertex = wgpu::VertexState {
             module: shader,
-            entry_point: "vs_main",
+            entry_point: "vs_floor",
             compilation_options: PipelineCompilationOptions::default(),
             buffers: vertex_buffers,
         };
@@ -169,6 +169,7 @@ impl Floor {
 
         let primitive = wgpu::PrimitiveState {
             cull_mode: None, //Some(wgpu::Face::Back),
+            topology: wgpu::PrimitiveTopology::TriangleStrip,
             ..Default::default()
         };
 
@@ -195,9 +196,9 @@ impl Floor {
                 let right = f32::from(x + 1) - 0.1;
                 let index = u16::try_from(vertex_data.len()).unwrap();
                 vertex_data.push(vertex([left, bottom, 0.0], [0, 0]));
-                vertex_data.push(vertex([right, bottom, 0.0], [1, 0]));
-                vertex_data.push(vertex([left, top, 0.0], [0, 1]));
-                vertex_data.push(vertex([right, top, 0.0], [1, 1]));
+                // vertex_data.push(vertex([right, bottom, 0.0], [1, 0]));
+                // vertex_data.push(vertex([left, top, 0.0], [0, 1]));
+                // vertex_data.push(vertex([right, top, 0.0], [1, 1]));
 
                 // 2         3
                 // +---------+
@@ -210,8 +211,9 @@ impl Floor {
 
                 // for symmetry
                 #[allow(clippy::identity_op)]
-                index_data.extend([index + 0, index + 1, index + 2]);
-                index_data.extend([index + 3, index + 2, index + 1]);
+                index_data.push(index);
+                // index_data.extend([index + 0, index + 1, index + 2]);
+                // index_data.extend([index + 3, index + 2, index + 1]);
             }
         }
 
