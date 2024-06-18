@@ -1,4 +1,4 @@
-from rust_py_module import RustStruct, rust_function, rotate_cube
+from rust_py_module import RustStruct, rust_function, rotate_cube  # type: ignore FIXME the IDE should see the native API somehow
 import time
 
 
