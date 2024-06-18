@@ -13,7 +13,7 @@ pub(super) struct Cube {
     pipeline_wire: Option<wgpu::RenderPipeline>,
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
-    index_count: usize,
+    index_count: u32,
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
@@ -92,7 +92,7 @@ impl Cube {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let elapsed_bytes = [0; 64];
+        let elapsed_bytes = [0_u32; 2];
         let time_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Time Uniform Buffer"),
             contents: bytemuck::cast_slice(&elapsed_bytes),
@@ -165,7 +165,7 @@ impl Cube {
         Self {
             vertex_buf,
             index_buf,
-            index_count: index_data.len(),
+            index_count: u32::try_from(index_data.len()).unwrap(),
             time_buf,
             bind_group,
             matrix_buf,
@@ -197,11 +197,11 @@ impl Cube {
         render_pass.set_vertex_buffer(0, self.vertex_buf.slice(..));
         render_pass.pop_debug_group();
         render_pass.insert_debug_marker("Draw!");
-        render_pass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
+        render_pass.draw_indexed(0..self.index_count, 0, 0..1);
 
         if let Some(ref pipe) = self.pipeline_wire {
             render_pass.set_pipeline(pipe);
-            render_pass.draw_indexed(0..u32::try_from(self.index_count).unwrap(), 0, 0..1);
+            render_pass.draw_indexed(0..self.index_count, 0, 0..1);
         }
     }
 
@@ -212,12 +212,8 @@ impl Cube {
     }
 
     fn update_time(&self, start_time: Instant, queue: &Queue) {
-        let mut elapsed_bytes = [0; 64];
-        elapsed_bytes
-            .iter_mut()
-            .zip(elapsed_as_vec(start_time))
-            .for_each(|(target, source)| *target = source);
-        queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&elapsed_bytes));
+        let bytes = elapsed_as_vec(start_time);
+        queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&bytes));
     }
 
     fn create_pipeline(
