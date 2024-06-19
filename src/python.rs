@@ -37,7 +37,7 @@ pub(crate) fn python_runner(source_path: &(impl AsRef<Path> + ToString), sender:
         vm.insert_sys_path(vm.new_pyobj("python"))
             .expect("add path");
 
-        match vm.import("call_between_rust_and_python", 0) {
+        match vm.import("robot", 0) {
             Ok(module) => {
                 let init_fn = module.get_attr("python_callback", vm).unwrap();
                 init_fn.call((), vm).unwrap();
@@ -86,7 +86,11 @@ pub(crate) fn python_runner(source_path: &(impl AsRef<Path> + ToString), sender:
     clippy::unused_self
 )]
 mod rust_py_module {
-    use std::sync::{atomic::Ordering, mpsc::Sender, Mutex};
+    use std::{
+        sync::{atomic::Ordering, mpsc::Sender, Mutex},
+        thread,
+        time::Duration,
+    };
 
     use crate::{scene::Command, ROTATION};
 
@@ -123,6 +127,7 @@ python_person.name: {}",
             .unwrap()
             .send(Command::MoveForward)
             .unwrap();
+        thread::sleep(Duration::from_millis(1000));
     }
 
     #[pyfunction]
@@ -134,6 +139,7 @@ python_person.name: {}",
             .unwrap()
             .send(Command::TurnLeft)
             .unwrap();
+        thread::sleep(Duration::from_millis(1000));
     }
 
     #[pyfunction]
@@ -145,6 +151,7 @@ python_person.name: {}",
             .unwrap()
             .send(Command::TurnRight)
             .unwrap();
+        thread::sleep(Duration::from_millis(1000));
     }
 
     #[pyfunction]

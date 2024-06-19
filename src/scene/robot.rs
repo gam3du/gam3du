@@ -10,7 +10,13 @@ use glam::{FloatExt, IVec3, Mat4, Quat, Vec3};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
-use super::{camera::Camera, elapsed_as_vec, projection::Projection, DepthTexture};
+use super::{
+    camera::Camera,
+    elapsed_as_vec,
+    floor::{Floor, LineSegment},
+    projection::Projection,
+    DepthTexture,
+};
 
 pub(super) struct Robot {
     pipeline: wgpu::RenderPipeline,
@@ -435,14 +441,30 @@ impl Robot {
         self.current_animation.is_none()
     }
 
-    pub(super) fn process_command(&mut self, command: &Command) {
+    pub(super) fn process_command(&mut self, command: &Command, floor: &mut Floor) {
         if let Some(current_animation) = self.current_animation.take() {
             current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
         }
 
         self.current_animation = Some(match command {
             Command::MoveForward => {
+                let segment = LineSegment::from(self.orientation);
+
+                // TODO make this a safe function
+                #[allow(clippy::cast_sign_loss)]
+                let index = (self.position.y * 10 + self.position.x + 55) as usize;
+                floor.tiles[index].line_pattern |= segment;
+
                 self.position += self.orientation.as_ivec3();
+
+                // TODO make this a safe function
+                #[allow(clippy::cast_sign_loss)]
+                let index = (self.position.y * 10 + self.position.x + 55) as usize;
+                floor.tiles[index].line_pattern |= -segment;
+                floor.tainted = true;
+
+                // TODO also draw corners for adjacent tiles when moving diagonally
+
                 Animation::Move {
                     start: self.animation_position,
                     end: self.position.as_vec3() + Vec3::new(0.5, 0.5, 0.25),
@@ -562,7 +584,7 @@ impl Animation {
 #[allow(dead_code)]
 #[derive(Clone, Copy, Default)]
 #[repr(u8)]
-enum Orientation {
+pub(super) enum Orientation {
     /// positive x
     #[default]
     E = 0,

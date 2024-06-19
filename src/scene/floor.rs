@@ -1,18 +1,23 @@
-use std::{mem::size_of, ops};
+use std::{
+    mem::size_of,
+    ops::{self, Neg},
+};
 
 use bytemuck::{offset_of, Pod, Zeroable};
-use rand::{thread_rng, Rng};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
-use super::{camera::Camera, elapsed_as_vec, projection::Projection, DepthTexture};
+use super::{
+    camera::Camera, elapsed_as_vec, projection::Projection, robot::Orientation, DepthTexture,
+};
 
 pub(super) struct Floor {
     pipeline: wgpu::RenderPipeline,
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
-    tiles: Vec<Tile>,
+    pub(super) tiles: Vec<Tile>,
+    pub(super) tainted: bool,
     tile_buf: wgpu::Buffer,
 }
 
@@ -26,7 +31,7 @@ impl Floor {
         let tile_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Tile Buffer"),
             contents: bytemuck::cast_slice(&tiles),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let bind_group_layout = Self::create_bind_group_layout(device);
@@ -104,6 +109,7 @@ impl Floor {
             matrix_buf,
             tiles,
             tile_buf,
+            tainted: false,
         }
     }
 
@@ -112,13 +118,18 @@ impl Floor {
     }
 
     pub(super) fn render<'pipeline>(
-        &'pipeline self,
+        &'pipeline mut self,
         queue: &Queue,
         render_pass: &mut RenderPass<'pipeline>,
         camera: &Camera,
         projection: &Projection,
         start_time: Instant,
     ) {
+        if self.tainted {
+            queue.write_buffer(&self.tile_buf, 0, bytemuck::cast_slice(&self.tiles));
+            self.tainted = false;
+        }
+
         self.update_time(start_time, queue);
         self.update_matrix(projection, camera, queue);
 
@@ -184,12 +195,11 @@ impl Floor {
 
     fn create_vertices() -> Vec<Tile> {
         let mut vertex_data = Vec::new();
-        let thread_rng = &mut thread_rng();
         for y in -5_i16..5 {
             let bottom = f32::from(y);
             for x in -5_i16..5 {
                 let left = f32::from(x);
-                let line_pattern = thread_rng.gen();
+                let line_pattern = 0; //thread_rng.gen();
                 vertex_data.push(tile([left, bottom, 0.0], LinePattern(line_pattern)));
             }
         }
@@ -228,9 +238,9 @@ impl Floor {
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
-struct Tile {
+pub(super) struct Tile {
     pos: [f32; 4],
-    line_pattern: LinePattern,
+    pub(super) line_pattern: LinePattern,
 }
 
 fn tile(pos: [f32; 3], line_pattern: LinePattern) -> Tile {
@@ -242,7 +252,7 @@ fn tile(pos: [f32; 3], line_pattern: LinePattern) -> Tile {
 
 #[repr(transparent)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Pod, Zeroable, Default)]
-struct LinePattern(u32);
+pub(super) struct LinePattern(u32);
 
 impl ops::BitOrAssign<LineSegment> for LinePattern {
     fn bitor_assign(&mut self, rhs: LineSegment) {
@@ -250,9 +260,8 @@ impl ops::BitOrAssign<LineSegment> for LinePattern {
     }
 }
 
-// TODO W.I.P.
-#[allow(dead_code)]
-enum LineSegment {
+#[derive(Clone, Copy)]
+pub(super) enum LineSegment {
     /// positive x
     E = 0,
     /// +x, +y
@@ -277,4 +286,40 @@ enum LineSegment {
     SWCorner = 13,
     /// +x -y
     SECorner = 15,
+}
+
+impl From<Orientation> for LineSegment {
+    fn from(value: Orientation) -> Self {
+        match value {
+            Orientation::E => Self::E,
+            Orientation::NE => Self::NE,
+            Orientation::N => Self::N,
+            Orientation::NW => Self::NW,
+            Orientation::W => Self::W,
+            Orientation::SW => Self::SW,
+            Orientation::S => Self::S,
+            Orientation::SE => Self::SE,
+        }
+    }
+}
+
+impl Neg for LineSegment {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        match self {
+            Self::E => Self::W,
+            Self::NE => Self::SW,
+            Self::N => Self::S,
+            Self::NW => Self::SE,
+            Self::W => Self::E,
+            Self::SW => Self::NE,
+            Self::S => Self::N,
+            Self::SE => Self::NW,
+            Self::NECorner => Self::SWCorner,
+            Self::NWCorner => Self::SECorner,
+            Self::SWCorner => Self::NECorner,
+            Self::SECorner => Self::NWCorner,
+        }
+    }
 }

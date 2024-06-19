@@ -193,7 +193,7 @@ impl Scene {
     }
 
     pub(crate) fn process_command(&mut self, command: &Command) {
-        self.robot.process_command(command);
+        self.robot.process_command(command, &mut self.floor);
     }
 }
 
