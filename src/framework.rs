@@ -1,5 +1,8 @@
 use std::{
-    sync::Arc,
+    sync::{
+        mpsc::{Receiver, TryRecvError},
+        Arc,
+    },
     time::{Duration, Instant},
 };
 
@@ -14,7 +17,7 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::scene::Scene;
+use crate::scene::{Command, Scene};
 
 /// Wrapper type which manages the surface and surface configuration.
 ///
@@ -217,10 +220,12 @@ struct Application {
     title: String,
     frame_counter: u32,
     frame_time: Instant,
+    receiver: Receiver<Command>,
+    current_command: Option<Command>,
 }
 
 impl Application {
-    async fn new(title: String) -> Self {
+    async fn new(title: String, receiver: Receiver<Command>) -> Self {
         let mut surface = SurfaceWrapper::new();
         let context = ExampleContext::init_async(&mut surface).await;
 
@@ -232,6 +237,8 @@ impl Application {
             title,
             frame_counter: 0,
             frame_time: Instant::now(),
+            receiver,
+            current_command: None,
         }
     }
 }
@@ -433,6 +440,26 @@ impl ApplicationHandler for Application {
                 trace!("WindowEvent::Occluded({occluded})");
             }
             WindowEvent::RedrawRequested => {
+                if self.current_command.is_none() {
+                    match self.receiver.try_recv() {
+                        Ok(command) => {
+                            self.current_command.replace(command);
+                        }
+                        Err(TryRecvError::Disconnected | TryRecvError::Empty) => {}
+                    }
+                }
+
+                if matches!(
+                    self.current_command,
+                    Some(Command::MoveForward | Command::TurnLeft | Command::TurnRight)
+                ) {
+                    if let Some(scene) = self.example.as_mut() {
+                        if scene.is_idle() {
+                            scene.process_command(&self.current_command.take().unwrap());
+                        }
+                    }
+                }
+
                 // On MacOS, currently redraw requested comes in _before_ Init does.
                 // If this happens, just drop the requested redraw on the floor.
                 //
@@ -516,7 +543,7 @@ impl ApplicationHandler for Application {
     }
 }
 
-pub(crate) async fn start(title: String) {
+pub(crate) async fn start(title: String, receiver: Receiver<Command>) {
     let event_loop = EventLoop::new().unwrap();
 
     // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
@@ -528,7 +555,7 @@ pub(crate) async fn start(title: String) {
     // input, and uses significantly less power/CPU time than ControlFlow::Poll.
     // event_loop.set_control_flow(ControlFlow::Wait);
 
-    let app = Application::new(title);
+    let app = Application::new(title, receiver);
     log::info!("Entering event loop...");
     event_loop.run_app(&mut app.await).unwrap();
 }

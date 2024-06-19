@@ -1,4 +1,4 @@
-from rust_py_module import RustStruct, rust_function, rotate_cube  # type: ignore FIXME the IDE should see the native API somehow
+from rust_py_module import RustStruct, rust_function, rotate_cube, move_forward, turn_left, turn_right  # type: ignore FIXME the IDE should see the native API somehow
 import time
 
 
@@ -21,5 +21,19 @@ def take_string(string):
 print("Hello World!")
 
 for x in range(100):
-    rotate_cube(x)
-    time.sleep(0.020)
+    move_forward()
+    time.sleep(1.0)
+    move_forward()
+    time.sleep(1.0)
+    turn_left()
+    time.sleep(1.0)
+    move_forward()
+    time.sleep(1.0)
+    turn_left()
+    time.sleep(1.0)
+    turn_left()
+    time.sleep(1.0)
+    move_forward()
+    time.sleep(1.0)
+    # rotate_cube(x)
+    # time.sleep(0.020)

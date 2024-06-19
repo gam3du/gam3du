@@ -8,13 +8,14 @@ mod camera;
 mod floor;
 mod projection;
 mod robot;
+pub(crate) use robot::Command;
 
 pub(crate) struct Scene {
     depth_map: DepthTexture,
     start_time: Instant,
     projection: Projection,
     camera: Camera,
-    cube: Robot,
+    robot: Robot,
     floor: Floor,
 }
 
@@ -55,7 +56,7 @@ impl Scene {
             start_time,
             projection,
             camera,
-            cube,
+            robot: cube,
             floor,
         }
     }
@@ -126,7 +127,7 @@ impl Scene {
         {
             let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
 
-            self.cube.render(
+            self.robot.render(
                 queue,
                 &mut render_pass,
                 &self.camera,
@@ -179,6 +180,14 @@ impl Scene {
                 self.start_time,
             );
         }
+    }
+
+    pub(crate) fn is_idle(&mut self) -> bool {
+        self.robot.is_idle()
+    }
+
+    pub(crate) fn process_command(&mut self, command: &Command) {
+        self.robot.process_command(command);
     }
 }
 

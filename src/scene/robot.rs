@@ -1,7 +1,12 @@
-use std::{f32::consts::TAU, mem::size_of};
+use std::{
+    f32::consts::TAU,
+    mem::size_of,
+    ops::{AddAssign, SubAssign},
+    time::Duration,
+};
 
 use bytemuck::{offset_of, Pod, Zeroable};
-use glam::{Mat4, Quat, Vec3};
+use glam::{FloatExt, IVec3, Mat4, Quat, Vec3};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
@@ -16,8 +21,11 @@ pub(super) struct Robot {
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
-    position: Vec3,
-    recent_time: Instant,
+    animation_position: Vec3,
+    animation_angle: f32,
+    position: IVec3,
+    orientation: Orientation,
+    current_animation: Option<Animation>,
 }
 
 impl Robot {
@@ -161,6 +169,9 @@ impl Robot {
                 )
             });
 
+        let orientation = Orientation::default();
+        let position = IVec3::new(0, 0, 0);
+
         Self {
             vertex_buf,
             index_buf,
@@ -170,8 +181,11 @@ impl Robot {
             matrix_buf,
             pipeline,
             pipeline_wire: wireframe_pipeline,
-            position: Vec3::new(0.0, 0.0, 0.25),
-            recent_time: Instant::now(),
+            animation_position: position.as_vec3() + Vec3::new(0.5, 0.5, 0.25),
+            current_animation: None,
+            animation_angle: orientation.angle(),
+            orientation,
+            position,
         }
     }
 
@@ -183,16 +197,16 @@ impl Robot {
         projection: &Projection,
         start_time: Instant,
     ) {
-        let time = Instant::now();
-        let dt = time.duration_since(self.recent_time);
-        // this is just a demo
-        #[allow(clippy::cast_possible_truncation)]
-        let rotation = (start_time.elapsed().as_secs_f64() * 0.5).sin() as f32 * TAU;
-        let (dy, dx) = rotation.sin_cos();
-        self.position += Vec3::new(dx * dt.as_secs_f32(), dy * dt.as_secs_f32(), 0.0);
+        if let Some(animation) = self.current_animation.as_ref() {
+            if animation.animate(&mut self.animation_position, &mut self.animation_angle) {
+                self.current_animation.take();
+            }
+        };
 
-        let position =
-            glam::Mat4::from_rotation_translation(Quat::from_rotation_z(rotation), self.position);
+        let position = glam::Mat4::from_rotation_translation(
+            Quat::from_rotation_z(self.animation_angle),
+            self.animation_position,
+        );
 
         self.update_time(start_time, queue);
         self.update_matrix(projection, camera, queue, position);
@@ -210,8 +224,6 @@ impl Robot {
             render_pass.set_pipeline(pipe);
             render_pass.draw_indexed(0..self.index_count, 0, 0..1);
         }
-
-        self.recent_time += dt;
     }
 
     fn update_matrix(
@@ -418,6 +430,46 @@ impl Robot {
             })
             .collect()
     }
+
+    pub(super) fn is_idle(&self) -> bool {
+        self.current_animation.is_none()
+    }
+
+    pub(super) fn process_command(&mut self, command: &Command) {
+        if let Some(current_animation) = self.current_animation.take() {
+            current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
+        }
+
+        self.current_animation = Some(match command {
+            Command::MoveForward => {
+                self.position += self.orientation.as_ivec3();
+                Animation::Move {
+                    start: self.animation_position,
+                    end: self.position.as_vec3() + Vec3::new(0.5, 0.5, 0.25),
+                    start_time: Instant::now(),
+                    duration: Duration::from_millis(1_000),
+                }
+            }
+            Command::TurnLeft => {
+                self.orientation += 1;
+                Animation::Rotate {
+                    start: self.animation_angle,
+                    end: self.orientation.angle(),
+                    start_time: Instant::now(),
+                    duration: Duration::from_millis(1_000),
+                }
+            }
+            Command::TurnRight => {
+                self.orientation -= 1;
+                Animation::Rotate {
+                    start: self.animation_angle,
+                    end: self.orientation.angle(),
+                    start_time: Instant::now(),
+                    duration: Duration::from_millis(1_000),
+                }
+            }
+        });
+    }
 }
 
 #[repr(C)]
@@ -436,5 +488,137 @@ fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
             1.0,
         ],
         tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
+    }
+}
+
+pub(crate) enum Command {
+    MoveForward,
+    TurnLeft,
+    TurnRight,
+}
+
+enum Animation {
+    Move {
+        start: Vec3,
+        end: Vec3,
+        start_time: Instant,
+        duration: Duration,
+    },
+    Rotate {
+        start: f32,
+        end: f32,
+        start_time: Instant,
+        duration: Duration,
+    },
+}
+
+impl Animation {
+    fn progress(&self) -> f32 {
+        match *self {
+            Animation::Move {
+                start_time,
+                duration,
+                ..
+            }
+            | Animation::Rotate {
+                start_time,
+                duration,
+                ..
+            } => start_time.elapsed().as_secs_f32() / duration.as_secs_f32(),
+        }
+    }
+
+    fn animate(&self, position: &mut Vec3, orientation: &mut f32) -> bool {
+        let progress = self.progress();
+        let animation_complete = progress >= 1.0;
+        self.animate_progress(progress, position, orientation);
+        animation_complete
+    }
+
+    fn complete(&self, position: &mut Vec3, orientation: &mut f32) {
+        self.animate_progress(1.0, position, orientation);
+    }
+
+    fn animate_progress(&self, progress: f32, position: &mut Vec3, orientation: &mut f32) {
+        let progress = progress.clamp(0.0, 1.0);
+        match *self {
+            Animation::Move { start, end, .. } => {
+                *position = start.lerp(end, progress);
+            }
+            Animation::Rotate { start, end, .. } => {
+                *orientation = start.lerp(end, progress);
+            }
+        }
+    }
+}
+
+// TODO W.I.P.
+#[allow(dead_code)]
+#[derive(Clone, Copy, Default)]
+#[repr(u8)]
+enum Orientation {
+    /// positive x
+    #[default]
+    E = 0,
+    /// +x, +y
+    NE = 1,
+    /// positive y
+    N = 2,
+    /// -x +y
+    NW = 3,
+    /// negative x
+    W = 4,
+    /// -x -y
+    SW = 5,
+    /// negative y
+    S = 6,
+    /// +x -y
+    SE = 7,
+}
+
+impl Orientation {
+    fn as_ivec3(self) -> IVec3 {
+        match self {
+            Orientation::E => IVec3::new(1, 0, 0),
+            Orientation::NE => IVec3::new(1, 1, 0),
+            Orientation::N => IVec3::new(0, 1, 0),
+            Orientation::NW => IVec3::new(-1, 1, 0),
+            Orientation::W => IVec3::new(-1, 0, 0),
+            Orientation::SW => IVec3::new(-1, -1, 0),
+            Orientation::S => IVec3::new(0, -1, 0),
+            Orientation::SE => IVec3::new(1, -1, 0),
+        }
+    }
+
+    fn angle(self) -> f32 {
+        f32::from(self as u8) / 8.0 * TAU
+    }
+}
+
+impl From<u8> for Orientation {
+    fn from(value: u8) -> Self {
+        match value & 0x07 {
+            0 => Self::E,
+            1 => Self::NE,
+            2 => Self::N,
+            3 => Self::NW,
+            4 => Self::W,
+            5 => Self::SW,
+            6 => Self::S,
+            7 => Self::SE,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl AddAssign<u8> for Orientation {
+    fn add_assign(&mut self, rhs: u8) {
+        *self = (*self as u8).wrapping_add(rhs).into();
+    }
+}
+
+impl SubAssign<u8> for Orientation {
+    fn sub_assign(&mut self, rhs: u8) {
+        *self = (*self as u8).wrapping_sub(rhs).into();
     }
 }

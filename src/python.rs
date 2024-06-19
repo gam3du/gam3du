@@ -4,7 +4,7 @@
 
 // TODO enable hand-picked clippy lints from the `restriction` group
 
-use std::{fs::read_to_string, path::Path};
+use std::{fs::read_to_string, path::Path, sync::mpsc::Sender};
 
 use log::{error, info};
 use rustpython_vm::{
@@ -12,9 +12,16 @@ use rustpython_vm::{
     VirtualMachine,
 };
 
-pub(crate) fn python_runner(source_path: &(impl AsRef<Path> + ToString)) {
+use crate::scene::Command;
+
+pub(crate) fn python_runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Command>) {
     let source = read_to_string(source_path).unwrap();
     let path_string = source_path.as_ref().display().to_string();
+
+    rust_py_module::COMMAND_QUEUE
+        .lock()
+        .unwrap()
+        .replace(sender);
 
     let interpreter = rustpython::InterpreterConfig::new()
         .init_stdlib()
@@ -79,12 +86,14 @@ pub(crate) fn python_runner(source_path: &(impl AsRef<Path> + ToString)) {
     clippy::unused_self
 )]
 mod rust_py_module {
-    use std::sync::atomic::Ordering;
+    use std::sync::{atomic::Ordering, mpsc::Sender, Mutex};
 
-    use crate::ROTATION;
+    use crate::{scene::Command, ROTATION};
 
     use super::{pyclass, PyObject, PyPayload, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython::vm::{builtins::PyList, convert::ToPyObject, PyObjectRef};
+
+    pub(super) static COMMAND_QUEUE: Mutex<Option<Sender<Command>>> = Mutex::new(None);
 
     #[pyfunction]
     fn rust_function(
@@ -103,6 +112,39 @@ python_person.name: {}",
         Ok(RustStruct {
             numbers: NumVec(vec![1, 2, 3, 4]),
         })
+    }
+
+    #[pyfunction]
+    fn move_forward() {
+        COMMAND_QUEUE
+            .lock()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .send(Command::MoveForward)
+            .unwrap();
+    }
+
+    #[pyfunction]
+    fn turn_left() {
+        COMMAND_QUEUE
+            .lock()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .send(Command::TurnLeft)
+            .unwrap();
+    }
+
+    #[pyfunction]
+    fn turn_right() {
+        COMMAND_QUEUE
+            .lock()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .send(Command::TurnRight)
+            .unwrap();
     }
 
     #[pyfunction]
