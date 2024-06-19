@@ -1,5 +1,5 @@
 use std::{
-    f32::consts::TAU,
+    f32::consts::{PI, TAU},
     mem::size_of,
     ops::{AddAssign, SubAssign},
     time::Duration,
@@ -546,7 +546,13 @@ impl Animation {
                 *position = start.lerp(end, progress);
             }
             Animation::Rotate { start, end, .. } => {
-                *orientation = start.lerp(end, progress);
+                *orientation = if (start - end).abs() <= PI {
+                    start.lerp(end, progress)
+                } else if start < end {
+                    (start + TAU).lerp(end, progress)
+                } else {
+                    (start - TAU).lerp(end, progress)
+                };
             }
         }
     }
