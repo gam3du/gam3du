@@ -1,5 +1,6 @@
 use camera::Camera;
 use floor::Floor;
+use glam::Vec3;
 use projection::Projection;
 use robot::Robot;
 use std::time::Instant;
@@ -9,6 +10,8 @@ mod floor;
 mod projection;
 mod robot;
 pub(crate) use robot::Command;
+
+const CAMERA_POS: Vec3 = Vec3::new(-2.0, -3.0, 2.0);
 
 pub(crate) struct Scene {
     depth_map: DepthTexture,
@@ -42,10 +45,10 @@ impl Scene {
         let projection = Projection::new_perspective(
             (surface.width, surface.height),
             45_f32.to_radians(),
-            1.0..10.0,
+            1.0..15.0,
         );
 
-        let camera = Camera::new(glam::Vec3::new(1.5f32, -5.0, 3.0), glam::Vec3::ZERO);
+        let camera = Camera::new(CAMERA_POS, glam::Vec3::ZERO);
 
         let start_time = Instant::now();
 
@@ -80,6 +83,9 @@ impl Scene {
     ) {
         let mut encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        let (dy, dx) = (self.start_time.elapsed().as_secs_f32() * 0.1).sin_cos();
+        self.camera.position = CAMERA_POS + Vec3::new(dx * 0.3, -dy * 0.3, 0.0);
 
         self.render_cube(texture_view, &mut encoder, queue);
 
