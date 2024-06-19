@@ -43,7 +43,7 @@ fn vs_floor(
 @fragment
 fn fs_floor_tile(vertex: FloorVertex) -> @location(0) vec4<f32> {
     if vertex.tex_coord.x > 0.02 && vertex.tex_coord.x < 0.98 && vertex.tex_coord.y > 0.02 && vertex.tex_coord.y < 0.98 {
-        return vec4<f32>(vertex.tex_coord.x, vertex.tex_coord.y, 0.5, 1.0);
+        return vec4<f32>(vertex.tex_coord.xy * 0.7, 0.3, 1.0);
     } else {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
