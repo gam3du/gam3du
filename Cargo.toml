@@ -15,7 +15,7 @@ bytemuck = { version = "1.16.0", features = ["derive"] }
 wgpu = "0.20.1"
 
 # Basic vector and matrix types and operations thereon
-glam = "0.28.0"
+glam = { version = "0.28.0", features = ["bytemuck"] }
 
 rand = "0.8.5"
 

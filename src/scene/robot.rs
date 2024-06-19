@@ -6,7 +6,7 @@ use std::{
 };
 
 use bytemuck::{offset_of, Pod, Zeroable};
-use glam::{FloatExt, IVec3, Mat4, Quat, Vec3};
+use glam::{FloatExt, IVec3, Mat4, Quat, Vec2, Vec3, Vec4};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
@@ -371,38 +371,66 @@ impl Robot {
         texture_view
     }
 
+    #[allow(clippy::similar_names)] // those are code names
     fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
+        let front = 0.4;
+        let back = -0.4;
+        let left = 0.2;
+        let right = -0.2;
+        let top = 0.25;
+        let bottom = 0.0;
+        let scale_front = 0.5;
+        let scale_top = 0.8;
+
+        //  xyz
+        let flt = Vec3::new(
+            front * scale_top,
+            left * scale_top * scale_front,
+            top * scale_front,
+        );
+        let blt = Vec3::new(back * scale_top, left * scale_top, top);
+        let frt = Vec3::new(
+            front * scale_top,
+            right * scale_top * scale_front,
+            top * scale_front,
+        );
+        let brt = Vec3::new(back * scale_top, right * scale_top, top);
+        let flb = Vec3::new(front, left * scale_front, bottom * scale_front);
+        let blb = Vec3::new(back, left, bottom);
+        let frb = Vec3::new(front, right * scale_front, bottom * scale_front);
+        let brb = Vec3::new(back, right, bottom);
+
         let vertex_data = [
-            // top (0, 0, 1)
-            vertex([-1, -1, 1], [0, 0]),
-            vertex([1, -1, 1], [1, 0]),
-            vertex([1, 1, 1], [1, 1]),
-            vertex([-1, 1, 1], [0, 1]),
-            // bottom (0, 0, -1)
-            vertex([-1, 1, -1], [1, 0]),
-            vertex([1, 1, -1], [0, 0]),
-            vertex([1, -1, -1], [0, 1]),
-            vertex([-1, -1, -1], [1, 1]),
-            // right (1, 0, 0)
-            vertex([1, -1, -1], [0, 0]),
-            vertex([1, 1, -1], [1, 0]),
-            vertex([1, 1, 1], [1, 1]),
-            vertex([1, -1, 1], [0, 1]),
-            // left (-1, 0, 0)
-            vertex([-1, -1, 1], [1, 0]),
-            vertex([-1, 1, 1], [0, 0]),
-            vertex([-1, 1, -1], [0, 1]),
-            vertex([-1, -1, -1], [1, 1]),
-            // front (0, 1, 0)
-            vertex([1, 1, -1], [1, 0]),
-            vertex([-1, 1, -1], [0, 0]),
-            vertex([-1, 1, 1], [0, 1]),
-            vertex([1, 1, 1], [1, 1]),
-            // back (0, -1, 0)
-            vertex([1, -1, 1], [0, 0]),
-            vertex([-1, -1, 1], [1, 0]),
-            vertex([-1, -1, -1], [1, 1]),
-            vertex([1, -1, -1], [0, 1]),
+            // front
+            vertex(frb, Vec2::new(1.0, -1.0)),
+            vertex(flb, Vec2::new(1.0, 1.0)),
+            vertex(flt, Vec2::new(1.0, 1.0)),
+            vertex(frt, Vec2::new(1.0, -1.0)),
+            // back
+            vertex(brt, Vec2::new(-1.0, 1.0)),
+            vertex(blt, Vec2::new(-1.0, -1.0)),
+            vertex(blb, Vec2::new(-1.0, -1.0)),
+            vertex(brb, Vec2::new(-1.0, 1.0)),
+            // left
+            vertex(flb, Vec2::new(1.0, -1.0)),
+            vertex(blb, Vec2::new(-1.0, -1.0)),
+            vertex(blt, Vec2::new(-1.0, 1.0)),
+            vertex(flt, Vec2::new(1.0, 1.0)),
+            // right
+            vertex(frt, Vec2::new(1.0, -1.0)),
+            vertex(brt, Vec2::new(-1.0, -1.0)),
+            vertex(brb, Vec2::new(-1.0, 1.0)),
+            vertex(frb, Vec2::new(1.0, 1.0)),
+            // top
+            vertex(brt, Vec2::new(-1.0, -1.0)),
+            vertex(frt, Vec2::new(1.0, -1.0)),
+            vertex(flt, Vec2::new(1.0, 1.0)),
+            vertex(blt, Vec2::new(-1.0, 1.0)),
+            // bottom
+            vertex(blb, Vec2::new(1.0, -1.0)),
+            vertex(flb, Vec2::new(-1.0, -1.0)),
+            vertex(frb, Vec2::new(-1.0, 1.0)),
+            vertex(brb, Vec2::new(1.0, 1.0)),
         ];
 
         let index_data: &[u16] = &[
@@ -467,7 +495,7 @@ impl Robot {
 
                 Animation::Move {
                     start: self.animation_position,
-                    end: self.position.as_vec3() + Vec3::new(0.5, 0.5, 0.25),
+                    end: self.position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
                     start_time: Instant::now(),
                     duration: Duration::from_millis(1_000),
                 }
@@ -497,19 +525,16 @@ impl Robot {
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
 struct Vertex {
-    pos: [f32; 4],
-    tex_coord: [f32; 2],
+    pos: Vec4,
+    tex_coord: Vec2,
+    _padding: Vec2,
 }
 
-fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
+fn vertex(position: Vec3, texture_coord: Vec2) -> Vertex {
     Vertex {
-        pos: [
-            f32::from(pos[0]) * 0.25,
-            f32::from(pos[1]) * 0.25,
-            f32::from(pos[2]) * 0.25,
-            1.0,
-        ],
-        tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
+        pos: Vec4::new(position.x, position.y, position.z, 1.0),
+        tex_coord: texture_coord,
+        _padding: Vec2::default(),
     }
 }
 

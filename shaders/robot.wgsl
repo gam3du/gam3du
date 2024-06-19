@@ -31,25 +31,13 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     // let tex = textureLoad(r_color, vec2<i32>(vertex.tex_coord * 256.0), 0);
     // let v = f32(tex.x) / 255.0;
     // return vec4<f32>(1.0 - (v * 5.0), 1.0 - (v * 15.0), 1.0 - (v * 50.0), 1.0);
-    
-    //vertex.tex_coord.x + vertex.tex_coord.y < 1 ?
-    //    vec4<f32>(0.0, 0.0, 0.0, 1.0) :
-    //    vec4<f32>(abs(sin((vertex.tex_coord.x * 3.1416 * 10))), abs(sin((vertex.tex_coord.y * 3.1416 * 10))), 0.5, 1.0);
 
     let subseconds = f32(time_vec.y) / 4294967296.0;
     let time = f32(time_vec.x) + subseconds;
 
-    if vertex.tex_coord.x + vertex.tex_coord.y < sin((vertex.tex_coord.x + time * 0.1) * 3.1416 * 10) {
-        return vec4<f32>(sin(cos(vertex.tex_coord.y * 3.1416 * 10)), 0.0, 0.0, 1.0);
-    } else {
-        return vec4<f32>(abs(sin((vertex.tex_coord.x * 3.1416 * 10))), abs(sin(((vertex.tex_coord.y + time * 0.25) * 3.1416 * 10))), 0.5, 1.0);
-    }
-
-    //let result = (vertex.tex_coord.x + vertex.tex_coord.y < 1) ?
-    //    vec4<f32>(0.0, 0.0, 0.0, 1.0) :
-    //    vec4<f32>(abs(sin((vertex.tex_coord.x * 3.1416 * 10))), abs(sin((vertex.tex_coord.y * 3.1416 * 10))), 0.5, 1.0);
-//
-    //return result;
+    let y = abs(vertex.tex_coord.y);
+    let r = fract((vertex.tex_coord.x - subseconds * 2.0 + y) * 1);
+    return vec4(r * r, r * r * r, r, 1.0);
 }
 
 @fragment
