@@ -1,20 +1,20 @@
 use camera::Camera;
-use cube::Cube;
 use floor::Floor;
 use projection::Projection;
+use robot::Robot;
 use std::time::Instant;
 
 mod camera;
-mod cube;
 mod floor;
 mod projection;
+mod robot;
 
 pub(crate) struct Scene {
     depth_map: DepthTexture,
     start_time: Instant,
     projection: Projection,
     camera: Camera,
-    cube: Cube,
+    cube: Robot,
     floor: Floor,
 }
 
@@ -35,7 +35,7 @@ impl Scene {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) -> Self {
-        let cube = Cube::new(device, queue, surface.view_formats[0]);
+        let cube = Robot::new(device, queue, surface.view_formats[0]);
         let floor = Floor::new(device, queue, surface.view_formats[0]);
 
         let projection = Projection::new_perspective(

@@ -1,13 +1,13 @@
 use std::{f32::consts::TAU, mem::size_of};
 
-use bytemuck::{Pod, Zeroable};
+use bytemuck::{offset_of, Pod, Zeroable};
 use glam::{Mat4, Quat, Vec3};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
 use super::{camera::Camera, elapsed_as_vec, projection::Projection, DepthTexture};
 
-pub(super) struct Cube {
+pub(super) struct Robot {
     pipeline: wgpu::RenderPipeline,
     pipeline_wire: Option<wgpu::RenderPipeline>,
     vertex_buf: wgpu::Buffer,
@@ -20,7 +20,7 @@ pub(super) struct Cube {
     recent_time: Instant,
 }
 
-impl Cube {
+impl Robot {
     // TODO partition this function into smaller parts
     #[allow(clippy::too_many_lines)]
     #[must_use]
@@ -118,7 +118,9 @@ impl Cube {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shader.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
+                "../../shaders/robot.wgsl"
+            ))),
         });
 
         let vertex_buffers = [wgpu::VertexBufferLayout {
@@ -127,12 +129,12 @@ impl Cube {
             attributes: &[
                 wgpu::VertexAttribute {
                     format: wgpu::VertexFormat::Float32x4,
-                    offset: 0,
+                    offset: offset_of!(Vertex, pos) as u64,
                     shader_location: 0,
                 },
                 wgpu::VertexAttribute {
                     format: wgpu::VertexFormat::Float32x2,
-                    offset: 4 * 4,
+                    offset: offset_of!(Vertex, tex_coord) as u64,
                     shader_location: 1,
                 },
             ],
@@ -419,20 +421,20 @@ impl Cube {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
 struct Vertex {
-    _pos: [f32; 4],
-    _tex_coord: [f32; 2],
+    pos: [f32; 4],
+    tex_coord: [f32; 2],
 }
 
 fn vertex(pos: [i8; 3], tc: [i8; 2]) -> Vertex {
     Vertex {
-        _pos: [
+        pos: [
             f32::from(pos[0]) * 0.25,
             f32::from(pos[1]) * 0.25,
             f32::from(pos[2]) * 0.25,
             1.0,
         ],
-        _tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
+        tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
     }
 }

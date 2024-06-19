@@ -1,6 +1,6 @@
-use std::mem::size_of;
+use std::{mem::size_of, ops};
 
-use bytemuck::{Pod, Zeroable};
+use bytemuck::{offset_of, Pod, Zeroable};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
@@ -11,24 +11,23 @@ pub(super) struct Floor {
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
-    vertex_buf: wgpu::Buffer,
-    tile_count: u32,
+    tiles: Vec<Tile>,
+    tile_buf: wgpu::Buffer,
 }
 
 impl Floor {
-    // TODO partition this function into smaller parts
-    #[allow(clippy::too_many_lines)]
+    // `time` will be moved to global scope anyway
+    #[allow(clippy::similar_names)]
     #[must_use]
     pub(super) fn new(device: &wgpu::Device, _queue: &Queue, view_format: TextureFormat) -> Self {
-        let vertex_data = Self::create_vertices();
+        let tiles = Self::create_vertices();
 
-        let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertex_data),
+        let tile_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Tile Buffer"),
+            contents: bytemuck::cast_slice(&tiles),
             usage: wgpu::BufferUsages::VERTEX,
         });
 
-        // Create pipeline layout
         let bind_group_layout = Self::create_bind_group_layout(device);
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
@@ -67,22 +66,24 @@ impl Floor {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shader.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
+                "../../shaders/floor.wgsl"
+            ))),
         });
 
         let vertex_buffers = [wgpu::VertexBufferLayout {
-            array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
+            array_stride: size_of::<Tile>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[
                 wgpu::VertexAttribute {
                     format: wgpu::VertexFormat::Float32x4,
-                    offset: 0,
+                    offset: offset_of!(Tile, pos) as u64,
                     shader_location: 0,
                 },
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
-                    offset: 4 * 4,
-                    shader_location: 1,
+                    format: wgpu::VertexFormat::Uint32,
+                    offset: offset_of!(Tile, line_pattern) as u64,
+                    shader_location: 2,
                 },
             ],
         }];
@@ -96,13 +97,17 @@ impl Floor {
         );
 
         Self {
-            vertex_buf,
+            pipeline,
             time_buf,
             bind_group,
             matrix_buf,
-            pipeline,
-            tile_count: u32::try_from(vertex_data.len()).unwrap(),
+            tiles,
+            tile_buf,
         }
+    }
+
+    fn tile_count(&self) -> u32 {
+        u32::try_from(self.tiles.len()).unwrap()
     }
 
     pub(super) fn render<'pipeline>(
@@ -119,10 +124,10 @@ impl Floor {
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);
         render_pass.set_bind_group(0, &self.bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.vertex_buf.slice(..));
+        render_pass.set_vertex_buffer(0, self.tile_buf.slice(..));
         render_pass.pop_debug_group();
         render_pass.insert_debug_marker("Draw!");
-        render_pass.draw(0..4, 0..self.tile_count);
+        render_pass.draw(0..4, 0..self.tile_count());
     }
 
     fn update_matrix(&self, projection: &Projection, camera: &Camera, queue: &Queue) {
@@ -141,7 +146,7 @@ impl Floor {
         device: &wgpu::Device,
         pipeline_layout: &wgpu::PipelineLayout,
         shader: &wgpu::ShaderModule,
-        vertex_buffers: &[wgpu::VertexBufferLayout; 1],
+        vertex_buffers: &[wgpu::VertexBufferLayout],
         view_format: TextureFormat,
     ) -> wgpu::RenderPipeline {
         let vertex = wgpu::VertexState {
@@ -176,13 +181,13 @@ impl Floor {
         })
     }
 
-    fn create_vertices() -> Vec<Vertex> {
+    fn create_vertices() -> Vec<Tile> {
         let mut vertex_data = Vec::new();
         for y in -5_i16..5 {
             let bottom = f32::from(y);
             for x in -5_i16..5 {
                 let left = f32::from(x);
-                vertex_data.push(vertex([left, bottom, 0.0], [0, 0]));
+                vertex_data.push(tile([left, bottom, 0.0], LinePattern::default()));
             }
         }
 
@@ -219,15 +224,54 @@ impl Floor {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable)]
-struct Vertex {
-    _pos: [f32; 4],
-    _tex_coord: [f32; 2],
+#[derive(Clone, Copy, Pod, Zeroable, Default)]
+struct Tile {
+    pos: [f32; 4],
+    line_pattern: LinePattern,
 }
 
-fn vertex(pos: [f32; 3], tc: [i8; 2]) -> Vertex {
-    Vertex {
-        _pos: [pos[0], pos[1], pos[2], 1.0],
-        _tex_coord: [f32::from(tc[0]), f32::from(tc[1])],
+fn tile(pos: [f32; 3], line_pattern: LinePattern) -> Tile {
+    Tile {
+        pos: [pos[0], pos[1], pos[2], 1.0],
+        line_pattern,
     }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Pod, Zeroable, Default)]
+struct LinePattern(u32);
+
+impl ops::BitOrAssign<LineSegment> for LinePattern {
+    fn bitor_assign(&mut self, rhs: LineSegment) {
+        self.0 |= 1 << rhs as u32;
+    }
+}
+
+// TODO W.I.P.
+#[allow(dead_code)]
+enum LineSegment {
+    /// positive x
+    E = 0,
+    /// +x, +y
+    NE = 1,
+    /// positive y
+    N = 2,
+    /// -x +y
+    NW = 3,
+    /// negative x
+    W = 4,
+    /// -x -y
+    SW = 5,
+    /// negative y
+    S = 6,
+    /// +x -y
+    SE = 7,
+    /// +x, +y
+    NECorner = 9,
+    /// -x +y
+    NWCorner = 11,
+    /// -x -y
+    SWCorner = 13,
+    /// +x -y
+    SECorner = 15,
 }
