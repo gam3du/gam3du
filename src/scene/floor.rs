@@ -1,6 +1,7 @@
 use std::{mem::size_of, ops};
 
 use bytemuck::{offset_of, Pod, Zeroable};
+use rand::{thread_rng, Rng};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
@@ -183,11 +184,13 @@ impl Floor {
 
     fn create_vertices() -> Vec<Tile> {
         let mut vertex_data = Vec::new();
+        let thread_rng = &mut thread_rng();
         for y in -5_i16..5 {
             let bottom = f32::from(y);
             for x in -5_i16..5 {
                 let left = f32::from(x);
-                vertex_data.push(tile([left, bottom, 0.0], LinePattern::default()));
+                let line_pattern = thread_rng.gen_range(0..0x100);
+                vertex_data.push(tile([left, bottom, 0.0], LinePattern(line_pattern)));
             }
         }
 

@@ -17,6 +17,8 @@ wgpu = "0.20.1"
 # Basic vector and matrix types and operations thereon
 glam = "0.28.0"
 
+rand = "0.8.5"
+
 pollster = "0.3.0"
 log = "0.4.21"
 env_logger = "0.11.3"
