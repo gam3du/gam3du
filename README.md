@@ -9,6 +9,6 @@ In the beginning there was 0. Give it some time …
 3. Change into the project directory: `cd 3du`
 4. Build and run the code: `cargo run`
 
-This will open a new window, showing a 3D-Cube, while the terminal prints some logs with the string "Hello, World!" in between, which is the result of the executed python code.
+This will open a new window, showing a plane where a Python-controlled robot is moving across the grid.
 
 Exit with `ESC` or just close the window.

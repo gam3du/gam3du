@@ -189,7 +189,7 @@ impl Floor {
             let bottom = f32::from(y);
             for x in -5_i16..5 {
                 let left = f32::from(x);
-                let line_pattern = thread_rng.gen_range(0..0x100);
+                let line_pattern = thread_rng.gen();
                 vertex_data.push(tile([left, bottom, 0.0], LinePattern(line_pattern)));
             }
         }
