@@ -1,7 +1,6 @@
 struct VertexOutput {
-    @location(0) tex_coord: vec2<f32>,
     @builtin(position) position: vec4<f32>,
-    @location(2) time: vec2<u32>,
+    @location(1) tex_coord: vec2<f32>,
 };
 
 @group(0)
@@ -14,7 +13,7 @@ var r_color: texture_2d<u32>;
 
 @group(0)
 @binding(2)
-var<uniform> time: vec2<u32>;
+var<uniform> time_vec: vec2<u32>;
 
 @vertex
 fn vs_main(
@@ -22,9 +21,8 @@ fn vs_main(
     @location(1) tex_coord: vec2<f32>,
 ) -> VertexOutput {
     var vertex: VertexOutput;
-    vertex.tex_coord = tex_coord;
     vertex.position = transform * position;
-    vertex.time = time;
+    vertex.tex_coord = tex_coord;
     return vertex;
 }
 
@@ -38,8 +36,8 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     //    vec4<f32>(0.0, 0.0, 0.0, 1.0) :
     //    vec4<f32>(abs(sin((vertex.tex_coord.x * 3.1416 * 10))), abs(sin((vertex.tex_coord.y * 3.1416 * 10))), 0.5, 1.0);
 
-    let subseconds = f32(vertex.time.y) / 4294967296.0;
-    let time = f32(vertex.time.x) + subseconds;
+    let subseconds = f32(time_vec.y) / 4294967296.0;
+    let time = f32(time_vec.x) + subseconds;
 
     if vertex.tex_coord.x + vertex.tex_coord.y < sin((vertex.tex_coord.x + time * 0.1) * 3.1416 * 10) {
         return vec4<f32>(sin(cos(vertex.tex_coord.y * 3.1416 * 10)), 0.0, 0.0, 1.0);
