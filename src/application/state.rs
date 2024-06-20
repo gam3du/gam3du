@@ -13,15 +13,15 @@ pub struct State {
     pub(crate) ftps: f64,
     pub(crate) fps: f64,
 
-    pub(crate) delta_tick_time: f64,
+    pub delta_tick_time: f64,
     pub(crate) delta_frame_time: f64,
 
     pub(crate) measured_ticks_per_second: f64,
     pub(crate) measured_frames_per_second: f64,
 }
 
-impl State {
-    pub fn new() -> State {
+impl Default for State {
+    fn default() -> Self {
         let mut state = State {
             stop: false,
 
@@ -43,7 +43,9 @@ impl State {
 
         state
     }
+}
 
+impl State {
     pub fn add_subscriber(&mut self, subscriber: Box<dyn EventSubscriber>) {
         self.event_subscribers.push(subscriber);
     }

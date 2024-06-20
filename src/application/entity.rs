@@ -1,10 +1,6 @@
 use std::{any::TypeId, collections::HashMap, mem};
 
-use crate::transform;
-
 use super::{component::Component, state::State};
-
-use std::any::Any;
 
 pub struct Entity {
     name: String,
@@ -12,6 +8,7 @@ pub struct Entity {
 }
 
 impl Entity {
+    #[must_use]
     pub fn new(name: String) -> Self {
         Entity {
             name,
@@ -68,23 +65,34 @@ impl Entity {
     }
 
     pub fn add_component<T: Component + 'static>(&mut self, component: T) {
-        self.components.entry(TypeId::of::<T>()).or_default().push(Box::new(component));
-    }   
+        self.components
+            .entry(TypeId::of::<T>())
+            .or_default()
+            .push(Box::new(component));
+    }
 
-    pub fn get_components<T>(&mut self) -> Vec<&mut T> where T: Component + 'static {
+    pub fn get_components<T>(&mut self) -> Vec<&mut T>
+    where
+        T: Component + 'static,
+    {
         let mut result = Vec::new();
-    
+
         let components = self.components.get_mut(&TypeId::of::<T>()).unwrap();
-    
+
         for component in components {
             unsafe {
-                result.push(&mut *(component as *mut Box<dyn Component> as *mut Box<T>).as_mut().unwrap().as_mut());
+                result.push(
+                    &mut *(component as *mut Box<dyn Component> as *mut Box<T>)
+                        .as_mut()
+                        .unwrap()
+                        .as_mut(),
+                );
 
                 //let component_casted_to_t = &mut *(component as *mut Box<dyn Component> as *mut Box<T>).as_mut().unwrap().as_mut();
                 //result.push(Some(component_casted_to_t));
             }
         }
-    
+
         result
     }
 }

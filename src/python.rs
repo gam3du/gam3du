@@ -14,7 +14,8 @@ use rustpython_vm::{
 
 use crate::scene::Command;
 
-pub(crate) fn python_runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Command>) {
+#[allow(clippy::missing_panics_doc)]
+pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Command>) {
     let source = read_to_string(source_path).unwrap();
     let path_string = source_path.as_ref().display().to_string();
 

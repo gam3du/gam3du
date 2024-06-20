@@ -543,7 +543,7 @@ impl ApplicationHandler for Application {
     }
 }
 
-pub(crate) async fn start(title: String, receiver: Receiver<Command>) {
+pub async fn start(title: String, receiver: Receiver<Command>) {
     let event_loop = EventLoop::new().unwrap();
 
     // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't

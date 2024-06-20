@@ -1,6 +1,6 @@
 use glam::Vec3;
 
-use crate::application::{self, component};
+use crate::application;
 
 pub struct TransformComponent {
     pub position: Vec3,
@@ -8,8 +8,8 @@ pub struct TransformComponent {
     pub scale: Vec3,
 }
 
-impl TransformComponent {
-    pub fn new() -> TransformComponent {
+impl Default for TransformComponent {
+    fn default() -> Self {
         TransformComponent {
             position: Vec3::new(0.0, 0.0, 0.0),
             rotation: Vec3::new(0.0, 0.0, 0.0),
@@ -19,7 +19,7 @@ impl TransformComponent {
 }
 
 impl application::component::Component for TransformComponent {
-    fn start(&mut self, state: &mut application::state::State) {
+    fn start(&mut self, _state: &mut application::state::State) {
         //println!("{}", self.position);
     }
 
@@ -30,11 +30,11 @@ impl application::component::Component for TransformComponent {
         );
     }
 
-    fn render(&mut self, state: &mut application::state::State) {
+    fn render(&mut self, _state: &mut application::state::State) {
         println!("TestComponent::render");
     }
 
-    fn stop(&mut self, state: &mut application::state::State) {
+    fn stop(&mut self, _state: &mut application::state::State) {
         println!("TestComponent::stop");
     }
 }

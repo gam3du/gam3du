@@ -1,24 +1,16 @@
 use std::{
-    borrow::Borrow,
     mem,
-    sync::{Arc, Mutex, RwLock, RwLockWriteGuard, Weak},
+    sync::{Arc, RwLock, RwLockWriteGuard},
     thread,
     time::Instant,
 };
 
-use super::{
-    event_subscriber::EventSubscriber,
-    state::{self, State},
-    Application,
-};
+use super::state::State;
 
+#[derive(Default)]
 pub struct ApplicationRuntime {}
 
 impl ApplicationRuntime {
-    pub fn new() -> Self {
-        ApplicationRuntime {}
-    }
-
     pub fn start(&mut self, state_arc: Arc<RwLock<State>>) {
         {
             let mut state = state_arc.write().unwrap();

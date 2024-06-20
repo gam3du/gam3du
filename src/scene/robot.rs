@@ -489,13 +489,13 @@ impl Robot {
                     #[allow(clippy::cast_sign_loss)]
                     let index = (self.position.y * 10 + (self.position.x + offset.x) + 55) as usize;
                     floor.tiles[index].line_pattern |= segment.get_x_corner().unwrap();
-                    
+
                     // TODO make this a safe function
                     #[allow(clippy::cast_sign_loss)]
                     let index = ((self.position.y + offset.y) * 10 + self.position.x + 55) as usize;
                     floor.tiles[index].line_pattern |= -segment.get_x_corner().unwrap();
                 }
-                
+
                 self.position += offset;
 
                 // TODO make this a safe function
@@ -549,7 +549,7 @@ fn vertex(position: Vec3, texture_coord: Vec2) -> Vertex {
     }
 }
 
-pub(crate) enum Command {
+pub enum Command {
     MoveForward,
     TurnLeft,
     TurnRight,
