@@ -1,7 +1,8 @@
 [package]
-name = "_3du"
+name = "gam3du"
 version = "0.1.0"
 edition = "2021"
+description = "A game engine written for educational purposes. The main goals are learning/teaching software development, ease of use and having fun!"
 
 [dependencies]
 # Python interpreter

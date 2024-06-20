@@ -8,9 +8,9 @@
 
 use std::{sync::mpsc::channel, thread};
 
-use _3du::framework;
-use _3du::logging::init_logger;
-use _3du::python::runner;
+use gam3du::framework;
+use gam3du::logging::init_logger;
+use gam3du::python::runner;
 
 fn main() {
     //ecs_test();

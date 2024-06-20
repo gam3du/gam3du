@@ -6,7 +6,7 @@
 
 // TODO enable hand-picked clippy lints from the `restriction` group
 
-use _3du::{
+use gam3du::{
     application::{self, event_subscriber::EventSubscriber},
     transform::TransformComponent,
 };

@@ -9,22 +9,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 
 [[package]]
-name = "_3du"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "env_logger 0.11.3",
- "glam",
- "log",
- "pollster",
- "rand",
- "rustpython",
- "rustpython-vm",
- "wgpu",
- "winit",
-]
-
-[[package]]
 name = "ab_glyph"
 version = "0.2.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -865,6 +849,22 @@ name = "foreign-types-shared"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
+
+[[package]]
+name = "gam3du"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "env_logger 0.11.3",
+ "glam",
+ "log",
+ "pollster",
+ "rand",
+ "rustpython",
+ "rustpython-vm",
+ "wgpu",
+ "winit",
+]
 
 [[package]]
 name = "generic-array"
