@@ -303,6 +303,18 @@ impl From<Orientation> for LineSegment {
     }
 }
 
+impl LineSegment {
+    pub fn get_x_corner(self) -> Option<LineSegment> {
+        match self {
+            Self::NE => Some(Self::NWCorner),
+            Self::NW => Some(Self::NECorner),
+            Self::SW => Some(Self::SECorner),
+            Self::SE => Some(Self::SWCorner),
+            _ => None,
+        }
+    }
+}
+
 impl Neg for LineSegment {
     type Output = Self;
 

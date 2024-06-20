@@ -483,15 +483,26 @@ impl Robot {
                 let index = (self.position.y * 10 + self.position.x + 55) as usize;
                 floor.tiles[index].line_pattern |= segment;
 
-                self.position += self.orientation.as_ivec3();
+                let offset = self.orientation.as_ivec3();
+                if offset.x != 0 && offset.y != 0 {
+                    // TODO make this a safe function
+                    #[allow(clippy::cast_sign_loss)]
+                    let index = (self.position.y * 10 + (self.position.x + offset.x) + 55) as usize;
+                    floor.tiles[index].line_pattern |= segment.get_x_corner().unwrap();
+                    
+                    // TODO make this a safe function
+                    #[allow(clippy::cast_sign_loss)]
+                    let index = ((self.position.y + offset.y) * 10 + self.position.x + 55) as usize;
+                    floor.tiles[index].line_pattern |= -segment.get_x_corner().unwrap();
+                }
+                
+                self.position += offset;
 
                 // TODO make this a safe function
                 #[allow(clippy::cast_sign_loss)]
                 let index = (self.position.y * 10 + self.position.x + 55) as usize;
                 floor.tiles[index].line_pattern |= -segment;
                 floor.tainted = true;
-
-                // TODO also draw corners for adjacent tiles when moving diagonally
 
                 Animation::Move {
                     start: self.animation_position,

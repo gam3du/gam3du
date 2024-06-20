@@ -60,10 +60,10 @@ fn fs_floor_tile(vertex: FloorVertex) -> @location(0) vec4<f32> {
     let line_end: bool = dot(cc.xy, cc.xy) < (LINE_RADIUS * LINE_RADIUS) && (vertex.line_pattern & 0xFF) != 0;
     
     let line_corner: bool =
-        (cc.x - cc.y < (-2.0 + SQRT2 * LINE_RADIUS) && (vertex.line_pattern & (1u << 8u)) != 0) ||
-        (cc.x - cc.y > (2.0 - SQRT2 * LINE_RADIUS) && (vertex.line_pattern & (1u << 10u)) != 0) ||
-        (cc.x + cc.y < (-2.0 + SQRT2 * LINE_RADIUS) && (vertex.line_pattern & (1u << 12u)) != 0) ||
-        (cc.x + cc.y > (2.0 - SQRT2 * LINE_RADIUS) && (vertex.line_pattern & (1u << 14u)) != 0);
+        (cc.x + cc.y > (2.0 - SQRT2 * LINE_RADIUS) && (vertex.line_pattern & (1u << 9u)) != 0) ||
+        (cc.x - cc.y < (-2.0 + SQRT2 * LINE_RADIUS) && (vertex.line_pattern & (1u << 11u)) != 0) ||
+        (cc.x + cc.y < (-2.0 + SQRT2 * LINE_RADIUS) && (vertex.line_pattern & (1u << 13u)) != 0) ||
+        (cc.x - cc.y > (2.0 - SQRT2 * LINE_RADIUS) && (vertex.line_pattern & (1u << 15u)) != 0);
     
     let border: bool = cc.x < -0.95 || cc.x > 0.95 || cc.y < -0.95 || cc.y > 0.95;
     
