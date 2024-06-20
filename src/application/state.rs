@@ -28,9 +28,9 @@ impl State {
             entities: HashMap::new(),
             event_subscribers: Vec::new(),
 
-            tps: 60000.0,
+            tps: 60.0,
             ftps: 60.0,
-            fps: 60000.0,
+            fps: 60.0,
 
             delta_tick_time: 0.0,
             delta_frame_time: 0.0,
