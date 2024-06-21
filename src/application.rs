@@ -17,7 +17,7 @@ impl Application {
     pub fn start(&mut self) {
         let runtime = &mut self.application_runtime;
 
-        runtime.start(Arc::clone(&self.state));
+        runtime.start(&self.state);
     }
 
     #[must_use]

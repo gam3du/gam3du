@@ -11,7 +11,7 @@ use super::state::State;
 pub struct ApplicationRuntime {}
 
 impl ApplicationRuntime {
-    pub fn start(&mut self, state_arc: Arc<RwLock<State>>) {
+    pub fn start(&mut self, state_arc: &Arc<RwLock<State>>) {
         {
             let mut state = state_arc.write().unwrap();
 

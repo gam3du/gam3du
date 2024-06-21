@@ -158,7 +158,7 @@ impl Floor {
         device: &wgpu::Device,
         pipeline_layout: &wgpu::PipelineLayout,
         shader: &wgpu::ShaderModule,
-        vertex_buffers: &[wgpu::VertexBufferLayout],
+        vertex_buffers: &[wgpu::VertexBufferLayout<'_>],
         view_format: TextureFormat,
     ) -> wgpu::RenderPipeline {
         let vertex = wgpu::VertexState {
@@ -261,6 +261,8 @@ impl ops::BitOrAssign<LineSegment> for LinePattern {
 }
 
 #[derive(Clone, Copy)]
+// their meaning is clear from the context
+#[allow(clippy::min_ident_chars)]
 pub(super) enum LineSegment {
     /// positive x
     E = 0,
@@ -304,7 +306,7 @@ impl From<Orientation> for LineSegment {
 }
 
 impl LineSegment {
-    pub fn get_x_corner(self) -> Option<LineSegment> {
+    pub(crate) fn get_x_corner(self) -> Option<LineSegment> {
         match self {
             Self::NE => Some(Self::NWCorner),
             Self::NW => Some(Self::NECorner),

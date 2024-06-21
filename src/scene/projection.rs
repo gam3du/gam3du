@@ -62,7 +62,7 @@ impl Projection {
 
     #[must_use]
     pub(super) fn matrix(&self) -> Mat4 {
-        glam::Mat4::perspective_rh(self.fov(), self.aspect_ratio(), self.near(), self.far())
+        Mat4::perspective_rh(self.fov(), self.aspect_ratio(), self.near(), self.far())
     }
 
     pub(crate) fn set_surface_dimensions(

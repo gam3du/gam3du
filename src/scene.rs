@@ -48,7 +48,7 @@ impl Scene {
             1.0..15.0,
         );
 
-        let camera = Camera::new(CAMERA_POS, glam::Vec3::ZERO);
+        let camera = Camera::new(CAMERA_POS, Vec3::ZERO);
 
         let start_time = Instant::now();
 
@@ -204,9 +204,9 @@ struct DepthTexture {
 }
 
 impl DepthTexture {
-    pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float; // 1.
+    pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float; // 1.
 
-    pub fn create_depth_texture(
+    pub(crate) fn create_depth_texture(
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
         label: &str,

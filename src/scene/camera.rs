@@ -12,7 +12,7 @@ impl Camera {
         Self {
             position: eye,
             look_at: center,
-            up: glam::Vec3::Z,
+            up: Vec3::Z,
         }
     }
 

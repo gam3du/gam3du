@@ -7,7 +7,7 @@ use std::{
 };
 
 use log::{debug, trace};
-use wgpu::{Features, Surface};
+use wgpu;
 use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
@@ -120,7 +120,7 @@ impl SurfaceWrapper {
         }
     }
 
-    fn get(&self) -> Option<&Surface> {
+    fn get(&self) -> Option<&wgpu::Surface<'_>> {
         self.surface.as_ref()
     }
 
@@ -158,7 +158,7 @@ impl ExampleContext {
         let adapter_info = adapter.get_info();
         log::info!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
-        let required_features = Features::empty();
+        let required_features = wgpu::Features::empty();
         let adapter_features = adapter.features();
         assert!(
             adapter_features.contains(required_features),
@@ -249,7 +249,8 @@ impl ApplicationHandler for Application {
 
         let window = Arc::new(event_loop.create_window(attributes).unwrap());
 
-        self.surface.resume(&self.context, window.clone(), true);
+        self.surface
+            .resume(&self.context, Arc::clone(&window), true);
 
         self.window = Some(window);
 
@@ -270,9 +271,9 @@ impl ApplicationHandler for Application {
         &mut self,
         event_loop: &ActiveEventLoop,
         _window_id: WindowId,
-        event: WindowEvent,
+        window_event: WindowEvent,
     ) {
-        match event {
+        match window_event {
             WindowEvent::Resized(size) => {
                 trace!("WindowEvent::Resized({size:?})");
 
@@ -314,10 +315,10 @@ impl ApplicationHandler for Application {
 
             WindowEvent::KeyboardInput {
                 device_id,
-                event,
+                event: key_event,
                 is_synthetic,
             } => {
-                trace!("WindowEvent::KeyboardInput({device_id:?}, {event:?}, {is_synthetic})");
+                trace!("WindowEvent::KeyboardInput({device_id:?}, {key_event:?}, {is_synthetic})");
                 let KeyEvent {
                     physical_key: _,
                     logical_key,
@@ -326,7 +327,7 @@ impl ApplicationHandler for Application {
                     state: _,
                     repeat: _,
                     ..
-                } = event;
+                } = key_event;
 
                 match logical_key {
                     Key::Named(key) => {

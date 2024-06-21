@@ -8,7 +8,7 @@ use std::{
 use bytemuck::{offset_of, Pod, Zeroable};
 use glam::{FloatExt, IVec3, Mat4, Quat, Vec2, Vec3, Vec4};
 use std::{borrow::Cow, time::Instant};
-use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
+use wgpu::{self, util::DeviceExt};
 
 use super::{
     camera::Camera,
@@ -38,7 +38,11 @@ impl Robot {
     // TODO partition this function into smaller parts
     #[allow(clippy::too_many_lines)]
     #[must_use]
-    pub(super) fn new(device: &wgpu::Device, queue: &Queue, view_format: TextureFormat) -> Self {
+    pub(super) fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        view_format: wgpu::TextureFormat,
+    ) -> Self {
         let (vertex_data, index_data) = Self::create_vertices();
 
         let vertex_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -187,7 +191,7 @@ impl Robot {
             matrix_buf,
             pipeline,
             pipeline_wire: wireframe_pipeline,
-            animation_position: position.as_vec3() + Vec3::new(0.5, 0.5, 0.25),
+            animation_position: position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
             current_animation: None,
             animation_angle: orientation.angle(),
             orientation,
@@ -197,8 +201,8 @@ impl Robot {
 
     pub(super) fn render<'pipeline>(
         &'pipeline mut self,
-        queue: &Queue,
-        render_pass: &mut RenderPass<'pipeline>,
+        queue: &wgpu::Queue,
+        render_pass: &mut wgpu::RenderPass<'pipeline>,
         camera: &Camera,
         projection: &Projection,
         start_time: Instant,
@@ -209,7 +213,7 @@ impl Robot {
             }
         };
 
-        let position = glam::Mat4::from_rotation_translation(
+        let position = Mat4::from_rotation_translation(
             Quat::from_rotation_z(self.animation_angle),
             self.animation_position,
         );
@@ -236,7 +240,7 @@ impl Robot {
         &self,
         projection: &Projection,
         camera: &Camera,
-        queue: &Queue,
+        queue: &wgpu::Queue,
         position: Mat4,
     ) {
         let matrix = projection.matrix() * camera.matrix() * position;
@@ -244,7 +248,7 @@ impl Robot {
         queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
     }
 
-    fn update_time(&self, start_time: Instant, queue: &Queue) {
+    fn update_time(&self, start_time: Instant, queue: &wgpu::Queue) {
         let bytes = elapsed_as_vec(start_time);
         queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&bytes));
     }
@@ -253,20 +257,20 @@ impl Robot {
         device: &wgpu::Device,
         pipeline_layout: &wgpu::PipelineLayout,
         shader: &wgpu::ShaderModule,
-        vertex_buffers: &[wgpu::VertexBufferLayout; 1],
-        view_format: TextureFormat,
+        vertex_buffers: &[wgpu::VertexBufferLayout<'_>; 1],
+        view_format: wgpu::TextureFormat,
     ) -> wgpu::RenderPipeline {
         let vertex = wgpu::VertexState {
             module: shader,
             entry_point: "vs_main",
-            compilation_options: PipelineCompilationOptions::default(),
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
             buffers: vertex_buffers,
         };
 
         let fragment_state = wgpu::FragmentState {
             module: shader,
             entry_point: "fs_main",
-            compilation_options: PipelineCompilationOptions::default(),
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
             targets: &[Some(view_format.into())],
         };
 
@@ -291,20 +295,20 @@ impl Robot {
         device: &wgpu::Device,
         pipeline_layout: &wgpu::PipelineLayout,
         shader: &wgpu::ShaderModule,
-        vertex_buffers: &[wgpu::VertexBufferLayout; 1],
-        view_format: TextureFormat,
+        vertex_buffers: &[wgpu::VertexBufferLayout<'_>; 1],
+        view_format: wgpu::TextureFormat,
     ) -> wgpu::RenderPipeline {
         let vertex = wgpu::VertexState {
             module: shader,
             entry_point: "vs_main",
-            compilation_options: PipelineCompilationOptions::default(),
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
             buffers: vertex_buffers,
         };
 
         let fragment_state = wgpu::FragmentState {
             module: shader,
             entry_point: "fs_wire",
-            compilation_options: PipelineCompilationOptions::default(),
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
             targets: &[Some(wgpu::ColorTargetState {
                 format: view_format,
                 blend: Some(wgpu::BlendState {
@@ -338,9 +342,9 @@ impl Robot {
         })
     }
 
-    fn create_texture_view(device: &wgpu::Device, queue: &Queue) -> wgpu::TextureView {
+    fn create_texture_view(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::TextureView {
         // Create the texture
-        let size = 256u32;
+        let size = 256;
         let texels = Self::create_texels(size as usize);
         let texture_extent = wgpu::Extent3d {
             width: size,
@@ -474,34 +478,36 @@ impl Robot {
             current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
         }
 
-        self.current_animation = Some(match command {
+        self.current_animation = Some(match *command {
             Command::MoveForward => {
                 let segment = LineSegment::from(self.orientation);
 
                 // TODO make this a safe function
                 #[allow(clippy::cast_sign_loss)]
-                let index = (self.position.y * 10 + self.position.x + 55) as usize;
-                floor.tiles[index].line_pattern |= segment;
+                let start_index = (self.position.y * 10 + self.position.x + 55) as usize;
+                floor.tiles[start_index].line_pattern |= segment;
 
                 let offset = self.orientation.as_ivec3();
                 if offset.x != 0 && offset.y != 0 {
                     // TODO make this a safe function
                     #[allow(clippy::cast_sign_loss)]
-                    let index = (self.position.y * 10 + (self.position.x + offset.x) + 55) as usize;
-                    floor.tiles[index].line_pattern |= segment.get_x_corner().unwrap();
+                    let index0 =
+                        (self.position.y * 10 + (self.position.x + offset.x) + 55) as usize;
+                    floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
 
                     // TODO make this a safe function
                     #[allow(clippy::cast_sign_loss)]
-                    let index = ((self.position.y + offset.y) * 10 + self.position.x + 55) as usize;
-                    floor.tiles[index].line_pattern |= -segment.get_x_corner().unwrap();
+                    let index1 =
+                        ((self.position.y + offset.y) * 10 + self.position.x + 55) as usize;
+                    floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
                 }
 
                 self.position += offset;
 
                 // TODO make this a safe function
                 #[allow(clippy::cast_sign_loss)]
-                let index = (self.position.y * 10 + self.position.x + 55) as usize;
-                floor.tiles[index].line_pattern |= -segment;
+                let end_index = (self.position.y * 10 + self.position.x + 55) as usize;
+                floor.tiles[end_index].line_pattern |= -segment;
                 floor.tainted = true;
 
                 Animation::Move {
@@ -617,7 +623,8 @@ impl Animation {
 }
 
 // TODO W.I.P.
-#[allow(dead_code)]
+// their meaning is clear from the context
+#[allow(clippy::min_ident_chars)]
 #[derive(Clone, Copy, Default)]
 #[repr(u8)]
 pub(super) enum Orientation {

@@ -103,7 +103,7 @@ mod rust_py_module {
     #[pyfunction]
     fn rust_function(
         num: i32,
-        s: String,
+        str: String,
         python_person: PythonPerson,
         _vm: &VirtualMachine,
     ) -> PyResult<RustStruct> {
@@ -112,7 +112,7 @@ mod rust_py_module {
 num: {},
 string: {},
 python_person.name: {}",
-            num, s, python_person.name
+            num, str, python_person.name
         );
         Ok(RustStruct {
             numbers: NumVec(vec![1, 2, 3, 4]),
@@ -166,7 +166,7 @@ python_person.name: {}",
 
     impl ToPyObject for NumVec {
         fn to_pyobject(self, vm: &VirtualMachine) -> PyObjectRef {
-            let list = self.0.into_iter().map(|e| vm.new_pyobj(e)).collect();
+            let list = self.0.into_iter().map(|item| vm.new_pyobj(item)).collect();
             PyList::new_ref(list, vm.as_ref()).to_pyobject(vm)
         }
     }
@@ -195,8 +195,8 @@ python_person.name: {}",
         name: String,
     }
 
-    impl<'a> TryFromBorrowedObject<'a> for PythonPerson {
-        fn try_from_borrowed_object(vm: &VirtualMachine, obj: &'a PyObject) -> PyResult<Self> {
+    impl<'obj> TryFromBorrowedObject<'obj> for PythonPerson {
+        fn try_from_borrowed_object(vm: &VirtualMachine, obj: &'obj PyObject) -> PyResult<Self> {
             let name = obj.get_attr("name", vm)?.try_into_value::<String>(vm)?;
             Ok(PythonPerson { name })
         }

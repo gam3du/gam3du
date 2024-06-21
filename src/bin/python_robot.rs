@@ -1,8 +1,17 @@
-#![warn(clippy::all, clippy::pedantic)]
+// has false positives; enable every now and then to see whether there are actually missed opportunities
+#![allow(missing_copy_implementations)]
+// usually too noisy. Disable every now and then to see whether there are actually identifiers that need to be improved.
+#![allow(unused_crate_dependencies)]
 // TODO re-enable this later and review all occurrences
 #![allow(clippy::cast_precision_loss)]
 // TODO remove before release
 #![allow(clippy::missing_panics_doc)]
+#![allow(missing_docs)]
+#![allow(clippy::print_stdout)]
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::expect_used)]
+#![allow(clippy::indexing_slicing)]
+#![allow(clippy::panic)]
 
 // TODO enable hand-picked clippy lints from the `restriction` group
 
