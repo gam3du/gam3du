@@ -13,10 +13,11 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::indexing_slicing)]
 #![allow(clippy::panic)]
+#![allow(clippy::missing_errors_doc)]
 
-// TODO enable hand-picked clippy lints from the `restriction` group
-
+pub mod api;
 pub mod application;
+pub mod bindgen;
 pub mod framework;
 pub mod logging;
 pub mod python;

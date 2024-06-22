@@ -1,5 +1,4 @@
-from rust_py_module import move_forward, turn_left  # type: ignore FIXME the IDE should see the native API somehow
-import time
+from robot_api import move_forward, turn_left
 
 for x in range(100):
     move_forward()

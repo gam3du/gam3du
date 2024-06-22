@@ -1,0 +1,28 @@
+{
+  "name": "robot",
+  "caption": "A simple robot that can be moced across a 2D-plane and draw lines",
+  "description": "Once upon a time there was a lonely robot with the serial number `#C0D1E`. …",
+  "functions": [
+    {
+      "name": "move forward",
+      "caption": "Makes the robot move to the next tile in its current orientation",
+      "description": "Makes the robot move to the next tile in its current orientation",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "turn left",
+      "caption": "Turns the robot 45° in a counter-clockwise direction",
+      "description": "Turns the robot 45° in a counter-clockwise direction",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "turn right",
+      "caption": "Turns the robot 45° in a clockwise direction",
+      "description": "Turns the robot 45° in a clockwise direction",
+      "parameters": [],
+      "returns": null
+    }
+  ]
+}

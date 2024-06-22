@@ -13,8 +13,6 @@
 #![allow(clippy::indexing_slicing)]
 #![allow(clippy::panic)]
 
-// TODO enable hand-picked clippy lints from the `restriction` group
-
 use std::{sync::mpsc::channel, thread};
 
 use gam3du::framework;

@@ -2,8 +2,6 @@
 // TODO re-enable this later and review all occurrences
 #![allow(clippy::cast_precision_loss)]
 
-// TODO enable hand-picked clippy lints from the `restriction` group
-
 use std::{fs::read_to_string, path::Path, sync::mpsc::Sender};
 
 use log::{error, info};
@@ -28,7 +26,7 @@ pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Comman
         .init_stdlib()
         .init_hook(Box::new(|vm| {
             vm.add_native_module(
-                "rust_py_module".to_owned(),
+                "robot_api".to_owned(),
                 Box::new(rust_py_module::make_module),
             );
         }))

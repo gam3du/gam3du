@@ -13,8 +13,6 @@
 #![allow(clippy::indexing_slicing)]
 #![allow(clippy::panic)]
 
-// TODO enable hand-picked clippy lints from the `restriction` group
-
 use gam3du::{
     application::{self, event_subscriber::EventSubscriber},
     transform::TransformComponent,
