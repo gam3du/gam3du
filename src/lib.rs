@@ -23,6 +23,7 @@ pub mod logging;
 pub mod python;
 mod scene;
 pub mod transform;
+mod ecs;
 
 use std::sync::atomic::AtomicU16;
 
