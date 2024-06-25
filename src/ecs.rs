@@ -156,7 +156,7 @@ impl Component for PhysicsComponent {
 trait Component {
     fn entity_id(&self) -> EntityId;
 
-    // this would only make sense if every component is required to implement an update without neeing access to any other component
+    // this would only make sense if every component is required to implement an update without needing access to any other component
     // fn update(&mut self, state: &State);
 }
 
