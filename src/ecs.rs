@@ -74,11 +74,7 @@ struct Components {
     physics: ComponentCollection<PhysicsComponent>,
 }
 
-struct ComponentCollection<Item: Component>
-where
-    for<'iter> &'iter Self: IntoIterator<Item = &'iter Item>,
-    for<'iter> &'iter mut Self: IntoIterator<Item = &'iter mut Item>,
-{
+struct ComponentCollection<Item: Component> {
     components: HashMap<EntityId, Item>,
 }
 
@@ -107,7 +103,7 @@ impl<'iter, Item: Component> IntoIterator for &'iter ComponentCollection<Item> {
     }
 }
 
-/// permits using `&ComponentCollection` in a `for`-loop to iterate over `&Item`
+/// permits using `&mut ComponentCollection` in a `for`-loop to iterate over `&mut Item`
 impl<'iter, Item: Component> IntoIterator for &'iter mut ComponentCollection<Item> {
     type Item = &'iter mut Item;
 
