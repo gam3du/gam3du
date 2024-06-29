@@ -7,8 +7,11 @@ use std::{
 
 use bytemuck::{offset_of, Pod, Zeroable};
 use glam::{FloatExt, IVec3, Mat4, Quat, Vec2, Vec3, Vec4};
+use log::error;
 use std::{borrow::Cow, time::Instant};
 use wgpu::{self, util::DeviceExt};
+
+use crate::api::Identifier;
 
 use super::{
     camera::Camera,
@@ -478,8 +481,8 @@ impl Robot {
             current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
         }
 
-        self.current_animation = Some(match *command {
-            Command::MoveForward => {
+        self.current_animation = match command.name.0.as_str() {
+            "MoveForward" => {
                 let segment = LineSegment::from(self.orientation);
 
                 // TODO make this a safe function
@@ -510,32 +513,36 @@ impl Robot {
                 floor.tiles[end_index].line_pattern |= -segment;
                 floor.tainted = true;
 
-                Animation::Move {
+                Some(Animation::Move {
                     start: self.animation_position,
                     end: self.position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
                     start_time: Instant::now(),
                     duration: Duration::from_millis(1_000),
-                }
+                })
             }
-            Command::TurnLeft => {
+            "TurnLeft" => {
                 self.orientation += 1;
-                Animation::Rotate {
+                Some(Animation::Rotate {
                     start: self.animation_angle,
                     end: self.orientation.angle(),
                     start_time: Instant::now(),
                     duration: Duration::from_millis(1_000),
-                }
+                })
             }
-            Command::TurnRight => {
+            "TurnRight" => {
                 self.orientation -= 1;
-                Animation::Rotate {
+                Some(Animation::Rotate {
                     start: self.animation_angle,
                     end: self.orientation.angle(),
                     start_time: Instant::now(),
                     duration: Duration::from_millis(1_000),
-                }
+                })
             }
-        });
+            other => {
+                error!("Unknown Command: {other}");
+                None
+            }
+        };
     }
 }
 
@@ -555,10 +562,9 @@ fn vertex(position: Vec3, texture_coord: Vec2) -> Vertex {
     }
 }
 
-pub enum Command {
-    MoveForward,
-    TurnLeft,
-    TurnRight,
+#[derive(Debug)]
+pub struct Command {
+    pub name: Identifier,
 }
 
 enum Animation {

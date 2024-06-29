@@ -450,13 +450,10 @@ impl ApplicationHandler for Application {
                     }
                 }
 
-                if matches!(
-                    self.current_command,
-                    Some(Command::MoveForward | Command::TurnLeft | Command::TurnRight)
-                ) {
+                if let Some(current_command) = self.current_command.take() {
                     if let Some(scene) = self.example.as_mut() {
                         if scene.is_idle() {
-                            scene.process_command(&self.current_command.take().unwrap());
+                            scene.process_command(&current_command);
                         }
                     }
                 }

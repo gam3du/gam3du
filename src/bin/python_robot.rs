@@ -16,6 +16,7 @@
 use std::sync::mpsc::Sender;
 use std::{sync::mpsc::channel, thread};
 
+use gam3du::api::{Api, Identifier};
 use gam3du::logging::init_logger;
 use gam3du::python::runner;
 use gam3du::{framework, Command};
@@ -26,41 +27,55 @@ fn main() {
 
     init_logger();
 
+    let api_json = std::fs::read_to_string("apis/robot.api.json").unwrap();
+    let api: Api = serde_json::from_str(&api_json).unwrap();
+
     let (command_sender, command_receiver) = channel();
 
-    let source_path = "python/test.py";
-    let python_sender = command_sender.clone();
-    let python_tread = thread::spawn(move || runner(&source_path, python_sender));
-    let webserver_sender = command_sender.clone();
-    let webserver_tread = thread::spawn(move || http_server(&webserver_sender));
+    let python_thread = {
+        let source_path = "python/test.py";
+        let command_sender = command_sender.clone();
+        let api = api.clone();
+        thread::spawn(move || runner(&source_path, command_sender, &api))
+    };
+
+    let webserver_tread = {
+        let command_sender = command_sender.clone();
+        let api = api.clone();
+        thread::spawn(move || http_server(&command_sender, &api))
+    };
 
     pollster::block_on(framework::start("demo scene".into(), command_receiver));
     // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
 
-    python_tread.join().unwrap();
+    python_thread.join().unwrap();
     webserver_tread.join().unwrap();
 }
 
-fn http_server(command_sender: &Sender<Command>) {
+fn http_server(command_sender: &Sender<Command>, api: &Api) {
     let server = Server::http("0.0.0.0:8000").unwrap();
 
     for request in server.incoming_requests() {
-        match request.url() {
-            "/TurnLeft" => {
-                command_sender.send(Command::TurnLeft).unwrap();
-                request.respond(Response::empty(200)).unwrap();
-            }
-            "/TurnRight" => {
-                command_sender.send(Command::TurnRight).unwrap();
-                request.respond(Response::empty(200)).unwrap();
-            }
-            "/MoveForward" => {
-                command_sender.send(Command::MoveForward).unwrap();
-                request.respond(Response::empty(200)).unwrap();
-            }
-            _ => {
-                request.respond(Response::empty(404)).unwrap();
-            }
-        }
+        let url = request.url();
+        let Some(url) = url.strip_prefix(&format!("/{}/", api.name)) else {
+            request
+                .respond(Response::from_string("unknown api").with_status_code(404))
+                .unwrap();
+            continue;
+        };
+
+        let command = Command {
+            name: Identifier(url.to_owned()),
+        };
+
+        let response = Response::from_string(format!("{command:?}"));
+
+        command_sender
+            .send(Command {
+                name: Identifier(url.to_owned()),
+            })
+            .unwrap();
+
+        request.respond(response).unwrap();
     }
 }

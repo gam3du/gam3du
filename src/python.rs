@@ -10,10 +10,10 @@ use rustpython_vm::{
     VirtualMachine,
 };
 
-use crate::scene::Command;
+use crate::{api::Api, scene::Command};
 
 #[allow(clippy::missing_panics_doc)]
-pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Command>) {
+pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Command>, api: &Api) {
     let source = read_to_string(source_path).unwrap();
     let path_string = source_path.as_ref().display().to_string();
 
@@ -29,6 +29,15 @@ pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Comman
                 "robot_api".to_owned(),
                 Box::new(rust_py_module::make_module),
             );
+
+            // vm.add_native_module(
+            //     "robot_api2".to_owned(),
+            //     Box::new(|vm: &VirtualMachine| {
+            //         let module = PyModule::new();
+            //         // ???
+            //         module.into_ref(&vm.ctx)
+            //     }),
+            // );
         }))
         .interpreter();
 
@@ -91,7 +100,7 @@ mod rust_py_module {
         time::Duration,
     };
 
-    use crate::{scene::Command, ROTATION};
+    use crate::{api::Identifier, scene::Command, ROTATION};
 
     use super::{pyclass, PyObject, PyPayload, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython::vm::{builtins::PyList, convert::ToPyObject, PyObjectRef};
@@ -124,7 +133,9 @@ python_person.name: {}",
             .unwrap()
             .as_mut()
             .unwrap()
-            .send(Command::MoveForward)
+            .send(Command {
+                name: Identifier("MoveForward".to_owned()),
+            })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));
     }
@@ -136,7 +147,9 @@ python_person.name: {}",
             .unwrap()
             .as_mut()
             .unwrap()
-            .send(Command::TurnLeft)
+            .send(Command {
+                name: Identifier("TurnLeft".to_owned()),
+            })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));
     }
@@ -148,7 +161,9 @@ python_person.name: {}",
             .unwrap()
             .as_mut()
             .unwrap()
-            .send(Command::TurnRight)
+            .send(Command {
+                name: Identifier("TurnRight".to_owned()),
+            })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));
     }

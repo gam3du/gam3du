@@ -1,6 +1,6 @@
 //! Contains all the building blocks to specify an API and perform reflection thereon.
 
-use std::ops::Range;
+use std::{fmt::Display, ops::Range};
 
 use serde::{Deserialize, Serialize};
 
@@ -19,6 +19,12 @@ pub struct RichText(pub String);
 /// as a space is rarely accepted within identifiers.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Identifier(pub String);
+
+impl Display for Identifier {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(&self.0, formatter)
+    }
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Api {
