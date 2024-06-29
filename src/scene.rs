@@ -9,7 +9,7 @@ mod camera;
 mod floor;
 mod projection;
 mod robot;
-pub(crate) use robot::Command;
+pub use robot::Command;
 
 const CAMERA_POS: Vec3 = Vec3::new(-2.0, -3.0, 2.0);
 

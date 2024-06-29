@@ -18,13 +18,14 @@
 pub mod api;
 pub mod application;
 pub mod bindgen;
+mod ecs;
 pub mod framework;
 pub mod logging;
 pub mod python;
 mod scene;
 pub mod transform;
-mod ecs;
 
+pub use scene::Command;
 use std::sync::atomic::AtomicU16;
 
 pub(crate) static ROTATION: AtomicU16 = AtomicU16::new(0);
