@@ -1,0 +1,88 @@
+<mxfile host="65bd71144e">
+    <diagram id="2KSqYS7HcdBWXXMJBx4O" name="Page-1">
+        <mxGraphModel dx="941" dy="1138" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="4" style="edgeStyle=none;html=1;" edge="1" parent="1" source="2" target="3">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="Student Script" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="80" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" style="edgeStyle=none;html=1;" edge="1" parent="1" source="3" target="5">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="Teacher Script" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="160" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" style="edgeStyle=none;html=1;" edge="1" parent="1" source="5" target="7">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Game Script" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="240" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="7" target="9">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="Engine" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="320" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="Platform" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="400" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="Engine" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="320" width="480" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="API" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#000000;strokeColor=#BD7000;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="300" width="480" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="Python" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="280" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="Lua" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" vertex="1" parent="1">
+                    <mxGeometry x="340" y="280" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="C-FFI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6d8764;fontColor=#ffffff;strokeColor=#3A5431;" vertex="1" parent="1">
+                    <mxGeometry x="400" y="280" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="Webservice" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#76608a;fontColor=#ffffff;strokeColor=#432D57;" vertex="1" parent="1">
+                    <mxGeometry x="470" y="280" width="80" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="WASM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;fontColor=#ffffff;strokeColor=#6D1F00;" vertex="1" parent="1">
+                    <mxGeometry x="550" y="280" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="Java" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" vertex="1" parent="1">
+                    <mxGeometry x="620" y="280" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" value="JavaScript" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0050ef;fontColor=#ffffff;strokeColor=#001DBC;" vertex="1" parent="1">
+                    <mxGeometry x="690" y="280" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="wgpu" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6a00ff;fontColor=#ffffff;strokeColor=#3700CC;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="360" width="160" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="cpal" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6a00ff;fontColor=#ffffff;strokeColor=#3700CC;" vertex="1" parent="1">
+                    <mxGeometry x="440" y="360" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="winit" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6a00ff;fontColor=#ffffff;strokeColor=#3700CC;" vertex="1" parent="1">
+                    <mxGeometry x="580" y="360" width="180" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="23" target="13">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="Python&lt;br&gt;Script" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="270" y="160" width="70" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="24" target="14">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="Lua&lt;br&gt;Script" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="350" y="160" width="70" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="Challenges:&lt;br&gt;&lt;br&gt;- What's part of the engine and what shall be in the Scripting domain?&lt;br&gt;- What game modes shall be supported?&lt;br&gt;- What about UI-Elements?&lt;br&gt;- Which functionality shall be borrowed from existing crates and what will be written by ourselves (e.g. Bevy ECS)&lt;br&gt;- How to export the API of a script to another script without re-compiling the engine&lt;br&gt;- Shall we rely on system's Python/Lua-interpreters or embed our own?&lt;br&gt;- Will the web-version have the same feature-set? (Java in the web? Javascript on the Desktop?)&lt;br&gt;- How to deal with API changes that might break user scripts?" style="text;strokeColor=none;align=left;fillColor=none;html=1;verticalAlign=top;whiteSpace=wrap;rounded=0;horizontal=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="500" width="720" height="150" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
