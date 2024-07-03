@@ -4,6 +4,9 @@
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
+                <mxCell id="32" value="" style="whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;fillStyle=auto;" vertex="1" parent="1">
+                    <mxGeometry x="60" y="300" width="160" height="160" as="geometry"/>
+                </mxCell>
                 <mxCell id="4" style="edgeStyle=none;html=1;" edge="1" parent="1" source="2" target="3">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
@@ -16,7 +19,10 @@
                 <mxCell id="3" value="Teacher Script" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
                     <mxGeometry x="80" y="160" width="120" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="8" style="edgeStyle=none;html=1;" edge="1" parent="1" source="5" target="7">
+                <mxCell id="8" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="5" target="28">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" style="edgeStyle=none;html=1;entryX=0.75;entryY=0;entryDx=0;entryDy=0;exitX=0.75;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="5" target="7">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="5" value="Game Script" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
@@ -26,10 +32,10 @@
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="7" value="Engine" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="80" y="320" width="120" height="40" as="geometry"/>
+                    <mxGeometry x="80" y="400" width="120" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="9" value="Platform" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="80" y="400" width="120" height="40" as="geometry"/>
+                    <mxGeometry x="80" y="480" width="120" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="11" value="Engine" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="280" y="320" width="480" height="40" as="geometry"/>
@@ -79,8 +85,14 @@
                 <mxCell id="24" value="Lua&lt;br&gt;Script" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="350" y="160" width="70" height="40" as="geometry"/>
                 </mxCell>
-                <mxCell id="27" value="Challenges:&lt;br&gt;&lt;br&gt;- What's part of the engine and what shall be in the Scripting domain?&lt;br&gt;- What game modes shall be supported?&lt;br&gt;- What about UI-Elements?&lt;br&gt;- Which functionality shall be borrowed from existing crates and what will be written by ourselves (e.g. Bevy ECS)&lt;br&gt;- How to export the API of a script to another script without re-compiling the engine&lt;br&gt;- Shall we rely on system's Python/Lua-interpreters or embed our own?&lt;br&gt;- Will the web-version have the same feature-set? (Java in the web? Javascript on the Desktop?)&lt;br&gt;- How to deal with API changes that might break user scripts?" style="text;strokeColor=none;align=left;fillColor=none;html=1;verticalAlign=top;whiteSpace=wrap;rounded=0;horizontal=1;" vertex="1" parent="1">
-                    <mxGeometry x="80" y="500" width="720" height="150" as="geometry"/>
+                <mxCell id="27" value="Challenges:&lt;br&gt;&lt;br&gt;- What's part of the engine and what shall be in the scripting domain?&lt;br&gt;- What game modes shall be supported?&lt;br&gt;- What about UI-Elements?&lt;br&gt;- Which functionality shall be borrowed from existing crates and what will be written by ourselves (e.g. Bevy ECS)&lt;br&gt;- How to export the API of a script to another script without re-compiling the engine&lt;br&gt;- Shall we rely on system's Python/Lua-interpreters or embed our own?&lt;br&gt;- Will the web-version have the same feature-set? (Java in the web? Javascript on the Desktop?)&lt;br&gt;- How to deal with API changes that might break user scripts?" style="text;strokeColor=none;align=left;fillColor=none;html=1;verticalAlign=top;whiteSpace=wrap;rounded=0;horizontal=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="600" width="720" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" style="edgeStyle=none;html=1;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="28" target="7">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="Utilities" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="320" width="60" height="40" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
