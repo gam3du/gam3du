@@ -11,6 +11,8 @@ mod projection;
 mod robot;
 pub use robot::Command;
 
+use crate::api::Identifier;
+
 const CAMERA_POS: Vec3 = Vec3::new(-2.0, -3.0, 2.0);
 
 pub(crate) struct Scene {
@@ -192,7 +194,7 @@ impl Scene {
         self.robot.is_idle()
     }
 
-    pub(crate) fn process_command(&mut self, command: &Command) {
+    pub(crate) fn process_command(&mut self, command: &Identifier) {
         self.robot.process_command(command, &mut self.floor);
     }
 }

@@ -10,10 +10,10 @@ use rustpython_vm::{
     VirtualMachine,
 };
 
-use crate::{api::Api, scene::Command};
+use crate::{api::Api, event::EngineEvent, scene::Command};
 
 #[allow(clippy::missing_panics_doc)]
-pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Command>, api: &Api) {
+pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<EngineEvent>, api: &Api) {
     let source = read_to_string(source_path).unwrap();
     let path_string = source_path.as_ref().display().to_string();
 
@@ -100,12 +100,12 @@ mod rust_py_module {
         time::Duration,
     };
 
-    use crate::{api::Identifier, scene::Command, ROTATION};
+    use crate::{api::Identifier, event::EngineEvent, scene::Command, ROTATION};
 
     use super::{pyclass, PyObject, PyPayload, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython::vm::{builtins::PyList, convert::ToPyObject, PyObjectRef};
 
-    pub(super) static COMMAND_QUEUE: Mutex<Option<Sender<Command>>> = Mutex::new(None);
+    pub(super) static COMMAND_QUEUE: Mutex<Option<Sender<EngineEvent>>> = Mutex::new(None);
 
     #[pyfunction]
     fn rust_function(
@@ -133,8 +133,9 @@ python_person.name: {}",
             .unwrap()
             .as_mut()
             .unwrap()
-            .send(Command {
-                name: Identifier("MoveForward".to_owned()),
+            .send(EngineEvent::ApiCall {
+                api: Identifier("robot".into()),
+                command: Identifier("MoveForward".into()),
             })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));
@@ -147,8 +148,9 @@ python_person.name: {}",
             .unwrap()
             .as_mut()
             .unwrap()
-            .send(Command {
-                name: Identifier("TurnLeft".to_owned()),
+            .send(EngineEvent::ApiCall {
+                api: Identifier("robot".into()),
+                command: Identifier("TurnLeft".into()),
             })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));
@@ -161,8 +163,9 @@ python_person.name: {}",
             .unwrap()
             .as_mut()
             .unwrap()
-            .send(Command {
-                name: Identifier("TurnRight".to_owned()),
+            .send(EngineEvent::ApiCall {
+                api: Identifier("robot".into()),
+                command: Identifier("TurnRight".into()),
             })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));

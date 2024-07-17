@@ -14,45 +14,53 @@
 #![allow(clippy::panic)]
 
 use std::sync::mpsc::Sender;
-use std::{sync::mpsc::channel, thread};
+use std::thread;
 
 use gam3du::api::{Api, Identifier};
+use gam3du::event::{EngineEvent, EventRouter};
+use gam3du::framework::Application;
 use gam3du::logging::init_logger;
 use gam3du::python::runner;
 use gam3du::{framework, Command};
 use tiny_http::{Response, Server};
 
 fn main() {
-    //ecs_test();
-
     init_logger();
 
     let api_json = std::fs::read_to_string("apis/robot.api.json").unwrap();
     let api: Api = serde_json::from_str(&api_json).unwrap();
 
-    let (command_sender, command_receiver) = channel();
+    let mut event_router = EventRouter::default();
+    let event_sender = event_router.clone_sender();
+
+    // let (command_sender, command_receiver) = channel();
 
     let python_thread = {
         let source_path = "python/test.py";
-        let command_sender = command_sender.clone();
+        let event_sender = event_sender.clone();
         let api = api.clone();
-        thread::spawn(move || runner(&source_path, command_sender, &api))
+        thread::spawn(move || runner(&source_path, event_sender, &api))
     };
 
     let webserver_tread = {
-        let command_sender = command_sender.clone();
+        let event_sender = event_sender.clone();
         let api = api.clone();
-        thread::spawn(move || http_server(&command_sender, &api))
+        thread::spawn(move || http_server(&event_sender, &api))
     };
 
-    pollster::block_on(framework::start("demo scene".into(), command_receiver));
+    let application = pollster::block_on(Application::new("demo scene".into(), &mut event_router));
+    let event_thread = thread::spawn(move || event_router.run());
+
+    pollster::block_on(framework::start(application));
     // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
 
     python_thread.join().unwrap();
     webserver_tread.join().unwrap();
+    // FIXME Event thread doesn't exit, yet
+    event_thread.join().unwrap();
 }
 
-fn http_server(command_sender: &Sender<Command>, api: &Api) {
+fn http_server(command_sender: &Sender<EngineEvent>, api: &Api) {
     let server = Server::http("0.0.0.0:8000").unwrap();
 
     for request in server.incoming_requests() {
@@ -71,8 +79,9 @@ fn http_server(command_sender: &Sender<Command>, api: &Api) {
         let response = Response::from_string(format!("{command:?}"));
 
         command_sender
-            .send(Command {
-                name: Identifier(url.to_owned()),
+            .send(EngineEvent::ApiCall {
+                api: Identifier("robot".into()),
+                command: Identifier(url.to_owned()),
             })
             .unwrap();
 

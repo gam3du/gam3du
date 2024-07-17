@@ -1,6 +1,6 @@
 use std::{
     sync::{
-        mpsc::{Receiver, TryRecvError},
+        mpsc::{channel, Receiver, Sender, TryRecvError},
         Arc,
     },
     time::{Duration, Instant},
@@ -17,7 +17,10 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::scene::{Command, Scene};
+use crate::{
+    event::{EngineEvent, EventRouter},
+    scene::{Command, Scene},
+};
 
 /// Wrapper type which manages the surface and surface configuration.
 ///
@@ -211,8 +214,8 @@ impl ExampleContext {
     }
 }
 
-struct Application {
-    example: Option<Scene>,
+pub struct Application {
+    scene: Option<Scene>,
     surface: SurfaceWrapper,
     context: ExampleContext,
     // window: Arc<Window>,
@@ -220,17 +223,30 @@ struct Application {
     title: String,
     frame_counter: u32,
     frame_time: Instant,
-    receiver: Receiver<Command>,
-    current_command: Option<Command>,
+    receiver: Receiver<EngineEvent>,
+    current_command: Option<EngineEvent>,
+    event_sink: Sender<EngineEvent>,
 }
 
 impl Application {
-    async fn new(title: String, receiver: Receiver<Command>) -> Self {
+    pub async fn new(title: String, event_router: &mut EventRouter) -> Self {
         let mut surface = SurfaceWrapper::new();
         let context = ExampleContext::init_async(&mut surface).await;
+        let event_sender = event_router.clone_sender();
+
+        let (sender, receiver) = channel();
+
+        event_router.add_handler(Box::new(move |event| {
+            if matches!(event, EngineEvent::ApiCall { ref api, ref command }) {
+                sender.send(event);
+                None
+            } else {
+                Some(event)
+            }
+        }));
 
         Self {
-            example: None,
+            scene: None,
             surface,
             context,
             window: None,
@@ -239,6 +255,7 @@ impl Application {
             frame_time: Instant::now(),
             receiver,
             current_command: None,
+            event_sink: event_sender,
         }
     }
 }
@@ -255,8 +272,8 @@ impl ApplicationHandler for Application {
         self.window = Some(window);
 
         // If we haven't created the example yet, do so now.
-        if self.example.is_none() {
-            self.example.replace(Scene::init(
+        if self.scene.is_none() {
+            self.scene.replace(Scene::init(
                 self.surface.config(),
                 &self.context.adapter,
                 &self.context.device,
@@ -265,20 +282,24 @@ impl ApplicationHandler for Application {
         }
     }
 
-    // TODO maybe the trace output can be moved elsewhere?
-    #[allow(clippy::too_many_lines)]
+    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: ()) {}
+
+    #[allow(
+        clippy::too_many_lines,
+        reason = "TODO maybe the trace output can be moved elsewhere?"
+    )]
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,
         _window_id: WindowId,
-        window_event: WindowEvent,
+        event: WindowEvent,
     ) {
-        match window_event {
-            WindowEvent::Resized(size) => {
+        match &event {
+            &WindowEvent::Resized(size) => {
                 trace!("WindowEvent::Resized({size:?})");
 
                 self.surface.resize(&self.context, size);
-                self.example.as_mut().unwrap().resize(
+                self.scene.as_mut().unwrap().resize(
                     self.surface.config(),
                     &self.context.device,
                     &self.context.queue,
@@ -287,30 +308,9 @@ impl ApplicationHandler for Application {
                 self.window.as_ref().unwrap().request_redraw();
             }
 
-            WindowEvent::ActivationTokenDone { serial, token } => {
-                trace!("WindowEvent::ActivationTokenDone({serial:?}, {token:?})");
-            }
-            WindowEvent::Moved(position) => {
-                trace!("WindowEvent::Moved({position:?})");
-            }
             WindowEvent::CloseRequested => {
                 trace!("WindowEvent::CloseRequested()");
                 event_loop.exit();
-            }
-            WindowEvent::Destroyed => {
-                trace!("WindowEvent::Destroyed()");
-            }
-            WindowEvent::DroppedFile(path) => {
-                trace!("WindowEvent::DroppedFile({path})", path = path.display());
-            }
-            WindowEvent::HoveredFile(path) => {
-                trace!("WindowEvent::HoveredFile({path})", path = path.display());
-            }
-            WindowEvent::HoveredFileCancelled => {
-                trace!("WindowEvent::HoveredFileCancelled()");
-            }
-            WindowEvent::Focused(focused) => {
-                trace!("WindowEvent::Focused({focused})");
             }
 
             WindowEvent::KeyboardInput {
@@ -343,9 +343,6 @@ impl ApplicationHandler for Application {
                     }
                     Key::Character(key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Character({key:?})");
-                        if key == "r" {
-                            println!("{:#?}", self.context.instance.generate_report());
-                        }
                     }
                     Key::Unidentified(key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Unidentified({key:?})");
@@ -354,91 +351,6 @@ impl ApplicationHandler for Application {
                         trace!("WindowEvent::KeyboardInput::logical_key::Dead({key:?})");
                     }
                 }
-            }
-            WindowEvent::ModifiersChanged(modifiers) => {
-                trace!("WindowEvent::ModifiersChanged({modifiers:?})");
-            }
-            WindowEvent::Ime(ime) => {
-                trace!("WindowEvent::Ime({ime:?})");
-            }
-            WindowEvent::CursorMoved {
-                device_id,
-                position,
-            } => {
-                trace!("WindowEvent::CursorMoved({device_id:?}, {position:?})");
-            }
-            WindowEvent::CursorEntered { device_id } => {
-                trace!("WindowEvent::CursorEntered({device_id:?})");
-            }
-            WindowEvent::CursorLeft { device_id } => {
-                trace!("WindowEvent::CursorLeft({device_id:?})");
-            }
-            WindowEvent::MouseWheel {
-                device_id,
-                delta,
-                phase,
-            } => {
-                trace!("WindowEvent::MouseWheel({device_id:?}, {delta:?}, {phase:?})");
-            }
-            WindowEvent::MouseInput {
-                device_id,
-                state,
-                button,
-            } => {
-                trace!("WindowEvent::MouseInput({device_id:?}, {state:?}, {button:?})");
-            }
-            WindowEvent::PinchGesture {
-                device_id,
-                delta,
-                phase,
-            } => {
-                trace!("WindowEvent::PinchGesture({device_id:?}, {delta:?}, {phase:?})");
-            }
-            WindowEvent::PanGesture {
-                device_id,
-                delta,
-                phase,
-            } => {
-                trace!("WindowEvent::PanGesture({device_id:?}, {delta:?}, {phase:?})");
-            }
-            WindowEvent::DoubleTapGesture { device_id } => {
-                trace!("WindowEvent::DoubleTapGesture({device_id:?})");
-            }
-            WindowEvent::RotationGesture {
-                device_id,
-                delta,
-                phase,
-            } => {
-                trace!("WindowEvent::RotationGesture({device_id:?}, {delta}, {phase:?})");
-            }
-            WindowEvent::TouchpadPressure {
-                device_id,
-                pressure,
-                stage,
-            } => {
-                trace!("WindowEvent::TouchpadPressure({device_id:?}, {pressure}, {stage})");
-            }
-            WindowEvent::AxisMotion {
-                device_id,
-                axis,
-                value,
-            } => {
-                trace!("WindowEvent::AxisMotion({device_id:?}, {axis}, {value})");
-            }
-            WindowEvent::Touch(touch) => {
-                trace!("WindowEvent::Touch({touch:?})");
-            }
-            WindowEvent::ScaleFactorChanged {
-                scale_factor,
-                inner_size_writer,
-            } => {
-                trace!("WindowEvent::ScaleFactorChanged({scale_factor}, {inner_size_writer:?})");
-            }
-            WindowEvent::ThemeChanged(theme) => {
-                trace!("WindowEvent::ThemeChanged({theme:?})");
-            }
-            WindowEvent::Occluded(occluded) => {
-                trace!("WindowEvent::Occluded({occluded})");
             }
             WindowEvent::RedrawRequested => {
                 if self.current_command.is_none() {
@@ -450,10 +362,11 @@ impl ApplicationHandler for Application {
                     }
                 }
 
-                if let Some(current_command) = self.current_command.take() {
-                    if let Some(scene) = self.example.as_mut() {
+                if let Some(EngineEvent::ApiCall { api, ref command }) = self.current_command.take()
+                {
+                    if let Some(scene) = self.scene.as_mut() {
                         if scene.is_idle() {
-                            scene.process_command(&current_command);
+                            scene.process_command(command);
                         }
                     }
                 }
@@ -462,7 +375,7 @@ impl ApplicationHandler for Application {
                 // If this happens, just drop the requested redraw on the floor.
                 //
                 // See https://github.com/rust-windowing/winit/issues/3235 for some discussion
-                if self.example.is_none() {
+                if self.scene.is_none() {
                     return;
                 }
 
@@ -472,7 +385,7 @@ impl ApplicationHandler for Application {
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
-                self.example.as_mut().unwrap().render(
+                self.scene.as_mut().unwrap().render(
                     &texture_view,
                     &self.context.device,
                     &self.context.queue,
@@ -493,7 +406,10 @@ impl ApplicationHandler for Application {
 
                 self.window.as_ref().unwrap().request_redraw();
             }
+            _ => {}
         }
+
+        self.event_sink.send(EngineEvent::Window { event });
     }
 
     fn device_event(
@@ -541,19 +457,14 @@ impl ApplicationHandler for Application {
     }
 }
 
-pub async fn start(title: String, receiver: Receiver<Command>) {
+pub async fn start(mut app: Application) {
     let event_loop = EventLoop::new().unwrap();
 
     // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
     // dispatched any events. This is ideal for games and similar applications.
     event_loop.set_control_flow(ControlFlow::Poll);
 
-    // ControlFlow::Wait pauses the event loop if no events are available to process.
-    // This is ideal for non-game applications that only update in response to user
-    // input, and uses significantly less power/CPU time than ControlFlow::Poll.
-    // event_loop.set_control_flow(ControlFlow::Wait);
-
-    let app = Application::new(title, receiver);
+    //let app = Application::new(title, receiver, event_sender);
     log::info!("Entering event loop...");
-    event_loop.run_app(&mut app.await).unwrap();
+    event_loop.run_app(&mut app).unwrap();
 }

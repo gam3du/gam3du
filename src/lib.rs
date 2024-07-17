@@ -19,6 +19,7 @@ pub mod api;
 pub mod application;
 pub mod bindgen;
 mod ecs;
+pub mod event;
 pub mod framework;
 pub mod logging;
 pub mod python;

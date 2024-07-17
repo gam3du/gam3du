@@ -476,12 +476,12 @@ impl Robot {
         self.current_animation.is_none()
     }
 
-    pub(super) fn process_command(&mut self, command: &Command, floor: &mut Floor) {
+    pub(super) fn process_command(&mut self, command: &Identifier, floor: &mut Floor) {
         if let Some(current_animation) = self.current_animation.take() {
             current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
         }
 
-        self.current_animation = match command.name.0.as_str() {
+        self.current_animation = match command.0.as_str() {
             "MoveForward" => {
                 let segment = LineSegment::from(self.orientation);
 
