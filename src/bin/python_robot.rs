@@ -5,6 +5,7 @@
 // TODO re-enable this later and review all occurrences
 #![allow(clippy::cast_precision_loss)]
 // TODO remove before release
+#![allow(clippy::allow_attributes_without_reason)]
 #![allow(clippy::missing_panics_doc)]
 #![allow(missing_docs)]
 #![allow(clippy::print_stdout)]
@@ -18,10 +19,10 @@ use std::thread;
 
 use gam3du::api::{Api, Identifier};
 use gam3du::event::{EngineEvent, EventRouter};
+use gam3du::framework;
 use gam3du::framework::Application;
 use gam3du::logging::init_logger;
 use gam3du::python::runner;
-use gam3du::{framework, Command};
 use tiny_http::{Response, Server};
 
 fn main() {
@@ -72,9 +73,7 @@ fn http_server(command_sender: &Sender<EngineEvent>, api: &Api) {
             continue;
         };
 
-        let command = Command {
-            name: Identifier(url.to_owned()),
-        };
+        let command = Identifier(url.to_owned());
 
         let response = Response::from_string(format!("{command:?}"));
 

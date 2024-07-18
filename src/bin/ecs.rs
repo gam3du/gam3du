@@ -5,6 +5,7 @@
 // TODO re-enable this later and review all occurrences
 #![allow(clippy::cast_precision_loss)]
 // TODO remove before release
+#![allow(clippy::allow_attributes_without_reason)]
 #![allow(clippy::missing_panics_doc)]
 #![allow(missing_docs)]
 #![allow(clippy::print_stdout)]
@@ -13,30 +14,29 @@
 #![allow(clippy::indexing_slicing)]
 #![allow(clippy::panic)]
 
-use gam3du::{
-    application::{self, event_subscriber::EventSubscriber},
-    transform::TransformComponent,
+use gam3du::application::ecs::{
+    event_subscriber::EventSubscriber, state, transform::TransformComponent, Application,
 };
 use glam::Vec3;
 
 fn main() {
     println!("Hello, world!");
 
-    let mut app = application::Application::default();
+    let mut app = Application::default();
 
     {
         let state_arc = app.get_state_arc();
 
         let mut state = state_arc.write().unwrap();
 
-        state.create_entity("Test".to_string());
+        state.create_entity("Test".to_owned());
 
         let entity = state.get_entity("Test").unwrap();
 
         entity.add_component(TransformComponent::default());
 
         let mut components = entity.get_components::<TransformComponent>();
-        let component = components.get_mut(0).unwrap();
+        let component = &mut *components[0];
 
         component.position = Vec3::new(1.0, 2.0, 3.0);
 
@@ -46,10 +46,10 @@ fn main() {
     app.start();
 }
 
-struct TestSubscriber {}
+struct TestSubscriber;
 
 impl EventSubscriber for TestSubscriber {
-    fn update(&mut self, state: &mut application::state::State) {
+    fn update(&mut self, state: &mut state::State) {
         println!("delta time: {}", state.delta_tick_time);
     }
 }

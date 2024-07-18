@@ -1,3 +1,4 @@
+#![allow(clippy::allow_attributes_without_reason)]
 #![allow(unused_crate_dependencies)]
 #![allow(missing_docs)]
 #![allow(clippy::print_stdout)]

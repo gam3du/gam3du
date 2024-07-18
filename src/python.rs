@@ -10,7 +10,7 @@ use rustpython_vm::{
     VirtualMachine,
 };
 
-use crate::{api::Api, event::EngineEvent, scene::Command};
+use crate::{api::Api, event::EngineEvent};
 
 #[allow(clippy::missing_panics_doc)]
 pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<EngineEvent>, api: &Api) {
@@ -100,7 +100,7 @@ mod rust_py_module {
         time::Duration,
     };
 
-    use crate::{api::Identifier, event::EngineEvent, scene::Command, ROTATION};
+    use crate::{api::Identifier, event::EngineEvent, ROTATION};
 
     use super::{pyclass, PyObject, PyPayload, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython::vm::{builtins::PyList, convert::ToPyObject, PyObjectRef};

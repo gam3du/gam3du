@@ -1,6 +1,39 @@
 // TODO remove this once the design finalizes
 #![allow(dead_code)]
 
+// This is the suggested ecs design of @NextLegacy
+
+pub mod component;
+pub mod entity;
+pub mod event_subscriber;
+mod runtime;
+pub mod state;
+pub mod transform;
+
+use std::sync::{Arc, RwLock};
+
+#[derive(Default)]
+pub struct Application {
+    pub state: Arc<RwLock<state::State>>,
+
+    application_runtime: runtime::ApplicationRuntime,
+}
+
+impl Application {
+    pub fn start(&mut self) {
+        let runtime = &mut self.application_runtime;
+
+        runtime.start(&self.state);
+    }
+
+    #[must_use]
+    pub fn get_state_arc(&self) -> Arc<RwLock<state::State>> {
+        Arc::clone(&self.state)
+    }
+}
+
+// This is the suggested ecs design of @kawogi
+
 use std::{
     collections::{hash_map, HashMap},
     num::NonZeroU64,

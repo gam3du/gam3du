@@ -8,7 +8,10 @@ use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
 use super::{
-    camera::Camera, elapsed_as_vec, projection::Projection, robot::Orientation, DepthTexture,
+    camera::Camera,
+    projection::Projection,
+    scene::{elapsed_as_vec, DepthTexture},
+    Orientation,
 };
 
 pub(super) struct Floor {
@@ -73,7 +76,7 @@ impl Floor {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
-                "../../shaders/floor.wgsl"
+                "../../../shaders/floor.wgsl"
             ))),
         });
 

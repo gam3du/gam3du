@@ -17,10 +17,7 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::{
-    event::{EngineEvent, EventRouter},
-    scene::{Command, Scene},
-};
+use crate::{application::robot::scene::Scene, event::{EngineEvent, EventRouter}};
 
 /// Wrapper type which manages the surface and surface configuration.
 ///
@@ -271,7 +268,7 @@ impl ApplicationHandler for Application {
 
         self.window = Some(window);
 
-        // If we haven't created the example yet, do so now.
+        // First-time init of the scene
         if self.scene.is_none() {
             self.scene.replace(Scene::init(
                 self.surface.config(),

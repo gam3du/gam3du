@@ -1,17 +1,9 @@
-use camera::Camera;
-use floor::Floor;
 use glam::Vec3;
-use projection::Projection;
-use robot::Robot;
 use std::time::Instant;
 
-mod camera;
-mod floor;
-mod projection;
-mod robot;
-pub use robot::Command;
-
 use crate::api::Identifier;
+
+use super::{camera::Camera, floor::Floor, projection::Projection, Robot};
 
 const CAMERA_POS: Vec3 = Vec3::new(-2.0, -3.0, 2.0);
 
@@ -24,7 +16,7 @@ pub(crate) struct Scene {
     floor: Floor,
 }
 
-fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {
+pub(super) fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {
     let elapsed = start_time.elapsed();
     let seconds = u32::try_from(elapsed.as_secs()).unwrap();
     let subsec_nanos = u64::from(elapsed.subsec_nanos());
@@ -199,7 +191,7 @@ impl Scene {
     }
 }
 
-struct DepthTexture {
+pub(super) struct DepthTexture {
     _texture: wgpu::Texture,
     view: wgpu::TextureView,
     _sampler: wgpu::Sampler,
@@ -254,7 +246,7 @@ impl DepthTexture {
         }
     }
 
-    fn depth_stencil_state() -> wgpu::DepthStencilState {
+    pub(super) fn depth_stencil_state() -> wgpu::DepthStencilState {
         wgpu::DepthStencilState {
             format: DepthTexture::DEPTH_FORMAT,
             depth_write_enabled: true,

@@ -1,3 +1,8 @@
+mod camera;
+mod floor;
+mod projection;
+pub(crate) mod scene;
+
 use std::{
     f32::consts::{PI, TAU},
     mem::size_of,
@@ -6,20 +11,16 @@ use std::{
 };
 
 use bytemuck::{offset_of, Pod, Zeroable};
+use camera::Camera;
+use floor::{Floor, LineSegment};
 use glam::{FloatExt, IVec3, Mat4, Quat, Vec2, Vec3, Vec4};
 use log::error;
+use projection::Projection;
+use scene::{elapsed_as_vec, DepthTexture};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{self, util::DeviceExt};
 
 use crate::api::Identifier;
-
-use super::{
-    camera::Camera,
-    elapsed_as_vec,
-    floor::{Floor, LineSegment},
-    projection::Projection,
-    DepthTexture,
-};
 
 pub(super) struct Robot {
     pipeline: wgpu::RenderPipeline,

@@ -1,6 +1,9 @@
 use glam::Vec3;
 
-use crate::application;
+use crate::application::{
+    self,
+    ecs::{component::Component, state::State},
+};
 
 pub struct TransformComponent {
     pub position: Vec3,
@@ -18,23 +21,23 @@ impl Default for TransformComponent {
     }
 }
 
-impl application::component::Component for TransformComponent {
-    fn start(&mut self, _state: &mut application::state::State) {
+impl Component for TransformComponent {
+    fn start(&mut self, _state: &mut State) {
         //println!("{}", self.position);
     }
 
-    fn update(&mut self, state: &mut application::state::State) {
+    fn update(&mut self, state: &mut State) {
         println!(
             "TestComponent::update | FPS: {} | TPS: {}",
             state.measured_frames_per_second, state.measured_ticks_per_second
         );
     }
 
-    fn render(&mut self, _state: &mut application::state::State) {
+    fn render(&mut self, _state: &mut State) {
         println!("TestComponent::render");
     }
 
-    fn stop(&mut self, _state: &mut application::state::State) {
+    fn stop(&mut self, _state: &mut State) {
         println!("TestComponent::stop");
     }
 }
