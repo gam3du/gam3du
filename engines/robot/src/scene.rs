@@ -1,7 +1,9 @@
-use glam::Vec3;
+use glam::{IVec3, Vec3};
 use std::time::Instant;
 
 use bindings::api::Identifier;
+
+use crate::{renderer::RendererState, tile::Tile, Orientation};
 
 use super::{
     camera::Camera, floor::Floor, floor_renderer::FloorRenderer, projection::Projection,
@@ -10,19 +12,20 @@ use super::{
 
 const CAMERA_POS: Vec3 = Vec3::new(-2.0, -3.0, 2.0);
 
-pub(crate) struct Scene {
+pub struct Scene {
     depth_map: DepthTexture,
     start_time: Instant,
-    projection: Projection,
-    camera: Camera,
+    // projection: Projection,
+    // camera: Camera,
     robot: Robot,
-    floor: Floor,
+    // floor: Floor,
+    state: RendererState,
     robot_renderer: RobotRenderer,
     floor_renderer: FloorRenderer,
 }
 
 impl Scene {
-    pub(crate) fn init(
+    pub fn init(
         surface: &wgpu::SurfaceConfiguration,
         _adapter: &wgpu::Adapter,
         device: &wgpu::Device,
@@ -30,8 +33,9 @@ impl Scene {
     ) -> Self {
         let robot = Robot::new();
         let floor = Floor::new();
+        let tiles = floor.tiles;
         let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
-        let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0]);
+        let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0], &tiles);
 
         let projection = Projection::new_perspective(
             (surface.width, surface.height),
@@ -45,28 +49,44 @@ impl Scene {
 
         let depth_map = DepthTexture::create_depth_texture(device, surface, "depth_map");
 
+        let state = RendererState {
+            camera,
+            projection,
+            animation_position: Vec3::default(),
+            animation_angle: 0.0,
+            position: IVec3::default(),
+            orientation: Orientation::E,
+            current_animation: None,
+            tiles,
+            tiles_tainted: true,
+        };
+
         Scene {
             depth_map,
             start_time,
-            projection,
-            camera,
+            // projection,
+            // camera,
             robot,
-            floor,
+            // floor,
+            robot_renderer,
+            floor_renderer,
+            state,
         }
     }
 
-    pub(crate) fn resize(
+    pub fn resize(
         &mut self,
         surface: &wgpu::SurfaceConfiguration,
         device: &wgpu::Device,
         _queue: &wgpu::Queue,
     ) {
-        self.projection
+        self.state
+            .projection
             .set_surface_dimensions((surface.width, surface.height));
         self.depth_map = DepthTexture::create_depth_texture(device, surface, "depth_map");
     }
 
-    pub(crate) fn render(
+    pub fn render(
         &mut self,
         texture_view: &wgpu::TextureView,
         device: &wgpu::Device,
@@ -76,7 +96,7 @@ impl Scene {
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         let (dy, dx) = (self.start_time.elapsed().as_secs_f32() * 0.1).sin_cos();
-        self.camera.position = CAMERA_POS + Vec3::new(dx * 0.3, -dy * 0.3, 0.0);
+        self.state.camera.position = CAMERA_POS + Vec3::new(dx * 0.3, -dy * 0.3, 0.0);
 
         self.render_cube(texture_view, &mut encoder, queue);
 
@@ -124,13 +144,8 @@ impl Scene {
         {
             let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
 
-            self.robot.render(
-                queue,
-                &mut render_pass,
-                &self.camera,
-                &self.projection,
-                self.start_time,
-            );
+            self.robot_renderer
+                .render(queue, &mut render_pass, &mut self.state, self.start_time);
         }
     }
 
@@ -169,22 +184,17 @@ impl Scene {
         {
             let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
 
-            self.floor.render(
-                queue,
-                &mut render_pass,
-                &self.camera,
-                &self.projection,
-                self.start_time,
-            );
+            self.floor_renderer
+                .render(queue, &mut render_pass, &mut self.state, self.start_time);
         }
     }
 
-    pub(crate) fn is_idle(&mut self) -> bool {
+    pub fn is_idle(&mut self) -> bool {
         self.robot.is_idle()
     }
 
-    pub(crate) fn process_command(&mut self, command: &Identifier) {
-        self.robot.process_command(command, &mut self.floor);
+    pub fn process_command(&mut self, command: &Identifier) {
+        self.robot.process_command(command, &mut self.state);
     }
 }
 

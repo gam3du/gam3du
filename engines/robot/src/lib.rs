@@ -1,3 +1,11 @@
+// TODO remove and fix before release
+#![allow(missing_docs)]
+#![allow(clippy::indexing_slicing)]
+#![allow(clippy::todo)]
+#![allow(clippy::panic)]
+#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_in_result)]
+
 mod camera;
 mod floor;
 mod floor_renderer;
@@ -6,6 +14,9 @@ mod renderer;
 mod robot_renderer;
 pub(crate) mod scene;
 mod tile;
+
+use renderer::RendererState;
+pub use scene::Scene;
 
 use std::{
     f32::consts::{PI, TAU},
@@ -45,11 +56,12 @@ impl Robot {
         }
     }
 
+    #[must_use]
     pub fn is_idle(&self) -> bool {
         self.current_animation.is_none()
     }
 
-    pub fn process_command(&mut self, command: &Identifier, floor: &mut Floor) {
+    pub fn process_command(&mut self, command: &Identifier, state: &mut RendererState) {
         if let Some(current_animation) = self.current_animation.take() {
             current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
         }
@@ -61,7 +73,7 @@ impl Robot {
                 // TODO make this a safe function
                 #[allow(clippy::cast_sign_loss)]
                 let start_index = (self.position.y * 10 + self.position.x + 55) as usize;
-                floor.tiles[start_index].line_pattern |= segment;
+                state.tiles[start_index].line_pattern |= segment;
 
                 let offset = self.orientation.as_ivec3();
                 if offset.x != 0 && offset.y != 0 {
@@ -69,13 +81,13 @@ impl Robot {
                     #[allow(clippy::cast_sign_loss)]
                     let index0 =
                         (self.position.y * 10 + (self.position.x + offset.x) + 55) as usize;
-                    floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
+                    state.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
 
                     // TODO make this a safe function
                     #[allow(clippy::cast_sign_loss)]
                     let index1 =
                         ((self.position.y + offset.y) * 10 + self.position.x + 55) as usize;
-                    floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
+                    state.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
                 }
 
                 self.position += offset;
@@ -83,8 +95,8 @@ impl Robot {
                 // TODO make this a safe function
                 #[allow(clippy::cast_sign_loss)]
                 let end_index = (self.position.y * 10 + self.position.x + 55) as usize;
-                floor.tiles[end_index].line_pattern |= -segment;
-                floor.tainted = true;
+                state.tiles[end_index].line_pattern |= -segment;
+                state.tiles_tainted = true;
 
                 Some(Animation::Move {
                     start: self.animation_position,

@@ -182,7 +182,7 @@ impl RobotRenderer {
         &'pipeline mut self,
         queue: &wgpu::Queue,
         render_pass: &mut wgpu::RenderPass<'pipeline>,
-        state: &RendererState,
+        state: &mut RendererState,
         start_time: Instant,
     ) {
         if let Some(animation) = state.current_animation.as_ref() {

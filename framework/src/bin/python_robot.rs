@@ -17,7 +17,7 @@
 use std::sync::mpsc::Sender;
 use std::thread;
 
-use gam3du::api::{Api, Identifier};
+use bindings::api::{Api, Identifier};
 use gam3du::event::{EngineEvent, EventRouter};
 use gam3du::framework;
 use gam3du::framework::Application;
@@ -28,7 +28,7 @@ use tiny_http::{Response, Server};
 fn main() {
     init_logger();
 
-    let api_json = std::fs::read_to_string("apis/robot.api.json").unwrap();
+    let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
     let api: Api = serde_json::from_str(&api_json).unwrap();
 
     let mut event_router = EventRouter::default();

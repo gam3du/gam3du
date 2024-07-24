@@ -4,13 +4,14 @@
 
 use std::{fs::read_to_string, path::Path, sync::mpsc::Sender};
 
+use bindings::api::Api;
 use log::{error, info};
 use rustpython_vm::{
     compiler::Mode, pyclass, pymodule, PyObject, PyPayload, PyResult, TryFromBorrowedObject,
     VirtualMachine,
 };
 
-use crate::{api::Api, event::EngineEvent};
+use crate::event::EngineEvent;
 
 #[allow(clippy::missing_panics_doc)]
 pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<EngineEvent>, api: &Api) {
@@ -100,7 +101,8 @@ mod rust_py_module {
         time::Duration,
     };
 
-    use crate::{api::Identifier, event::EngineEvent, ROTATION};
+    use crate::{event::EngineEvent, ROTATION};
+    use bindings::api::Identifier;
 
     use super::{pyclass, PyObject, PyPayload, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython::vm::{builtins::PyList, convert::ToPyObject, PyObjectRef};

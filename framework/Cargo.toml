@@ -8,6 +8,7 @@ license-file.workspace = true
 
 [dependencies]
 engine-robot.workspace = true
+bindings.workspace = true
 
 # Python interpreter
 rustpython.workspace = true

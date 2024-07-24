@@ -886,6 +886,7 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 name = "gam3du"
 version = "0.1.0"
 dependencies = [
+ "bindings",
  "bytemuck",
  "engine-robot",
  "env_logger 0.11.3",

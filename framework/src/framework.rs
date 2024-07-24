@@ -6,6 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use engine_robot::Scene;
 use log::{debug, trace};
 use wgpu;
 use winit::{
@@ -17,7 +18,7 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-use crate::{application::robot::scene::Scene, event::{EngineEvent, EventRouter}};
+use crate::event::{EngineEvent, EventRouter};
 
 /// Wrapper type which manages the surface and surface configuration.
 ///
@@ -281,10 +282,8 @@ impl ApplicationHandler for Application {
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: ()) {}
 
-    #[allow(
-        clippy::too_many_lines,
-        reason = "TODO maybe the trace output can be moved elsewhere?"
-    )]
+    // TODO maybe the trace output can be moved elsewhere?
+    #[allow(clippy::too_many_lines)]
     fn window_event(
         &mut self,
         event_loop: &ActiveEventLoop,

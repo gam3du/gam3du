@@ -2,7 +2,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 
 use winit::event::WindowEvent;
 
-use crate::api::Identifier;
+use bindings::api::Identifier;
 
 pub enum EngineEvent {
     Window {

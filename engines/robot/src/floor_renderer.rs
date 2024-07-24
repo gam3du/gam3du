@@ -9,7 +9,7 @@ use super::{
     projection::Projection,
     renderer::{elapsed_as_vec, RendererState},
     scene::DepthTexture,
-    tile::{tile, LinePattern, Tile},
+    tile::Tile,
 };
 
 pub(super) struct FloorRenderer {
@@ -24,12 +24,15 @@ impl FloorRenderer {
     // `time` will be moved to global scope anyway
     #[allow(clippy::similar_names)]
     #[must_use]
-    pub(super) fn new(device: &wgpu::Device, _queue: &Queue, view_format: TextureFormat) -> Self {
-        let tiles = Self::create_vertices();
-
+    pub(super) fn new(
+        device: &wgpu::Device,
+        _queue: &Queue,
+        view_format: TextureFormat,
+        tiles: &[Tile],
+    ) -> Self {
         let tile_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Tile Buffer"),
-            contents: bytemuck::cast_slice(&tiles),
+            contents: bytemuck::cast_slice(tiles),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -116,7 +119,7 @@ impl FloorRenderer {
         &'pipeline mut self,
         queue: &Queue,
         render_pass: &mut RenderPass<'pipeline>,
-        state: &RendererState,
+        state: &mut RendererState,
         start_time: Instant,
     ) {
         if state.tiles_tainted {
@@ -186,20 +189,6 @@ impl FloorRenderer {
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         })
-    }
-
-    fn create_vertices() -> Vec<Tile> {
-        let mut vertex_data = Vec::new();
-        for y in -5_i16..5 {
-            let bottom = f32::from(y);
-            for x in -5_i16..5 {
-                let left = f32::from(x);
-                let line_pattern = 0; //thread_rng.gen();
-                vertex_data.push(tile([left, bottom, 0.0], LinePattern(line_pattern)));
-            }
-        }
-
-        vertex_data
     }
 
     fn create_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {

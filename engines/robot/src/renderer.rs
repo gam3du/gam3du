@@ -40,7 +40,7 @@ impl Renderer {
         queue: &wgpu::Queue,
         render_pass: &mut wgpu::RenderPass<'pipeline>,
         start_time: Instant,
-        state: &RendererState,
+        state: &mut RendererState,
     ) {
         self.floor_renderer
             .render(queue, render_pass, state, start_time);
