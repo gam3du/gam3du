@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use crate::api::{Api, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor};
+use bindings::api::{Api, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor};
 
 pub fn generate(out: &mut impl Write, api: &Api) -> io::Result<()> {
     // TODO add documentation comments for api

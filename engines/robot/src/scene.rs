@@ -1,9 +1,12 @@
 use glam::Vec3;
 use std::time::Instant;
 
-use crate::api::Identifier;
+use bindings::api::Identifier;
 
-use super::{camera::Camera, floor::Floor, projection::Projection, Robot};
+use super::{
+    camera::Camera, floor::Floor, floor_renderer::FloorRenderer, projection::Projection,
+    robot_renderer::RobotRenderer, Robot,
+};
 
 const CAMERA_POS: Vec3 = Vec3::new(-2.0, -3.0, 2.0);
 
@@ -14,16 +17,8 @@ pub(crate) struct Scene {
     camera: Camera,
     robot: Robot,
     floor: Floor,
-}
-
-pub(super) fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {
-    let elapsed = start_time.elapsed();
-    let seconds = u32::try_from(elapsed.as_secs()).unwrap();
-    let subsec_nanos = u64::from(elapsed.subsec_nanos());
-    // map range of nanoseconds to value range of u32 with rounding
-    let subseconds = ((subsec_nanos << u32::BITS) + 500_000_000) / 1_000_000_000;
-
-    [seconds, u32::try_from(subseconds).unwrap()]
+    robot_renderer: RobotRenderer,
+    floor_renderer: FloorRenderer,
 }
 
 impl Scene {
@@ -33,8 +28,10 @@ impl Scene {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) -> Self {
-        let cube = Robot::new(device, queue, surface.view_formats[0]);
-        let floor = Floor::new(device, queue, surface.view_formats[0]);
+        let robot = Robot::new();
+        let floor = Floor::new();
+        let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
+        let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0]);
 
         let projection = Projection::new_perspective(
             (surface.width, surface.height),
@@ -53,7 +50,7 @@ impl Scene {
             start_time,
             projection,
             camera,
-            robot: cube,
+            robot,
             floor,
         }
     }

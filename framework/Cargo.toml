@@ -1,56 +1,40 @@
-[workspace]
-resolver = "2"
-exclude = ["bindings/src"]
-members = [
-    "bindings",
-    "bindings/python",
-    "engines/robot",
-    "libs/ecs",
-    "libs/ecs-kawogi",
-    "framework",
-    "libs/*",
-]
-
-[workspace.package]
+[package]
+name = "gam3du"
 version = "0.1.0"
-edition = "2021"
-license = "MIT"
-license-file = "LICENSE-MIT"
-readme = "README.md"
+edition.workspace = true
+description = "A game engine written for educational purposes. The main goals are learning/teaching software development, ease of use and having fun!"
+license.workspace = true
+license-file.workspace = true
 
-[workspace.dependencies]
-bindings = { path = "bindings" }
-bind-python = { path = "bindings/python" }
-engine-robot = { path = "engines/robot" }
-lib-ecs = { path = "libs/ecs" }
-lib-ecs-kawogi = { path = "libs/ecs-kawogi" }
+[dependencies]
+engine-robot.workspace = true
 
 # Python interpreter
-rustpython = "0.3.1"
-rustpython-vm = "0.3.1"
+rustpython.workspace = true
+rustpython-vm.workspace = true
 
 # simplifies bit/byte-level operations
-bytemuck = "1.16.0"
+bytemuck = { workspace = true, features = ["derive"] }
 
 # Abstraction layer for the paltform's graphics API
-wgpu = "0.20.1"
+wgpu.workspace = true
 
 # Basic vector and matrix types and operations thereon
-glam = "0.28.0"
+glam = { workspace = true, features = ["bytemuck"] }
 
-rand = "0.8.5"
+rand.workspace = true
 
-pollster = "0.3.0"
-log = "0.4.21"
-env_logger = "0.11.3"
-winit = "0.30.1"
+pollster.workspace = true
+log.workspace = true
+env_logger.workspace = true
+winit.workspace = true
 
-serde = "1.0.203"
-json5 = "0.4.1"
-serde_json = "1.0.117"
-tiny_http = "0.12.0"
+serde = { workspace = true, features = ["derive"] }
+json5 = { workspace = true }
+serde_json.workspace = true
+tiny_http.workspace = true
 
-[workspace.lints.rust]
+[lints.rust]
 # more lints can be found in [lints.clippy]
 
 ######################################################################################################################
@@ -113,7 +97,7 @@ variant_size_differences = "warn"
 # non_exhaustive_omitted_patterns = "warn"
 # unnameable_types = "warn"
 
-[workspace.lints.clippy]
+[lints.clippy]
 # more lints can be found in [lints.rust]
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }

@@ -1,30 +1,26 @@
-use std::{
-    mem::size_of,
-    ops::{self, Neg},
-};
+use std::mem::size_of;
 
-use bytemuck::{offset_of, Pod, Zeroable};
+use bytemuck::offset_of;
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
 use super::{
     camera::Camera,
     projection::Projection,
-    scene::{elapsed_as_vec, DepthTexture},
-    Orientation,
+    renderer::{elapsed_as_vec, RendererState},
+    scene::DepthTexture,
+    tile::{tile, LinePattern, Tile},
 };
 
-pub(super) struct Floor {
+pub(super) struct FloorRenderer {
     pipeline: wgpu::RenderPipeline,
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
-    pub(super) tiles: Vec<Tile>,
-    pub(super) tainted: bool,
     tile_buf: wgpu::Buffer,
 }
 
-impl Floor {
+impl FloorRenderer {
     // `time` will be moved to global scope anyway
     #[allow(clippy::similar_names)]
     #[must_use]
@@ -75,9 +71,7 @@ impl Floor {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
-                "../../../shaders/floor.wgsl"
-            ))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/floor.wgsl"))),
         });
 
         let vertex_buffers = [wgpu::VertexBufferLayout {
@@ -110,31 +104,29 @@ impl Floor {
             time_buf,
             bind_group,
             matrix_buf,
-            tiles,
             tile_buf,
-            tainted: false,
         }
     }
 
-    fn tile_count(&self) -> u32 {
-        u32::try_from(self.tiles.len()).unwrap()
-    }
+    // fn tile_count(&self) -> u32 {
+    //     u32::try_from(self.tiles.len()).unwrap()
+    // }
 
     pub(super) fn render<'pipeline>(
         &'pipeline mut self,
         queue: &Queue,
         render_pass: &mut RenderPass<'pipeline>,
-        camera: &Camera,
-        projection: &Projection,
+        state: &RendererState,
         start_time: Instant,
     ) {
-        if self.tainted {
-            queue.write_buffer(&self.tile_buf, 0, bytemuck::cast_slice(&self.tiles));
-            self.tainted = false;
+        if state.tiles_tainted {
+            queue.write_buffer(&self.tile_buf, 0, bytemuck::cast_slice(&state.tiles));
+            state.tiles_tainted = false;
         }
+        let tile_count = u32::try_from(state.tiles.len()).unwrap();
 
         self.update_time(start_time, queue);
-        self.update_matrix(projection, camera, queue);
+        self.update_matrix(&state.projection, &state.camera, queue);
 
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);
@@ -142,7 +134,7 @@ impl Floor {
         render_pass.set_vertex_buffer(0, self.tile_buf.slice(..));
         render_pass.pop_debug_group();
         render_pass.insert_debug_marker("Draw!");
-        render_pass.draw(0..4, 0..self.tile_count());
+        render_pass.draw(0..4, 0..tile_count);
     }
 
     fn update_matrix(&self, projection: &Projection, camera: &Camera, queue: &Queue) {
@@ -236,107 +228,5 @@ impl Floor {
                 },
             ],
         })
-    }
-}
-
-#[repr(C)]
-#[derive(Clone, Copy, Pod, Zeroable, Default)]
-pub(super) struct Tile {
-    pos: [f32; 4],
-    pub(super) line_pattern: LinePattern,
-}
-
-fn tile(pos: [f32; 3], line_pattern: LinePattern) -> Tile {
-    Tile {
-        pos: [pos[0], pos[1], pos[2], 1.0],
-        line_pattern,
-    }
-}
-
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Pod, Zeroable, Default)]
-pub(super) struct LinePattern(u32);
-
-impl ops::BitOrAssign<LineSegment> for LinePattern {
-    fn bitor_assign(&mut self, rhs: LineSegment) {
-        self.0 |= 1 << rhs as u32;
-    }
-}
-
-#[derive(Clone, Copy)]
-// their meaning is clear from the context
-#[allow(clippy::min_ident_chars)]
-pub(super) enum LineSegment {
-    /// positive x
-    E = 0,
-    /// +x, +y
-    NE = 1,
-    /// positive y
-    N = 2,
-    /// -x +y
-    NW = 3,
-    /// negative x
-    W = 4,
-    /// -x -y
-    SW = 5,
-    /// negative y
-    S = 6,
-    /// +x -y
-    SE = 7,
-    /// +x, +y
-    NECorner = 9,
-    /// -x +y
-    NWCorner = 11,
-    /// -x -y
-    SWCorner = 13,
-    /// +x -y
-    SECorner = 15,
-}
-
-impl From<Orientation> for LineSegment {
-    fn from(value: Orientation) -> Self {
-        match value {
-            Orientation::E => Self::E,
-            Orientation::NE => Self::NE,
-            Orientation::N => Self::N,
-            Orientation::NW => Self::NW,
-            Orientation::W => Self::W,
-            Orientation::SW => Self::SW,
-            Orientation::S => Self::S,
-            Orientation::SE => Self::SE,
-        }
-    }
-}
-
-impl LineSegment {
-    pub(crate) fn get_x_corner(self) -> Option<LineSegment> {
-        match self {
-            Self::NE => Some(Self::NWCorner),
-            Self::NW => Some(Self::NECorner),
-            Self::SW => Some(Self::SECorner),
-            Self::SE => Some(Self::SWCorner),
-            _ => None,
-        }
-    }
-}
-
-impl Neg for LineSegment {
-    type Output = Self;
-
-    fn neg(self) -> Self::Output {
-        match self {
-            Self::E => Self::W,
-            Self::NE => Self::SW,
-            Self::N => Self::S,
-            Self::NW => Self::SE,
-            Self::W => Self::E,
-            Self::SW => Self::NE,
-            Self::S => Self::N,
-            Self::SE => Self::NW,
-            Self::NECorner => Self::SWCorner,
-            Self::NWCorner => Self::SECorner,
-            Self::SWCorner => Self::NECorner,
-            Self::SECorner => Self::NWCorner,
-        }
     }
 }
