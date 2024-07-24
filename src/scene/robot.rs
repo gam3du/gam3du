@@ -482,7 +482,7 @@ impl Robot {
         }
 
         self.current_animation = match command.name.0.as_str() {
-            "MoveForward" => {
+            "move forward" => {
                 let segment = LineSegment::from(self.orientation);
 
                 // TODO make this a safe function
@@ -520,7 +520,7 @@ impl Robot {
                     duration: Duration::from_millis(1_000),
                 })
             }
-            "TurnLeft" => {
+            "turn left" => {
                 self.orientation += 1;
                 Some(Animation::Rotate {
                     start: self.animation_angle,
@@ -529,7 +529,7 @@ impl Robot {
                     duration: Duration::from_millis(1_000),
                 })
             }
-            "TurnRight" => {
+            "turn right" => {
                 self.orientation -= 1;
                 Some(Animation::Rotate {
                     start: self.animation_angle,
