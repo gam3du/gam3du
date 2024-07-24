@@ -1,4 +1,4 @@
-// TODO remove and fix, once this design makes into production
+// TODO remove and fix, once this design makes it into production
 #![allow(dead_code)]
 #![allow(missing_docs)]
 #![allow(clippy::expect_used)]
