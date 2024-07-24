@@ -14,10 +14,10 @@
 #![allow(clippy::indexing_slicing)]
 #![allow(clippy::panic)]
 
-use gam3du::application::ecs::{
-    event_subscriber::EventSubscriber, state, transform::TransformComponent, Application,
-};
 use glam::Vec3;
+use lib_ecs::event_subscriber::EventSubscriber;
+use lib_ecs::transform::TransformComponent;
+use lib_ecs::Application;
 
 fn main() {
     println!("Hello, world!");
@@ -49,7 +49,7 @@ fn main() {
 struct TestSubscriber;
 
 impl EventSubscriber for TestSubscriber {
-    fn update(&mut self, state: &mut state::State) {
+    fn update(&mut self, state: &mut lib_ecs::state::State) {
         println!("delta time: {}", state.delta_tick_time);
     }
 }

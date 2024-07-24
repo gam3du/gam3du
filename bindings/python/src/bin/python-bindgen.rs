@@ -6,7 +6,8 @@
 
 use std::io::BufWriter;
 
-use gam3du::{api::Api, bindgen};
+use bind_python::bindgen;
+use bindings::api::Api;
 
 fn main() {
     // let move_forward = FunctionDescriptor {
@@ -53,14 +54,15 @@ fn main() {
 
     // let json_string = json5::to_string(&api).unwrap();
 
-    let api_json = std::fs::read_to_string("apis/robot.api.json").unwrap();
+    // TODO make the engine a command line parameter
+    let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
     let api: Api = serde_json::from_str(&api_json).unwrap();
     println!("{api:#?}");
 
     // let mut out = String::new();
     let out_file = std::fs::File::create("python/robot_api.py").unwrap();
     let mut out = BufWriter::new(out_file);
-    bindgen::python::generate(&mut out, &api).unwrap();
+    bindgen::generate(&mut out, &api).unwrap();
 
     // println!("{out}");
 }

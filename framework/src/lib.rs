@@ -15,7 +15,6 @@
 #![allow(clippy::panic)]
 #![allow(clippy::missing_errors_doc)]
 
-pub mod application;
 pub mod event;
 pub mod framework;
 pub mod logging;

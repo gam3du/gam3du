@@ -1,9 +1,7 @@
 use glam::Vec3;
 
-use crate::application::{
-    self,
-    ecs::{component::Component, state::State},
-};
+use crate::component::Component;
+use crate::state::State;
 
 pub struct TransformComponent {
     pub position: Vec3,

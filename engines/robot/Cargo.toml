@@ -12,3 +12,6 @@ bytemuck.workspace = true
 wgpu.workspace = true
 log.workspace = true
 bindings.workspace = true
+
+[lints]
+workspace = true
