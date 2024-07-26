@@ -4,6 +4,7 @@ use winit::event::WindowEvent;
 
 use crate::api::Identifier;
 
+#[derive(Clone)]
 pub enum EngineEvent {
     Window {
         event: WindowEvent,
