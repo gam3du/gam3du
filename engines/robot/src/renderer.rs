@@ -3,7 +3,7 @@ use std::time::Instant;
 mod floor;
 mod robot;
 
-pub use crate::RenderState;
+use crate::RenderState;
 use floor::FloorRenderer;
 use robot::RobotRenderer;
 

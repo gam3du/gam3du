@@ -7,7 +7,7 @@ use std::{
 };
 
 use bindings::event::{EngineEvent, EventRouter};
-use engine_robot::{GameLoop, GameState, RenderState, Renderer};
+use engine_robot::{GameState, RenderState, Renderer};
 use log::{debug, trace};
 use wgpu;
 use winit::{
@@ -239,8 +239,8 @@ impl Application {
         let (sender, receiver) = channel();
 
         event_router.add_handler(Box::new(move |event| {
-            if matches!(event, EngineEvent::ApiCall { ref api, ref command }) {
-                sender.send(event);
+            if matches!(event, EngineEvent::ApiCall { .. }) {
+                sender.send(event).unwrap();
                 None
             } else {
                 Some(event)
@@ -288,7 +288,7 @@ impl ApplicationHandler for Application {
         }
     }
 
-    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: ()) {}
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, _event: ()) {}
 
     // TODO maybe the trace output can be moved elsewhere?
     #[allow(clippy::too_many_lines)]
@@ -298,8 +298,8 @@ impl ApplicationHandler for Application {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
-        match &event {
-            &WindowEvent::Resized(size) => {
+        match event {
+            WindowEvent::Resized(size) => {
                 trace!("WindowEvent::Resized({size:?})");
 
                 self.surface.resize(&self.context, size);
@@ -319,21 +319,21 @@ impl ApplicationHandler for Application {
 
             WindowEvent::KeyboardInput {
                 device_id,
-                event: key_event,
+                event: ref key_event,
                 is_synthetic,
             } => {
                 trace!("WindowEvent::KeyboardInput({device_id:?}, {key_event:?}, {is_synthetic})");
                 let KeyEvent {
                     physical_key: _,
-                    logical_key,
+                    ref logical_key,
                     text: _,
                     location: _,
                     state: _,
                     repeat: _,
                     ..
-                } = key_event;
+                } = *key_event;
 
-                match logical_key {
+                match *logical_key {
                     Key::Named(key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Named({key:?})");
                         // more branches will follow for sure …
@@ -345,10 +345,10 @@ impl ApplicationHandler for Application {
                             _ => {}
                         }
                     }
-                    Key::Character(key) => {
+                    Key::Character(ref key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Character({key:?})");
                     }
-                    Key::Unidentified(key) => {
+                    Key::Unidentified(ref key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Unidentified({key:?})");
                     }
                     Key::Dead(key) => {
@@ -413,7 +413,7 @@ impl ApplicationHandler for Application {
             _ => {}
         }
 
-        self.event_sink.send(EngineEvent::Window { event });
+        self.event_sink.send(EngineEvent::Window { event }).unwrap();
     }
 
     fn device_event(
@@ -461,7 +461,7 @@ impl ApplicationHandler for Application {
     }
 }
 
-pub async fn start(mut app: Application) {
+pub fn start(mut app: Application) {
     let event_loop = EventLoop::new().unwrap();
 
     // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't

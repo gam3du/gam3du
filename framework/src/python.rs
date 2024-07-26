@@ -12,7 +12,11 @@ use rustpython_vm::{
 };
 
 #[allow(clippy::missing_panics_doc)]
-pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<EngineEvent>, api: &Api) {
+pub fn runner(
+    source_path: &(impl AsRef<Path> + ToString),
+    sender: Sender<EngineEvent>,
+    _api: &Api,
+) {
     let source = read_to_string(source_path).unwrap();
     let path_string = source_path.as_ref().display().to_string();
 
@@ -135,7 +139,7 @@ python_person.name: {}",
             .unwrap()
             .send(EngineEvent::ApiCall {
                 api: Identifier("robot".into()),
-                command: Identifier("MoveForward".into()),
+                command: Identifier("move forward".into()),
             })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));
@@ -150,7 +154,7 @@ python_person.name: {}",
             .unwrap()
             .send(EngineEvent::ApiCall {
                 api: Identifier("robot".into()),
-                command: Identifier("TurnLeft".into()),
+                command: Identifier("turn left".into()),
             })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));
@@ -165,7 +169,7 @@ python_person.name: {}",
             .unwrap()
             .send(EngineEvent::ApiCall {
                 api: Identifier("robot".into()),
-                command: Identifier("TurnRight".into()),
+                command: Identifier("turn right".into()),
             })
             .unwrap();
         thread::sleep(Duration::from_millis(1000));

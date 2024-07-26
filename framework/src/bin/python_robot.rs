@@ -16,7 +16,8 @@
 
 use std::sync::mpsc::channel;
 use std::sync::{mpsc::Sender, Arc};
-use std::thread;
+use std::thread::{self, JoinHandle};
+use std::time::Duration;
 
 use bindings::event::{ApplicationEvent, EngineEvent};
 use bindings::{
@@ -28,6 +29,7 @@ use gam3du::framework;
 use gam3du::framework::Application;
 use gam3du::logging::init_logger;
 use gam3du::python::runner;
+use log::info;
 use tiny_http::{Response, Server};
 
 fn main() {
@@ -80,14 +82,50 @@ fn main() {
     ));
     let event_thread = thread::spawn(move || event_router.run());
 
-    pollster::block_on(framework::start(application));
+    framework::start(application);
     // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
 
-    python_thread.join().unwrap();
-    game_loop_thread.join().unwrap();
-    webserver_tread.join().unwrap();
     // FIXME Event thread doesn't exit, yet
-    event_thread.join().unwrap();
+    // python_thread.join().unwrap();
+    // game_loop_thread.join().unwrap();
+    // webserver_tread.join().unwrap();
+    // event_thread.join().unwrap();
+
+    let mut python_thread = Some(python_thread);
+    let mut game_loop_thread = Some(game_loop_thread);
+    let mut webserver_tread = Some(webserver_tread);
+    let mut event_thread = Some(event_thread);
+    while python_thread.is_some()
+        || game_loop_thread.is_some()
+        || webserver_tread.is_some()
+        || event_thread.is_some()
+    {
+        info!("Waiting for all threads to exit …");
+        if python_thread.as_ref().is_some_and(JoinHandle::is_finished) {
+            info!("Phython stopped");
+            python_thread.take().unwrap().join().unwrap();
+        }
+        if game_loop_thread
+            .as_ref()
+            .is_some_and(JoinHandle::is_finished)
+        {
+            info!("Game loop stopped");
+            game_loop_thread.take().unwrap().join().unwrap();
+        }
+        if webserver_tread
+            .as_ref()
+            .is_some_and(JoinHandle::is_finished)
+        {
+            info!("webserver stopped");
+            webserver_tread.take().unwrap().join().unwrap();
+        }
+        if event_thread.as_ref().is_some_and(JoinHandle::is_finished) {
+            info!("event router stopped");
+            event_thread.take().unwrap().join().unwrap();
+        }
+
+        thread::sleep(Duration::from_secs(1));
+    }
 }
 
 fn http_server(command_sender: &Sender<EngineEvent>, api: &Api) {
