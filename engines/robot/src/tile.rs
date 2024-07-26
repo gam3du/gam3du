@@ -2,7 +2,7 @@ use std::ops;
 
 use bytemuck::{Pod, Zeroable};
 
-use super::Orientation;
+use crate::game_state::Orientation;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Default)]

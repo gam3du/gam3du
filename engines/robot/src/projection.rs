@@ -56,6 +56,8 @@ impl Projection {
         }
     }
 
+    // this doesn't have to be exact
+    #[allow(clippy::cast_precision_loss)]
     fn aspect_ratio(&self) -> f32 {
         self.surface_width() as f32 / self.surface_height() as f32
     }

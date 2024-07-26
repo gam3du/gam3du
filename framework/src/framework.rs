@@ -6,7 +6,6 @@ use std::{
     time::{Duration, Instant},
 };
 
-use engine_robot::Scene;
 use log::{debug, trace};
 use wgpu;
 use winit::{

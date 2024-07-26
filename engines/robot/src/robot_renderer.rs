@@ -5,12 +5,12 @@ use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{self, util::DeviceExt};
 
-use super::{
-    camera::Camera,
-    projection::Projection,
-    renderer::{elapsed_as_vec, RendererState},
-    scene::DepthTexture,
+use crate::{
+    render_state::RenderState,
+    renderer::{elapsed_as_vec, DepthTexture},
 };
+
+use super::{camera::Camera, projection::Projection};
 
 pub(super) struct RobotRenderer {
     pipeline: wgpu::RenderPipeline,
@@ -182,22 +182,16 @@ impl RobotRenderer {
         &'pipeline mut self,
         queue: &wgpu::Queue,
         render_pass: &mut wgpu::RenderPass<'pipeline>,
-        state: &mut RendererState,
-        start_time: Instant,
+        state: &RenderState,
+        projection: &Projection,
     ) {
-        if let Some(animation) = state.current_animation.as_ref() {
-            if animation.animate(&mut state.animation_position, &mut state.animation_angle) {
-                state.current_animation.take();
-            }
-        };
-
         let position = Mat4::from_rotation_translation(
             Quat::from_rotation_z(state.animation_angle),
             state.animation_position,
         );
 
-        self.update_time(start_time, queue);
-        self.update_matrix(&state.projection, &state.camera, queue, position);
+        self.update_time(state.start_time, queue);
+        self.update_matrix(projection, &state.camera, queue, position);
 
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);

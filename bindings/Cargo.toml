@@ -8,6 +8,7 @@ license-file.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
+winit.workspace = true
 
 [lints]
 workspace = true

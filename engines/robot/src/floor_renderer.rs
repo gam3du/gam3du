@@ -4,13 +4,9 @@ use bytemuck::offset_of;
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
-use super::{
-    camera::Camera,
-    projection::Projection,
-    renderer::{elapsed_as_vec, RendererState},
-    scene::DepthTexture,
-    tile::Tile,
-};
+use crate::{game_state::Tick, render_state::RenderState, renderer::DepthTexture};
+
+use super::{camera::Camera, projection::Projection, renderer::elapsed_as_vec, tile::Tile};
 
 pub(super) struct FloorRenderer {
     pipeline: wgpu::RenderPipeline,
@@ -18,6 +14,7 @@ pub(super) struct FloorRenderer {
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
     tile_buf: wgpu::Buffer,
+    tiles_tick: Tick,
 }
 
 impl FloorRenderer {
@@ -28,11 +25,11 @@ impl FloorRenderer {
         device: &wgpu::Device,
         _queue: &Queue,
         view_format: TextureFormat,
-        tiles: &[Tile],
+        state: &RenderState,
     ) -> Self {
         let tile_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Tile Buffer"),
-            contents: bytemuck::cast_slice(tiles),
+            contents: bytemuck::cast_slice(&state.tiles),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -108,6 +105,7 @@ impl FloorRenderer {
             bind_group,
             matrix_buf,
             tile_buf,
+            tiles_tick: state.tiles_tick,
         }
     }
 
@@ -119,17 +117,17 @@ impl FloorRenderer {
         &'pipeline mut self,
         queue: &Queue,
         render_pass: &mut RenderPass<'pipeline>,
-        state: &mut RendererState,
-        start_time: Instant,
+        state: &mut RenderState,
+        projection: &Projection,
     ) {
-        if state.tiles_tainted {
+        if state.tiles_tick > self.tiles_tick {
             queue.write_buffer(&self.tile_buf, 0, bytemuck::cast_slice(&state.tiles));
-            state.tiles_tainted = false;
+            self.tiles_tick = state.tiles_tick;
         }
         let tile_count = u32::try_from(state.tiles.len()).unwrap();
 
-        self.update_time(start_time, queue);
-        self.update_matrix(&state.projection, &state.camera, queue);
+        self.update_time(state.start_time, queue);
+        self.update_matrix(projection, &state.camera, queue);
 
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);
