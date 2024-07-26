@@ -5,6 +5,7 @@
 #![allow(clippy::panic)]
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::unwrap_in_result)]
+#![allow(clippy::missing_panics_doc)]
 // TODO remove ASAP!
 #![allow(dead_code)]
 
@@ -15,8 +16,8 @@ mod projection;
 mod render_state;
 mod renderer;
 mod tile;
-mod robot_renderer;
-mod floor_renderer;
 
 pub use game_loop::GameLoop;
+pub use game_state::GameState;
+pub use render_state::RenderState;
 pub use renderer::Renderer;

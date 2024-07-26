@@ -1,11 +1,13 @@
 use std::{
     sync::{
         mpsc::{channel, Receiver, Sender, TryRecvError},
-        Arc,
+        Arc, RwLock,
     },
     time::{Duration, Instant},
 };
 
+use bindings::event::{EngineEvent, EventRouter};
+use engine_robot::{GameLoop, GameState, RenderState, Renderer};
 use log::{debug, trace};
 use wgpu;
 use winit::{
@@ -16,8 +18,6 @@ use winit::{
     keyboard::{Key, NamedKey},
     window::{Window, WindowAttributes, WindowId},
 };
-
-use crate::event::{EngineEvent, EventRouter};
 
 /// Wrapper type which manages the surface and surface configuration.
 ///
@@ -212,7 +212,8 @@ impl ExampleContext {
 }
 
 pub struct Application {
-    scene: Option<Scene>,
+    game_state: Arc<RwLock<GameState>>,
+    renderer: Option<Renderer>,
     surface: SurfaceWrapper,
     context: ExampleContext,
     // window: Arc<Window>,
@@ -226,7 +227,11 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn new(title: String, event_router: &mut EventRouter) -> Self {
+    pub async fn new(
+        title: String,
+        event_router: &mut EventRouter,
+        game_state: Arc<RwLock<GameState>>,
+    ) -> Self {
         let mut surface = SurfaceWrapper::new();
         let context = ExampleContext::init_async(&mut surface).await;
         let event_sender = event_router.clone_sender();
@@ -243,7 +248,7 @@ impl Application {
         }));
 
         Self {
-            scene: None,
+            renderer: None,
             surface,
             context,
             window: None,
@@ -253,6 +258,7 @@ impl Application {
             receiver,
             current_command: None,
             event_sink: event_sender,
+            game_state,
         }
     }
 }
@@ -268,13 +274,16 @@ impl ApplicationHandler for Application {
 
         self.window = Some(window);
 
+        let render_state = RenderState::new(&self.game_state.read().unwrap());
+
         // First-time init of the scene
-        if self.scene.is_none() {
-            self.scene.replace(Scene::init(
-                self.surface.config(),
+        if self.renderer.is_none() {
+            self.renderer.replace(Renderer::init(
                 &self.context.adapter,
                 &self.context.device,
                 &self.context.queue,
+                self.surface.config(),
+                render_state,
             ));
         }
     }
@@ -294,10 +303,10 @@ impl ApplicationHandler for Application {
                 trace!("WindowEvent::Resized({size:?})");
 
                 self.surface.resize(&self.context, size);
-                self.scene.as_mut().unwrap().resize(
-                    self.surface.config(),
+                self.renderer.as_mut().unwrap().resize(
                     &self.context.device,
                     &self.context.queue,
+                    self.surface.config(),
                 );
 
                 self.window.as_ref().unwrap().request_redraw();
@@ -357,20 +366,20 @@ impl ApplicationHandler for Application {
                     }
                 }
 
-                if let Some(EngineEvent::ApiCall { api, ref command }) = self.current_command.take()
-                {
-                    if let Some(scene) = self.scene.as_mut() {
-                        if scene.is_idle() {
-                            scene.process_command(command);
-                        }
-                    }
-                }
+                // if let Some(EngineEvent::ApiCall { api, ref command }) = self.current_command.take()
+                // {
+                //     if let Some(scene) = self.renderer.as_mut() {
+                //         if scene.is_idle() {
+                //             scene.process_command(command);
+                //         }
+                //     }
+                // }
 
                 // On MacOS, currently redraw requested comes in _before_ Init does.
                 // If this happens, just drop the requested redraw on the floor.
                 //
                 // See https://github.com/rust-windowing/winit/issues/3235 for some discussion
-                if self.scene.is_none() {
+                if self.renderer.is_none() {
                     return;
                 }
 
@@ -380,7 +389,7 @@ impl ApplicationHandler for Application {
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
-                self.scene.as_mut().unwrap().render(
+                self.renderer.as_mut().unwrap().render(
                     &texture_view,
                     &self.context.device,
                     &self.context.queue,

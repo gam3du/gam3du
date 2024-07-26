@@ -15,7 +15,8 @@ pub(crate) struct Tick(pub(crate) u64);
 
 /// Contains every information about the current state of the game.
 /// This is what needs to be stored/loaded if the game need to be suspended.
-pub(crate) struct GameState {
+#[derive(Default)]
+pub struct GameState {
     /// ever increasing counter representing the number of game loop iterations so far
     pub(crate) tick: Tick,
     /// current state of the robot
@@ -116,20 +117,6 @@ pub(crate) struct Robot {
 
 impl Robot {
     #[must_use]
-    pub(crate) fn new() -> Self {
-        let orientation = Orientation::default();
-        let position = IVec3::new(0, 0, 0);
-
-        Self {
-            animation_position: position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
-            current_animation: None,
-            animation_angle: orientation.angle(),
-            orientation,
-            position,
-        }
-    }
-
-    #[must_use]
     pub(crate) fn is_idle(&self) -> bool {
         self.current_animation.is_none()
     }
@@ -149,24 +136,27 @@ impl Robot {
     }
 }
 
+impl Default for Robot {
+    fn default() -> Self {
+        let orientation = Orientation::default();
+        let position = IVec3::new(0, 0, 0);
+
+        Self {
+            animation_position: position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
+            current_animation: None,
+            animation_angle: orientation.angle(),
+            orientation,
+            position,
+        }
+    }
+}
+
 pub(super) struct Floor {
     pub(super) tiles: Vec<Tile>,
     pub(super) tainted: Tick,
 }
 
 impl Floor {
-    // `time` will be moved to global scope anyway
-    #[allow(clippy::similar_names)]
-    #[must_use]
-    pub(super) fn new() -> Self {
-        let tiles = Self::create_tiles();
-
-        Self {
-            tiles,
-            tainted: Tick::default(),
-        }
-    }
-
     fn tile_count(&self) -> u32 {
         u32::try_from(self.tiles.len()).unwrap()
     }
@@ -183,6 +173,17 @@ impl Floor {
         }
 
         vertex_data
+    }
+}
+
+impl Default for Floor {
+    fn default() -> Self {
+        let tiles = Self::create_tiles();
+
+        Self {
+            tiles,
+            tainted: Tick::default(),
+        }
     }
 }
 

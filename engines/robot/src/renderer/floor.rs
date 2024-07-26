@@ -4,9 +4,11 @@ use bytemuck::offset_of;
 use std::{borrow::Cow, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
-use crate::{game_state::Tick, render_state::RenderState, renderer::DepthTexture};
+use crate::{game_state::Tick, renderer::DepthTexture};
 
-use super::{camera::Camera, projection::Projection, renderer::elapsed_as_vec, tile::Tile};
+use crate::{camera::Camera, projection::Projection, renderer::elapsed_as_vec, tile::Tile};
+
+use crate::RenderState;
 
 pub(super) struct FloorRenderer {
     pipeline: wgpu::RenderPipeline,
@@ -71,7 +73,9 @@ impl FloorRenderer {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/floor.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
+                "../../shaders/floor.wgsl"
+            ))),
         });
 
         let vertex_buffers = [wgpu::VertexBufferLayout {

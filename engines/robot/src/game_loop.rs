@@ -1,48 +1,67 @@
+use crate::game_state::GameState;
+use bindings::event::{ApplicationEvent, EngineEvent};
 use std::{
-    sync::mpsc::{Receiver, TryRecvError},
+    sync::{
+        mpsc::{Receiver, TryRecvError},
+        Arc, RwLock,
+    },
     thread,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
-use bindings::event::{ApplicationEvent, EngineEvent};
+/// Number of game loop iterations per second.
+/// This is a multiple of common frame rates.
+const TICKS_PER_SECOND: u32 = 240;
 
-use crate::game_state::GameState;
+/// Duration of each game tick. Same as
+/// `Duration::from_secs_f64(f64::from(TICKS_PER_SECOND).recip())`
+/// but with const support
+const TICK_DURATION: Duration = Duration::from_nanos(
+    (1_000_000_000_u64 + TICKS_PER_SECOND as u64 / 2) / TICKS_PER_SECOND as u64,
+);
 
 /// The root object of a running engine
+#[derive(Default)]
 pub struct GameLoop {
-    /// Amount of time each iteration of the game loop takes in real time.
-    /// This if the reciprocal value of _ticks per _second_.
-    tick_duration: Duration,
-
-    game_state: GameState,
+    /// Contains the current state which will be updates by the game loop.
+    /// This might be shared with renderers.
+    /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
+    pub game_state: Arc<RwLock<GameState>>,
 }
 
 impl GameLoop {
-    fn run(mut self, event_source: &Receiver<EngineEvent>) {
+    pub fn run(self, event_source: &Receiver<EngineEvent>) {
+        let mut time = Instant::now();
         'game_loop: loop {
-            'next_event: loop {
-                match event_source.try_recv() {
-                    Ok(engine_event) => match engine_event {
-                        EngineEvent::Window { event: _ } => todo!(),
-                        EngineEvent::Device { event: _ } => todo!(),
-                        EngineEvent::ApiCall { api: _, command } => {
-                            self.game_state.process_command(&command);
-                        }
-                        EngineEvent::Application { event } => match event {
-                            ApplicationEvent::Exit => break 'game_loop,
+            {
+                let mut game_state = self.game_state.write().unwrap();
+                'next_event: loop {
+                    match event_source.try_recv() {
+                        Ok(engine_event) => match engine_event {
+                            EngineEvent::Window { event: _ } => todo!(),
+                            EngineEvent::Device { event: _ } => todo!(),
+                            EngineEvent::ApiCall { api: _, command } => {
+                                game_state.process_command(&command);
+                            }
+                            EngineEvent::Application { event } => match event {
+                                ApplicationEvent::Exit => break 'game_loop,
+                            },
                         },
-                    },
-                    Err(TryRecvError::Disconnected) => break 'game_loop,
-                    Err(TryRecvError::Empty) => break 'next_event,
+                        Err(TryRecvError::Disconnected) => break 'game_loop,
+                        Err(TryRecvError::Empty) => break 'next_event,
+                    }
                 }
+
+                game_state.update();
             }
 
-            self.game_state.update();
-
-            // TODO add updater for renderer
-
-            // FIXME this is too imprecise
-            thread::sleep(self.tick_duration);
+            // compute the timestamp of the next game loop iteration
+            time += TICK_DURATION;
+            if let Some(delay) = time.checked_duration_since(Instant::now()) {
+                thread::sleep(delay);
+            } else {
+                // game loop is running too slow
+            }
         }
     }
 }

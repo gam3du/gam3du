@@ -5,12 +5,11 @@ use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
 use std::{borrow::Cow, time::Instant};
 use wgpu::{self, util::DeviceExt};
 
-use crate::{
-    render_state::RenderState,
-    renderer::{elapsed_as_vec, DepthTexture},
-};
+use crate::renderer::{elapsed_as_vec, DepthTexture};
 
-use super::{camera::Camera, projection::Projection};
+use crate::{camera::Camera, projection::Projection};
+
+use crate::RenderState;
 
 pub(super) struct RobotRenderer {
     pipeline: wgpu::RenderPipeline,
@@ -125,7 +124,9 @@ impl RobotRenderer {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../shaders/robot.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
+                "../../shaders/robot.wgsl"
+            ))),
         });
 
         let vertex_buffers = [wgpu::VertexBufferLayout {

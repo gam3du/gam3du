@@ -11,7 +11,7 @@ use crate::{
 const CAMERA_POS: Vec3 = Vec3::new(-2.0, -3.0, 2.0);
 
 /// Contains every game information that is required to render the scene.
-pub(crate) struct RenderState {
+pub struct RenderState {
     /// Time stamp of the creation.
     /// Used to animate visual effects that run independently of the game loop.
     /// The current time can be retrieved by calling `start_time.elapsed()`
@@ -38,7 +38,8 @@ pub(crate) struct RenderState {
 }
 
 impl RenderState {
-    fn new(game_state: &GameState) -> Self {
+    #[must_use]
+    pub fn new(game_state: &GameState) -> Self {
         let camera = Camera::new(CAMERA_POS, Vec3::ZERO);
 
         Self {

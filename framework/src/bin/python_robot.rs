@@ -14,11 +14,16 @@
 #![allow(clippy::indexing_slicing)]
 #![allow(clippy::panic)]
 
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::channel;
+use std::sync::{mpsc::Sender, Arc};
 use std::thread;
 
-use bindings::api::{Api, Identifier};
-use gam3du::event::{EngineEvent, EventRouter};
+use bindings::event::{ApplicationEvent, EngineEvent};
+use bindings::{
+    api::{Api, Identifier},
+    event::EventRouter,
+};
+use engine_robot::GameLoop;
 use gam3du::framework;
 use gam3du::framework::Application;
 use gam3du::logging::init_logger;
@@ -28,13 +33,32 @@ use tiny_http::{Response, Server};
 fn main() {
     init_logger();
 
+    let game_loop = GameLoop::default();
+    let game_state = Arc::clone(&game_loop.game_state);
+
     let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
     let api: Api = serde_json::from_str(&api_json).unwrap();
 
     let mut event_router = EventRouter::default();
     let event_sender = event_router.clone_sender();
 
-    // let (command_sender, command_receiver) = channel();
+    let game_loop_thread = {
+        let (sender, receiver) = channel();
+        event_router.add_handler(Box::new(move |event| match event {
+            api_call @ EngineEvent::ApiCall { .. } => {
+                sender.send(api_call).unwrap();
+                None
+            }
+            EngineEvent::Application {
+                event: ApplicationEvent::Exit,
+            } => {
+                sender.send(event.clone()).unwrap();
+                Some(event)
+            }
+            other => Some(other),
+        }));
+        thread::spawn(move || game_loop.run(&receiver))
+    };
 
     let python_thread = {
         let source_path = "python/test.py";
@@ -49,13 +73,18 @@ fn main() {
         thread::spawn(move || http_server(&event_sender, &api))
     };
 
-    let application = pollster::block_on(Application::new("demo scene".into(), &mut event_router));
+    let application = pollster::block_on(Application::new(
+        "demo scene".into(),
+        &mut event_router,
+        game_state,
+    ));
     let event_thread = thread::spawn(move || event_router.run());
 
     pollster::block_on(framework::start(application));
     // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
 
     python_thread.join().unwrap();
+    game_loop_thread.join().unwrap();
     webserver_tread.join().unwrap();
     // FIXME Event thread doesn't exit, yet
     event_thread.join().unwrap();

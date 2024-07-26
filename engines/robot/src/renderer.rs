@@ -1,9 +1,13 @@
 use std::time::Instant;
 
-use crate::{
-    floor_renderer::FloorRenderer, projection::Projection, render_state::RenderState,
-    robot_renderer::RobotRenderer,
-};
+mod floor;
+mod robot;
+
+pub use crate::RenderState;
+use floor::FloorRenderer;
+use robot::RobotRenderer;
+
+use crate::projection::Projection;
 
 pub struct Renderer {
     // TODO check whether `projection` should be moved into `RenderState`
@@ -15,7 +19,8 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    fn init(
+    #[must_use]
+    pub fn init(
         _adapter: &wgpu::Adapter,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
