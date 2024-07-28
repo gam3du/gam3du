@@ -13,7 +13,7 @@ pub struct Renderer {
     // TODO check whether `projection` should be moved into `RenderState`
     projection: Projection,
     depth_map: DepthTexture,
-    state: RenderState,
+    pub state: RenderState,
     robot_renderer: RobotRenderer,
     floor_renderer: FloorRenderer,
 }

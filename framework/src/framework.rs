@@ -41,7 +41,7 @@ impl SurfaceWrapper {
     /// On all native platforms, this is where we create the surface.
     ///
     /// Additionally, we configure the surface based on the (now valid) window size.
-    fn resume(&mut self, context: &ExampleContext, window: Arc<Window>, srgb: bool) {
+    fn resume(&mut self, context: &GraphicsContext, window: Arc<Window>, srgb: bool) {
         // Window size is only actually valid after we enter the event loop.
         let window_size = window.inner_size();
         let width = window_size.width.max(1);
@@ -53,7 +53,6 @@ impl SurfaceWrapper {
         self.surface = Some(context.instance.create_surface(window).unwrap());
 
         // From here on, self.surface should be Some.
-
         let surface = self.surface.as_ref().unwrap();
 
         // Get the default configuration,
@@ -76,7 +75,7 @@ impl SurfaceWrapper {
     }
 
     /// Resize the surface, making sure to not resize to zero.
-    fn resize(&mut self, context: &ExampleContext, size: PhysicalSize<u32>) {
+    fn resize(&mut self, context: &GraphicsContext, size: PhysicalSize<u32>) {
         log::info!("Surface resize {size:?}");
 
         let config = self.config.as_mut().unwrap();
@@ -87,7 +86,7 @@ impl SurfaceWrapper {
     }
 
     /// Acquire the next surface texture.
-    fn acquire(&mut self, context: &ExampleContext) -> wgpu::SurfaceTexture {
+    fn acquire(&mut self, context: &GraphicsContext) -> wgpu::SurfaceTexture {
         let surface = self.surface.as_ref().unwrap();
 
         match surface.get_current_texture() {
@@ -130,13 +129,14 @@ impl SurfaceWrapper {
 }
 
 /// Context containing global wgpu resources.
-struct ExampleContext {
+struct GraphicsContext {
     instance: wgpu::Instance,
     adapter: wgpu::Adapter,
     device: wgpu::Device,
     queue: wgpu::Queue,
 }
-impl ExampleContext {
+
+impl GraphicsContext {
     /// Initializes the example context.
     async fn init_async(surface: &mut SurfaceWrapper) -> Self {
         log::info!("Initializing wgpu...");
@@ -215,7 +215,7 @@ pub struct Application {
     game_state: Arc<RwLock<GameState>>,
     renderer: Option<Renderer>,
     surface: SurfaceWrapper,
-    context: ExampleContext,
+    context: GraphicsContext,
     // window: Arc<Window>,
     window: Option<Arc<Window>>,
     title: String,
@@ -233,7 +233,7 @@ impl Application {
         game_state: Arc<RwLock<GameState>>,
     ) -> Self {
         let mut surface = SurfaceWrapper::new();
-        let context = ExampleContext::init_async(&mut surface).await;
+        let context = GraphicsContext::init_async(&mut surface).await;
         let event_sender = event_router.clone_sender();
 
         let (sender, receiver) = channel();
@@ -379,9 +379,11 @@ impl ApplicationHandler for Application {
                 // If this happens, just drop the requested redraw on the floor.
                 //
                 // See https://github.com/rust-windowing/winit/issues/3235 for some discussion
-                if self.renderer.is_none() {
+                let Some(renderer) = self.renderer.as_mut() else {
                     return;
-                }
+                };
+
+                renderer.state.update(&self.game_state.read().unwrap());
 
                 let frame = self.surface.acquire(&self.context);
                 let texture_view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
@@ -389,11 +391,7 @@ impl ApplicationHandler for Application {
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
-                self.renderer.as_mut().unwrap().render(
-                    &texture_view,
-                    &self.context.device,
-                    &self.context.queue,
-                );
+                renderer.render(&texture_view, &self.context.device, &self.context.queue);
 
                 frame.present();
 

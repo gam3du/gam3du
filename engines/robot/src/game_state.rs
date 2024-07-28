@@ -6,7 +6,7 @@ use std::{
 
 use bindings::api::Identifier;
 use glam::{FloatExt, IVec3, Vec3};
-use log::error;
+use log::{debug, error};
 
 use crate::tile::{tile, LinePattern, LineSegment, Tile};
 
@@ -32,7 +32,7 @@ impl GameState {
     }
 
     pub(crate) fn process_command(&mut self, command: &Identifier) {
-        self.robot.current_animation = match command.0.as_str() {
+        match command.0.as_str() {
             "move forward" => {
                 self.robot.complete_animation();
                 let segment = LineSegment::from(self.robot.orientation);
@@ -68,36 +68,35 @@ impl GameState {
                 self.floor.tiles[end_index].line_pattern |= -segment;
                 self.floor.tainted = self.tick;
 
-                Some(Animation::Move {
+                self.robot.current_animation = Some(Animation::Move {
                     start: self.robot.animation_position,
                     end: self.robot.position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
                     start_time: Instant::now(),
                     duration: Duration::from_millis(1_000),
-                })
+                });
             }
             "turn left" => {
                 self.robot.complete_animation();
                 self.robot.orientation += 1;
-                Some(Animation::Rotate {
+                self.robot.current_animation = Some(Animation::Rotate {
                     start: self.robot.animation_angle,
                     end: self.robot.orientation.angle(),
                     start_time: Instant::now(),
                     duration: Duration::from_millis(1_000),
-                })
+                });
             }
             "turn right" => {
                 self.robot.complete_animation();
                 self.robot.orientation -= 1;
-                Some(Animation::Rotate {
+                self.robot.current_animation = Some(Animation::Rotate {
                     start: self.robot.animation_angle,
                     end: self.robot.orientation.angle(),
                     start_time: Instant::now(),
                     duration: Duration::from_millis(1_000),
-                })
+                });
             }
             other => {
                 error!("Unknown Command: {other}");
-                None
             }
         };
     }
@@ -123,7 +122,10 @@ impl Robot {
 
     fn complete_animation(&mut self) {
         if let Some(current_animation) = self.current_animation.take() {
+            debug!("short-circuiting running animation");
             current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
+        } else {
+            debug!("no existing animation to short-circuit");
         }
     }
 

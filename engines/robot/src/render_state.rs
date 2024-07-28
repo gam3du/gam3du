@@ -52,7 +52,7 @@ impl RenderState {
         }
     }
 
-    fn update(&mut self, game_state: &GameState) {
+    pub fn update(&mut self, game_state: &GameState) {
         let time = self.start_time.elapsed();
 
         let (dy, dx) = (time.as_secs_f32() * 0.1).sin_cos();
