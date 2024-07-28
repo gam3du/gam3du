@@ -246,6 +246,9 @@ name = "bind-python"
 version = "0.1.0"
 dependencies = [
  "bindings",
+ "log",
+ "rustpython",
+ "rustpython-vm",
  "serde_json",
 ]
 
@@ -895,8 +898,6 @@ dependencies = [
  "engine-robot",
  "env_logger 0.11.5",
  "log",
- "rustpython",
- "rustpython-vm",
  "wgpu",
  "winit",
 ]
@@ -1279,6 +1280,7 @@ checksum = "507460a910eb7b32ee961886ff48539633b788a36b65692b95f225b844c82553"
 name = "launcher-robot"
 version = "0.1.0"
 dependencies = [
+ "bind-python",
  "bindings",
  "engine-robot",
  "gam3du-framework",

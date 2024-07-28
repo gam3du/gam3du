@@ -103,6 +103,7 @@ mod rust_py_module {
     };
 
     use bindings::{api::Identifier, event::EngineEvent};
+    use log::debug;
 
     use super::{PyObject, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython_vm::builtins::PyStr;
@@ -256,7 +257,7 @@ mod rust_py_module {
     fn message(name: ConvertIdentifier, vm: &VirtualMachine) -> PyResult<()> {
         let api = Api {};
         let name = name.inner(vm, &api)?;
-        println!("Called message with {name:?}");
+        debug!("Called message with {name:?}");
         COMMAND_QUEUE
             .lock()
             .unwrap()

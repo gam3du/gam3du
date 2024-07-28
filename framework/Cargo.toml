@@ -10,30 +10,12 @@ license-file.workspace = true
 engine-robot.workspace = true
 bindings.workspace = true
 
-# Python interpreter
-rustpython.workspace = true
-rustpython-vm.workspace = true
-
-# simplifies bit/byte-level operations
-# bytemuck = { workspace = true, features = ["derive"] }
-
 # Abstraction layer for the platform's graphics API
 wgpu.workspace = true
 
-# # Basic vector and matrix types and operations thereon
-# glam = { workspace = true, features = ["bytemuck"] }
-
-# rand.workspace = true
-
-# pollster.workspace = true
 log.workspace = true
 env_logger.workspace = true
 winit.workspace = true
-
-# serde = { workspace = true, features = ["derive"] }
-# json5 = { workspace = true }
-# serde_json.workspace = true
-# tiny_http.workspace = true
 
 [lints]
 workspace = true

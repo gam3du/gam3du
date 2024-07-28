@@ -27,7 +27,6 @@ use bindings::{
 use engine_robot::GameLoop;
 use gam3du_framework::framework::Application;
 use gam3du_framework::logging::init_logger;
-use gam3du_framework::python::runner;
 use log::info;
 use tiny_http::{Response, Server};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -66,7 +65,7 @@ fn main() {
         let source_path = "python/test.py";
         let event_sender = event_sender.clone();
         let api = api.clone();
-        thread::spawn(move || runner(&source_path, event_sender, &api))
+        thread::spawn(move || bind_python::runner(&source_path, event_sender, &api))
     };
 
     let webserver_thread = {
