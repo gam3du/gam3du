@@ -25,12 +25,12 @@ use bindings::{
     event::EventRouter,
 };
 use engine_robot::GameLoop;
-use gam3du::framework;
 use gam3du::framework::Application;
 use gam3du::logging::init_logger;
 use gam3du::python::runner;
 use log::info;
 use tiny_http::{Response, Server};
+use winit::event_loop::{ControlFlow, EventLoop};
 
 fn main() {
     init_logger();
@@ -75,14 +75,37 @@ fn main() {
         thread::spawn(move || http_server(&event_sender, &api))
     };
 
-    let application = pollster::block_on(Application::new(
+    let mut application = pollster::block_on(Application::new(
         "demo scene".into(),
         &mut event_router,
         game_state,
     ));
+
+    // framework::start(application);
+    let event_loop = EventLoop::with_user_event().build().unwrap();
+
+    // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
+    // dispatched any events. This is ideal for games and similar applications.
+    event_loop.set_control_flow(ControlFlow::Poll);
+
+    let proxy = event_loop.create_proxy();
+
+    event_router.add_handler(Box::new(move |engine_event| match engine_event {
+        event @ EngineEvent::Application {
+            event: ApplicationEvent::Exit,
+        } => {
+            proxy.send_event(event.clone()).unwrap();
+            Some(event)
+        }
+        other => Some(other),
+    }));
+
     let event_thread = thread::spawn(move || event_router.run());
 
-    framework::start(application);
+    //let app = Application::new(title, receiver, event_sender);
+    log::info!("Entering event loop...");
+    event_loop.run_app(&mut application).unwrap();
+
     // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
 
     // FIXME Event thread doesn't exit, yet
@@ -102,7 +125,7 @@ fn main() {
     {
         info!("Waiting for all threads to exit …");
         if python_thread.as_ref().is_some_and(JoinHandle::is_finished) {
-            info!("Phython stopped");
+            info!("Python stopped");
             python_thread.take().unwrap().join().unwrap();
         }
         if game_loop_thread

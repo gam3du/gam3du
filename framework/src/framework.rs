@@ -6,9 +6,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-use bindings::event::{EngineEvent, EventRouter};
+use bindings::event::{ApplicationEvent, EngineEvent, EventRouter};
 use engine_robot::{GameState, RenderState, Renderer};
-use log::{debug, trace};
+use log::{debug, info, trace};
 use wgpu;
 use winit::{
     application::ApplicationHandler,
@@ -221,8 +221,8 @@ pub struct Application {
     title: String,
     frame_counter: u32,
     frame_time: Instant,
-    receiver: Receiver<EngineEvent>,
-    current_command: Option<EngineEvent>,
+    // receiver: Receiver<EngineEvent>,
+    // current_command: Option<EngineEvent>,
     event_sink: Sender<EngineEvent>,
 }
 
@@ -236,16 +236,16 @@ impl Application {
         let context = GraphicsContext::init_async(&mut surface).await;
         let event_sender = event_router.clone_sender();
 
-        let (sender, receiver) = channel();
+        // let (sender, receiver) = channel();
 
-        event_router.add_handler(Box::new(move |event| {
-            if matches!(event, EngineEvent::ApiCall { .. }) {
-                sender.send(event).unwrap();
-                None
-            } else {
-                Some(event)
-            }
-        }));
+        // event_router.add_handler(Box::new(move |event| {
+        //     if matches!(event, EngineEvent::ApiCall { .. }) {
+        //         sender.send(event).unwrap();
+        //         None
+        //     } else {
+        //         Some(event)
+        //     }
+        // }));
 
         Self {
             renderer: None,
@@ -255,15 +255,15 @@ impl Application {
             title,
             frame_counter: 0,
             frame_time: Instant::now(),
-            receiver,
-            current_command: None,
+            // receiver,
+            // current_command: None,
             event_sink: event_sender,
             game_state,
         }
     }
 }
 
-impl ApplicationHandler for Application {
+impl ApplicationHandler<EngineEvent> for Application {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let attributes = WindowAttributes::default().with_title(&self.title);
 
@@ -288,13 +288,23 @@ impl ApplicationHandler for Application {
         }
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, _event: ()) {}
+    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: EngineEvent) {
+        match event {
+            EngineEvent::Application {
+                event: ApplicationEvent::Exit,
+            } => {
+                info!("Application event loop received an ExitEvent. Shutting down event loop.");
+                event_loop.exit();
+            }
+            other => todo!("unknown event: {other:?}"),
+        }
+    }
 
     // TODO maybe the trace output can be moved elsewhere?
     #[allow(clippy::too_many_lines)]
     fn window_event(
         &mut self,
-        event_loop: &ActiveEventLoop,
+        _event_loop: &ActiveEventLoop,
         _window_id: WindowId,
         event: WindowEvent,
     ) {
@@ -314,7 +324,11 @@ impl ApplicationHandler for Application {
 
             WindowEvent::CloseRequested => {
                 trace!("WindowEvent::CloseRequested()");
-                event_loop.exit();
+                self.event_sink
+                    .send(EngineEvent::Application {
+                        event: ApplicationEvent::Exit,
+                    })
+                    .unwrap();
             }
 
             WindowEvent::KeyboardInput {
@@ -340,31 +354,40 @@ impl ApplicationHandler for Application {
                         #[allow(clippy::single_match)]
                         match key {
                             NamedKey::Escape => {
-                                event_loop.exit();
+                                self.event_sink
+                                    .send(EngineEvent::Application {
+                                        event: ApplicationEvent::Exit,
+                                    })
+                                    .unwrap();
                             }
-                            _ => {}
+                            _ => {
+                                self.event_sink.send(EngineEvent::Window { event }).unwrap();
+                            }
                         }
                     }
                     Key::Character(ref key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Character({key:?})");
+                        self.event_sink.send(EngineEvent::Window { event }).unwrap();
                     }
                     Key::Unidentified(ref key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Unidentified({key:?})");
+                        self.event_sink.send(EngineEvent::Window { event }).unwrap();
                     }
                     Key::Dead(key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Dead({key:?})");
+                        self.event_sink.send(EngineEvent::Window { event }).unwrap();
                     }
                 }
             }
             WindowEvent::RedrawRequested => {
-                if self.current_command.is_none() {
-                    match self.receiver.try_recv() {
-                        Ok(command) => {
-                            self.current_command.replace(command);
-                        }
-                        Err(TryRecvError::Disconnected | TryRecvError::Empty) => {}
-                    }
-                }
+                // if self.current_command.is_none() {
+                //     match self.receiver.try_recv() {
+                //         Ok(command) => {
+                //             self.current_command.replace(command);
+                //         }
+                //         Err(TryRecvError::Disconnected | TryRecvError::Empty) => {}
+                //     }
+                // }
 
                 // if let Some(EngineEvent::ApiCall { api, ref command }) = self.current_command.take()
                 // {
@@ -407,11 +430,12 @@ impl ApplicationHandler for Application {
                 }
 
                 self.window.as_ref().unwrap().request_redraw();
+                // self.event_sink.send(EngineEvent::Window { event }).unwrap();
             }
-            _ => {}
+            _ => {
+                self.event_sink.send(EngineEvent::Window { event }).unwrap();
+            }
         }
-
-        self.event_sink.send(EngineEvent::Window { event }).unwrap();
     }
 
     fn device_event(
@@ -450,23 +474,27 @@ impl ApplicationHandler for Application {
     }
 
     fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
-        trace!("event loop is exiting");
+        trace!("window event loop is exiting");
     }
 
     fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
-        trace!("event loop was suspended");
+        trace!("window event loop was suspended");
         self.surface.suspend();
     }
 }
 
-pub fn start(mut app: Application) {
-    let event_loop = EventLoop::new().unwrap();
+// pub fn start(mut app: Application) {
+//     let event_loop = EventLoop::new().unwrap();
 
-    // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
-    // dispatched any events. This is ideal for games and similar applications.
-    event_loop.set_control_flow(ControlFlow::Poll);
+//     // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
+//     // dispatched any events. This is ideal for games and similar applications.
+//     event_loop.set_control_flow(ControlFlow::Poll);
 
-    //let app = Application::new(title, receiver, event_sender);
-    log::info!("Entering event loop...");
-    event_loop.run_app(&mut app).unwrap();
-}
+//     let proxy = event_loop.create_proxy();
+
+//     //proxy.send_event(event);
+
+//     //let app = Application::new(title, receiver, event_sender);
+//     log::info!("Entering event loop...");
+//     event_loop.run_app(&mut app).unwrap();
+// }

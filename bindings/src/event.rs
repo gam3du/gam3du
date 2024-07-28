@@ -1,10 +1,11 @@
 use std::sync::mpsc::{channel, Receiver, Sender};
 
+use log::debug;
 use winit::event::WindowEvent;
 
 use crate::api::Identifier;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum EngineEvent {
     Window {
         event: WindowEvent,
@@ -54,7 +55,16 @@ impl EventRouter {
                 };
                 event = handled_event;
             }
-            // unhandled event
+
+            if matches!(
+                event,
+                EngineEvent::Application {
+                    event: ApplicationEvent::Exit
+                }
+            ) {
+                debug!("exiting event router");
+                break 'next_event;
+            }
         }
     }
 }

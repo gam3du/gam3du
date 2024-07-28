@@ -6,14 +6,15 @@
 // TODO re-enable this later and review all occurrences
 #![allow(clippy::cast_precision_loss)]
 // TODO remove before release
-#![allow(clippy::missing_panics_doc)]
-#![allow(missing_docs)]
-#![allow(clippy::print_stdout)]
-#![allow(clippy::unwrap_used)]
 #![allow(clippy::expect_used)]
 #![allow(clippy::indexing_slicing)]
-#![allow(clippy::panic)]
 #![allow(clippy::missing_errors_doc)]
+#![allow(clippy::missing_panics_doc)]
+#![allow(clippy::panic)]
+#![allow(clippy::print_stdout)]
+#![allow(clippy::todo)]
+#![allow(clippy::unwrap_used)]
+#![allow(missing_docs)]
 
 pub mod framework;
 pub mod logging;
