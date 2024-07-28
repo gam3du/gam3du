@@ -1,9 +1,10 @@
+import robot_api_internal
+
 def move_forward():
-	pass
+	robot_api_internal.message("move forward")
 
 def turn_left():
-	pass
+	robot_api_internal.message("turn left")
 
 def turn_right():
-	pass
-
+	robot_api_internal.message("turn right")

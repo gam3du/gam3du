@@ -29,7 +29,7 @@ pub fn runner(
         .init_stdlib()
         .init_hook(Box::new(|vm| {
             vm.add_native_module(
-                "robot_api".to_owned(),
+                "robot_api_internal".to_owned(),
                 Box::new(rust_py_module::make_module),
             );
 
@@ -108,6 +108,7 @@ mod rust_py_module {
 
     use super::{pyclass, PyObject, PyPayload, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython::vm::{builtins::PyList, convert::ToPyObject, PyObjectRef};
+    use rustpython_vm::builtins::PyStr;
 
     pub(super) static COMMAND_QUEUE: Mutex<Option<Sender<EngineEvent>>> = Mutex::new(None);
 
@@ -220,5 +221,53 @@ python_person.name: {}",
             let name = obj.get_attr("name", vm)?.try_into_value::<String>(vm)?;
             Ok(PythonPerson { name })
         }
+    }
+
+    // TODO: Can we use this to store a reference to the real api struct?
+    // Maybe as a singleton inside the python module?
+    struct Api {}
+
+    impl Api {
+        fn check_identifier(&self, name: &str) -> bool {
+            name == "move forward" || name == "turn left" || name == "turn right"
+        }
+    }
+
+    struct ConvertIdentifier(Option<String>);
+
+    impl ConvertIdentifier {
+        fn inner(self, vm: &VirtualMachine, api: &Api) -> PyResult<Identifier> {
+            match self.0 {
+                Some(name) if api.check_identifier(&name) => Ok(Identifier(name)),
+                Some(name) => {
+                    Err(vm.new_value_error(format!("{name:?} is not an identifier name")))
+                }
+                None => Err(vm.new_type_error("Identifier name must be a string".to_string())),
+            }
+        }
+    }
+
+    impl<'a> TryFromBorrowedObject<'a> for ConvertIdentifier {
+        fn try_from_borrowed_object(_: &VirtualMachine, obj: &'a PyObject) -> PyResult<Self> {
+            let identifier: Option<&PyStr> = obj.payload();
+            let identifier = identifier.map(|pystr| pystr.as_ref().to_owned());
+            Ok(Self(identifier))
+        }
+    }
+
+    #[pyfunction]
+    fn message(name: ConvertIdentifier, vm: &VirtualMachine) -> PyResult<()> {
+        let api = Api {};
+        let name = name.inner(vm, &api)?;
+        println!("Called message with {:?}", name);
+        COMMAND_QUEUE
+            .lock()
+            .unwrap()
+            .as_mut()
+            .unwrap()
+            .send(Command { name })
+            .unwrap();
+        thread::sleep(Duration::from_millis(500));
+        Ok(())
     }
 }

@@ -39,7 +39,16 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
     }
     writeln!(out, ":")?;
 
-    writeln!(out, "\tpass")?;
+    write!(out, "\trobot_api.message(\"{name}\"")?;
+    for parameter in parameters {
+        write!(out, ", check_type(")?;
+        generate_parameter(out, parameter)?;
+        write!(out, ", ")?;
+        write!(out, "{:?}", serde_json::to_string(&parameter.typ)?)?;
+        write!(out, ")")?;
+    }
+    writeln!(out, ")",)?;
+
     writeln!(out)?;
 
     Ok(())
