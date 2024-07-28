@@ -19,7 +19,3 @@
 pub mod framework;
 pub mod logging;
 pub mod python;
-
-use std::sync::atomic::AtomicU16;
-
-pub(crate) static ROTATION: AtomicU16 = AtomicU16::new(0);

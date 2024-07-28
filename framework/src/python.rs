@@ -7,8 +7,7 @@ use std::{fs::read_to_string, path::Path, sync::mpsc::Sender};
 use bindings::{api::Api, event::EngineEvent};
 use log::{error, info};
 use rustpython_vm::{
-    compiler::Mode, pyclass, pymodule, PyObject, PyPayload, PyResult, TryFromBorrowedObject,
-    VirtualMachine,
+    compiler::Mode, pymodule, PyObject, PyResult, TryFromBorrowedObject, VirtualMachine,
 };
 
 #[allow(clippy::missing_panics_doc)]
@@ -98,134 +97,132 @@ pub fn runner(
 )]
 mod rust_py_module {
     use std::{
-        sync::{atomic::Ordering, mpsc::Sender, Mutex},
+        sync::{mpsc::Sender, Mutex},
         thread,
         time::Duration,
     };
 
-    use crate::ROTATION;
     use bindings::{api::Identifier, event::EngineEvent};
 
-    use super::{pyclass, PyObject, PyPayload, PyResult, TryFromBorrowedObject, VirtualMachine};
-    use rustpython::vm::{builtins::PyList, convert::ToPyObject, PyObjectRef};
+    use super::{PyObject, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython_vm::builtins::PyStr;
 
     pub(super) static COMMAND_QUEUE: Mutex<Option<Sender<EngineEvent>>> = Mutex::new(None);
 
-    #[pyfunction]
-    fn rust_function(
-        num: i32,
-        str: String,
-        python_person: PythonPerson,
-        _vm: &VirtualMachine,
-    ) -> PyResult<RustStruct> {
-        println!(
-            "Calling standalone rust function from python passing args:
-num: {},
-string: {},
-python_person.name: {}",
-            num, str, python_person.name
-        );
-        Ok(RustStruct {
-            numbers: NumVec(vec![1, 2, 3, 4]),
-        })
-    }
+    //     #[pyfunction]
+    //     fn rust_function(
+    //         num: i32,
+    //         str: String,
+    //         python_person: PythonPerson,
+    //         _vm: &VirtualMachine,
+    //     ) -> PyResult<RustStruct> {
+    //         println!(
+    //             "Calling standalone rust function from python passing args:
+    // num: {},
+    // string: {},
+    // python_person.name: {}",
+    //             num, str, python_person.name
+    //         );
+    //         Ok(RustStruct {
+    //             numbers: NumVec(vec![1, 2, 3, 4]),
+    //         })
+    //     }
 
-    #[pyfunction]
-    fn move_forward() {
-        COMMAND_QUEUE
-            .lock()
-            .unwrap()
-            .as_mut()
-            .unwrap()
-            .send(EngineEvent::ApiCall {
-                api: Identifier("robot".into()),
-                command: Identifier("move forward".into()),
-            })
-            .unwrap();
-        thread::sleep(Duration::from_millis(1000));
-    }
+    // #[pyfunction]
+    // fn move_forward() {
+    //     COMMAND_QUEUE
+    //         .lock()
+    //         .unwrap()
+    //         .as_mut()
+    //         .unwrap()
+    //         .send(EngineEvent::ApiCall {
+    //             api: Identifier("robot".into()),
+    //             command: Identifier("move forward".into()),
+    //         })
+    //         .unwrap();
+    //     thread::sleep(Duration::from_millis(1000));
+    // }
 
-    #[pyfunction]
-    fn turn_left() {
-        COMMAND_QUEUE
-            .lock()
-            .unwrap()
-            .as_mut()
-            .unwrap()
-            .send(EngineEvent::ApiCall {
-                api: Identifier("robot".into()),
-                command: Identifier("turn left".into()),
-            })
-            .unwrap();
-        thread::sleep(Duration::from_millis(1000));
-    }
+    // #[pyfunction]
+    // fn turn_left() {
+    //     COMMAND_QUEUE
+    //         .lock()
+    //         .unwrap()
+    //         .as_mut()
+    //         .unwrap()
+    //         .send(EngineEvent::ApiCall {
+    //             api: Identifier("robot".into()),
+    //             command: Identifier("turn left".into()),
+    //         })
+    //         .unwrap();
+    //     thread::sleep(Duration::from_millis(1000));
+    // }
 
-    #[pyfunction]
-    fn turn_right() {
-        COMMAND_QUEUE
-            .lock()
-            .unwrap()
-            .as_mut()
-            .unwrap()
-            .send(EngineEvent::ApiCall {
-                api: Identifier("robot".into()),
-                command: Identifier("turn right".into()),
-            })
-            .unwrap();
-        thread::sleep(Duration::from_millis(1000));
-    }
+    // #[pyfunction]
+    // fn turn_right() {
+    //     COMMAND_QUEUE
+    //         .lock()
+    //         .unwrap()
+    //         .as_mut()
+    //         .unwrap()
+    //         .send(EngineEvent::ApiCall {
+    //             api: Identifier("robot".into()),
+    //             command: Identifier("turn right".into()),
+    //         })
+    //         .unwrap();
+    //     thread::sleep(Duration::from_millis(1000));
+    // }
 
-    #[pyfunction]
-    fn rotate_cube(angle: u16) {
-        println!("angle {angle}");
-        ROTATION.store(angle, Ordering::Relaxed);
-    }
+    // #[pyfunction]
+    // fn rotate_cube(angle: u16) {
+    //     println!("angle {angle}");
+    //     ROTATION.store(angle, Ordering::Relaxed);
+    // }
 
-    #[derive(Debug, Clone)]
-    struct NumVec(Vec<i32>);
+    // #[derive(Debug, Clone)]
+    // struct NumVec(Vec<i32>);
 
-    impl ToPyObject for NumVec {
-        fn to_pyobject(self, vm: &VirtualMachine) -> PyObjectRef {
-            let list = self.0.into_iter().map(|item| vm.new_pyobj(item)).collect();
-            PyList::new_ref(list, vm.as_ref()).to_pyobject(vm)
-        }
-    }
+    // impl ToPyObject for NumVec {
+    //     fn to_pyobject(self, vm: &VirtualMachine) -> PyObjectRef {
+    //         let list = self.0.into_iter().map(|item| vm.new_pyobj(item)).collect();
+    //         PyList::new_ref(list, vm.as_ref()).to_pyobject(vm)
+    //     }
+    // }
 
-    #[pyattr]
-    #[pyclass(module = "rust_py_module", name = "RustStruct")]
-    #[derive(Debug, PyPayload)]
-    struct RustStruct {
-        numbers: NumVec,
-    }
+    // #[pyattr]
+    // #[pyclass(module = "rust_py_module", name = "RustStruct")]
+    // #[derive(Debug, PyPayload)]
+    // struct RustStruct {
+    //     numbers: NumVec,
+    // }
 
-    #[pyclass]
-    impl RustStruct {
-        #[pygetset]
-        fn numbers(&self) -> NumVec {
-            self.numbers.clone()
-        }
+    // #[pyclass]
+    // impl RustStruct {
+    //     #[pygetset]
+    //     fn numbers(&self) -> NumVec {
+    //         self.numbers.clone()
+    //     }
 
-        #[pymethod]
-        fn print_in_rust_from_python(&self) {
-            println!("Calling a rust method from python");
-        }
-    }
+    //     #[pymethod]
+    //     fn print_in_rust_from_python(&self) {
+    //         println!("Calling a rust method from python");
+    //     }
+    // }
 
-    struct PythonPerson {
-        name: String,
-    }
+    // struct PythonPerson {
+    //     name: String,
+    // }
 
-    impl<'obj> TryFromBorrowedObject<'obj> for PythonPerson {
-        fn try_from_borrowed_object(vm: &VirtualMachine, obj: &'obj PyObject) -> PyResult<Self> {
-            let name = obj.get_attr("name", vm)?.try_into_value::<String>(vm)?;
-            Ok(PythonPerson { name })
-        }
-    }
+    // impl<'obj> TryFromBorrowedObject<'obj> for PythonPerson {
+    //     fn try_from_borrowed_object(vm: &VirtualMachine, obj: &'obj PyObject) -> PyResult<Self> {
+    //         let name = obj.get_attr("name", vm)?.try_into_value::<String>(vm)?;
+    //         Ok(PythonPerson { name })
+    //     }
+    // }
 
     // TODO: Can we use this to store a reference to the real api struct?
     // Maybe as a singleton inside the python module?
-    struct Api {}
+    struct Api;
 
     impl Api {
         fn check_identifier(&self, name: &str) -> bool {
@@ -242,13 +239,13 @@ python_person.name: {}",
                 Some(name) => {
                     Err(vm.new_value_error(format!("{name:?} is not an identifier name")))
                 }
-                None => Err(vm.new_type_error("Identifier name must be a string".to_string())),
+                None => Err(vm.new_type_error("Identifier name must be a string".to_owned())),
             }
         }
     }
 
-    impl<'a> TryFromBorrowedObject<'a> for ConvertIdentifier {
-        fn try_from_borrowed_object(_: &VirtualMachine, obj: &'a PyObject) -> PyResult<Self> {
+    impl<'obj> TryFromBorrowedObject<'obj> for ConvertIdentifier {
+        fn try_from_borrowed_object(_: &VirtualMachine, obj: &'obj PyObject) -> PyResult<Self> {
             let identifier: Option<&PyStr> = obj.payload();
             let identifier = identifier.map(|pystr| pystr.as_ref().to_owned());
             Ok(Self(identifier))
@@ -259,15 +256,18 @@ python_person.name: {}",
     fn message(name: ConvertIdentifier, vm: &VirtualMachine) -> PyResult<()> {
         let api = Api {};
         let name = name.inner(vm, &api)?;
-        println!("Called message with {:?}", name);
+        println!("Called message with {name:?}");
         COMMAND_QUEUE
             .lock()
             .unwrap()
             .as_mut()
             .unwrap()
-            .send(Command { name })
+            .send(EngineEvent::ApiCall {
+                api: Identifier("robot".into()),
+                command: name,
+            })
             .unwrap();
-        thread::sleep(Duration::from_millis(500));
+        thread::sleep(Duration::from_millis(1000));
         Ok(())
     }
 }

@@ -1,8 +1,5 @@
 use std::{
-    sync::{
-        mpsc::{channel, Receiver, Sender, TryRecvError},
-        Arc, RwLock,
-    },
+    sync::{mpsc::Sender, Arc, RwLock},
     time::{Duration, Instant},
 };
 
@@ -14,7 +11,7 @@ use winit::{
     application::ApplicationHandler,
     dpi::PhysicalSize,
     event::{DeviceEvent, DeviceId, KeyEvent, WindowEvent},
-    event_loop::{ActiveEventLoop, ControlFlow, EventLoop},
+    event_loop::ActiveEventLoop,
     keyboard::{Key, NamedKey},
     window::{Window, WindowAttributes, WindowId},
 };
