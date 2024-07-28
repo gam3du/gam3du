@@ -69,7 +69,7 @@ fn main() {
         thread::spawn(move || runner(&source_path, event_sender, &api))
     };
 
-    let webserver_tread = {
+    let webserver_thread = {
         let event_sender = event_sender.clone();
         let api = api.clone();
         thread::spawn(move || http_server(&event_sender, &api))
@@ -116,11 +116,11 @@ fn main() {
 
     let mut python_thread = Some(python_thread);
     let mut game_loop_thread = Some(game_loop_thread);
-    let mut webserver_tread = Some(webserver_tread);
+    let mut webserver_thread = Some(webserver_thread);
     let mut event_thread = Some(event_thread);
     while python_thread.is_some()
         || game_loop_thread.is_some()
-        || webserver_tread.is_some()
+        || webserver_thread.is_some()
         || event_thread.is_some()
     {
         info!("Waiting for all threads to exit …");
@@ -135,12 +135,12 @@ fn main() {
             info!("Game loop stopped");
             game_loop_thread.take().unwrap().join().unwrap();
         }
-        if webserver_tread
+        if webserver_thread
             .as_ref()
             .is_some_and(JoinHandle::is_finished)
         {
             info!("webserver stopped");
-            webserver_tread.take().unwrap().join().unwrap();
+            webserver_thread.take().unwrap().join().unwrap();
         }
         if event_thread.as_ref().is_some_and(JoinHandle::is_finished) {
             info!("event router stopped");

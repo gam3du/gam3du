@@ -1,5 +1,6 @@
 use crate::game_state::GameState;
 use bindings::event::{ApplicationEvent, EngineEvent};
+use log::debug;
 use std::{
     sync::{
         mpsc::{Receiver, TryRecvError},
@@ -44,10 +45,16 @@ impl GameLoop {
                                 game_state.process_command(&command);
                             }
                             EngineEvent::Application { event } => match event {
-                                ApplicationEvent::Exit => break 'game_loop,
+                                ApplicationEvent::Exit => {
+                                    debug!("Received Exit-event. Exiting game loop");
+                                    break 'game_loop;
+                                }
                             },
                         },
-                        Err(TryRecvError::Disconnected) => break 'game_loop,
+                        Err(TryRecvError::Disconnected) => {
+                            debug!("Event source disconnected. Exiting game loop");
+                            break 'game_loop;
+                        }
                         Err(TryRecvError::Empty) => break 'next_event,
                     }
                 }
