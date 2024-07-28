@@ -3,6 +3,7 @@
     "rust-analyzer.linkedProjects": [
         "bindings/Cargo.toml",
         "bindings/python/Cargo.toml",
+        "engines/Cargo.toml",
         "engines/robot/Cargo.toml",
         "framework/Cargo.toml",
         "launchers/robot/Cargo.toml",

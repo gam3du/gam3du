@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "bindings",
     "bindings/python",
+    "engines",
     "engines/robot",
     "launchers/robot",
     "libs/ecs",
@@ -20,6 +21,7 @@ readme = "README.md"
 [workspace.dependencies]
 bindings = { path = "bindings" }
 bind-python = { path = "bindings/python" }
+engines = { path = "engines" }
 engine-robot = { path = "engines/robot" }
 gam3du-framework = { path = "framework" }
 lib-ecs = { path = "libs/ecs" }

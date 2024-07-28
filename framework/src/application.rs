@@ -1,11 +1,10 @@
+use bindings::event::{ApplicationEvent, EngineEvent, EventRouter};
+use engines::Renderer;
+use log::{debug, info, trace};
 use std::{
     sync::{mpsc::Sender, Arc},
     time::{Duration, Instant},
 };
-
-use bindings::event::{ApplicationEvent, EngineEvent, EventRouter};
-use engine_robot::{Renderer, RendererBuilder};
-use log::{debug, info, trace};
 use wgpu;
 use winit::{
     application::ApplicationHandler,
@@ -17,22 +16,19 @@ use winit::{
 
 use crate::{graphics_context::GraphicsContext, surface_wrapper::SurfaceWrapper};
 
-pub struct Application {
+pub struct Application<RendererBuilder: engines::RendererBuilder> {
     renderer_builder: RendererBuilder,
-    renderer: Option<Renderer>,
+    renderer: Option<RendererBuilder::Renderer>,
     pub(super) surface: SurfaceWrapper,
     context: GraphicsContext,
-    // window: Arc<Window>,
     window: Option<Arc<Window>>,
     title: String,
     frame_counter: u32,
     frame_time: Instant,
-    // receiver: Receiver<EngineEvent>,
-    // current_command: Option<EngineEvent>,
     event_sink: Sender<EngineEvent>,
 }
 
-impl Application {
+impl<RendererBuilder: engines::RendererBuilder> Application<RendererBuilder> {
     pub async fn new(
         title: String,
         event_router: &mut EventRouter,
@@ -56,7 +52,9 @@ impl Application {
     }
 }
 
-impl ApplicationHandler<EngineEvent> for Application {
+impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
+    for Application<RendererBuilder>
+{
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let attributes = WindowAttributes::default().with_title(&self.title);
 

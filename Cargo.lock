@@ -774,8 +774,16 @@ version = "0.1.0"
 dependencies = [
  "bindings",
  "bytemuck",
+ "engines",
  "glam",
  "log",
+ "wgpu",
+]
+
+[[package]]
+name = "engines"
+version = "0.1.0"
+dependencies = [
  "wgpu",
 ]
 
@@ -895,7 +903,7 @@ name = "gam3du-framework"
 version = "0.1.0"
 dependencies = [
  "bindings",
- "engine-robot",
+ "engines",
  "env_logger 0.11.5",
  "log",
  "wgpu",

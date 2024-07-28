@@ -174,12 +174,6 @@ mod rust_py_module {
     //     thread::sleep(Duration::from_millis(1000));
     // }
 
-    // #[pyfunction]
-    // fn rotate_cube(angle: u16) {
-    //     println!("angle {angle}");
-    //     ROTATION.store(angle, Ordering::Relaxed);
-    // }
-
     // #[derive(Debug, Clone)]
     // struct NumVec(Vec<i32>);
 

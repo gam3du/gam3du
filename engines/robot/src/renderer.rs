@@ -21,9 +21,13 @@ impl RendererBuilder {
     pub fn new(game_state: Arc<RwLock<GameState>>) -> Self {
         Self { game_state }
     }
+}
+
+impl engines::RendererBuilder for RendererBuilder {
+    type Renderer = Renderer;
 
     #[must_use]
-    pub fn build(
+    fn build(
         &self,
         _adapter: &wgpu::Adapter,
         device: &wgpu::Device,
@@ -66,47 +70,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    pub fn update(&mut self) {
-        self.state.update(&self.game_state.read().unwrap());
-    }
-
-    pub fn resize(
-        &mut self,
-        device: &wgpu::Device,
-        _queue: &wgpu::Queue,
-        surface: &wgpu::SurfaceConfiguration,
-    ) {
-        self.projection
-            .set_surface_dimensions((surface.width, surface.height));
-        self.depth_map = DepthTexture::create_depth_texture(device, surface, "depth_map");
-    }
-
-    // pub(crate) fn render<'pipeline>(
-    //     &'pipeline mut self,
-    //     queue: &wgpu::Queue,
-    //     render_pass: &mut wgpu::RenderPass<'pipeline>,
-    // ) {
-    //     self.floor_renderer.render(queue, render_pass, &self.state);
-    //     self.robot_renderer.render(queue, render_pass, &self.state);
-    // }
-
-    pub fn render(
-        &mut self,
-        texture_view: &wgpu::TextureView,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-    ) {
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-
-        self.render_cube(texture_view, &mut encoder, queue);
-
-        self.render_floor(texture_view, &mut encoder, queue);
-
-        queue.submit(Some(encoder.finish()));
-    }
-
-    fn render_cube(
+    fn render_robot(
         &mut self,
         texture_view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
@@ -188,6 +152,39 @@ impl Renderer {
             self.floor_renderer
                 .render(queue, &mut render_pass, &mut self.state, &self.projection);
         }
+    }
+}
+
+impl engines::Renderer for Renderer {
+    fn update(&mut self) {
+        self.state.update(&self.game_state.read().unwrap());
+    }
+
+    fn resize(
+        &mut self,
+        device: &wgpu::Device,
+        _queue: &wgpu::Queue,
+        surface: &wgpu::SurfaceConfiguration,
+    ) {
+        self.projection
+            .set_surface_dimensions((surface.width, surface.height));
+        self.depth_map = DepthTexture::create_depth_texture(device, surface, "depth_map");
+    }
+
+    fn render(
+        &mut self,
+        texture_view: &wgpu::TextureView,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) {
+        let mut encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        self.render_robot(texture_view, &mut encoder, queue);
+
+        self.render_floor(texture_view, &mut encoder, queue);
+
+        queue.submit(Some(encoder.finish()));
     }
 }
 

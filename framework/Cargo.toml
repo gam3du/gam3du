@@ -7,7 +7,7 @@ license.workspace = true
 license-file.workspace = true
 
 [dependencies]
-engine-robot.workspace = true
+engines.workspace = true
 bindings.workspace = true
 
 # Abstraction layer for the platform's graphics API
