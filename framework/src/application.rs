@@ -50,6 +50,19 @@ impl<RendererBuilder: engines::RendererBuilder> Application<RendererBuilder> {
             renderer_builder,
         }
     }
+
+    fn update_fps(&mut self) {
+        self.frame_counter += 1;
+        let span = self.frame_time.elapsed();
+        if span >= Duration::from_secs(1) {
+            debug!(
+                "{} fps",
+                ((self.frame_counter as f32) / span.as_secs_f32()).round()
+            );
+            self.frame_counter = 0;
+            self.frame_time += span;
+        }
+    }
 }
 
 impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
@@ -88,8 +101,6 @@ impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
         }
     }
 
-    // TODO maybe the trace output can be moved elsewhere?
-    #[allow(clippy::too_many_lines)]
     fn window_event(
         &mut self,
         _event_loop: &ActiveEventLoop,
@@ -168,24 +179,6 @@ impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
                 }
             }
             WindowEvent::RedrawRequested => {
-                // if self.current_command.is_none() {
-                //     match self.receiver.try_recv() {
-                //         Ok(command) => {
-                //             self.current_command.replace(command);
-                //         }
-                //         Err(TryRecvError::Disconnected | TryRecvError::Empty) => {}
-                //     }
-                // }
-
-                // if let Some(EngineEvent::ApiCall { api, ref command }) = self.current_command.take()
-                // {
-                //     if let Some(scene) = self.renderer.as_mut() {
-                //         if scene.is_idle() {
-                //             scene.process_command(command);
-                //         }
-                //     }
-                // }
-
                 // On MacOS, currently redraw requested comes in _before_ Init does.
                 // If this happens, just drop the requested redraw on the floor.
                 //
@@ -194,28 +187,17 @@ impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
                     return;
                 };
 
-                renderer.update();
-
                 let frame = self.surface.acquire(&self.context);
                 let texture_view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
                     format: Some(self.surface.config().view_formats[0]),
                     ..wgpu::TextureViewDescriptor::default()
                 });
 
+                renderer.update();
                 renderer.render(&texture_view, &self.context.device, &self.context.queue);
 
                 frame.present();
-
-                self.frame_counter += 1;
-                let span = self.frame_time.elapsed();
-                if span >= Duration::from_secs(1) {
-                    debug!(
-                        "{} fps",
-                        ((self.frame_counter as f32) / span.as_secs_f32()).round()
-                    );
-                    self.frame_counter = 0;
-                    self.frame_time += span;
-                }
+                self.update_fps();
 
                 self.window.as_ref().unwrap().request_redraw();
                 // self.event_sink.send(EngineEvent::Window { event }).unwrap();
