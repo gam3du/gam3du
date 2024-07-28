@@ -1,32 +1,38 @@
-use std::time::Instant;
+use std::{
+    sync::{Arc, RwLock},
+    time::Instant,
+};
 
 mod floor;
 mod robot;
 
-use crate::RenderState;
+use crate::{GameState, RenderState};
 use floor::FloorRenderer;
 use robot::RobotRenderer;
 
 use crate::projection::Projection;
 
-pub struct Renderer {
-    // TODO check whether `projection` should be moved into `RenderState`
-    projection: Projection,
-    depth_map: DepthTexture,
-    pub state: RenderState,
-    robot_renderer: RobotRenderer,
-    floor_renderer: FloorRenderer,
+pub struct RendererBuilder {
+    game_state: Arc<RwLock<GameState>>,
 }
 
-impl Renderer {
+impl RendererBuilder {
     #[must_use]
-    pub fn init(
+    pub fn new(game_state: Arc<RwLock<GameState>>) -> Self {
+        Self { game_state }
+    }
+
+    #[must_use]
+    pub fn build(
+        &self,
         _adapter: &wgpu::Adapter,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         surface: &wgpu::SurfaceConfiguration,
-        state: RenderState,
-    ) -> Self {
+    ) -> Renderer {
+        let game_state = Arc::clone(&self.game_state);
+        let state = RenderState::new(&game_state.read().unwrap());
+
         let projection = Projection::new_perspective(
             (surface.width, surface.height),
             45_f32.to_radians(),
@@ -38,13 +44,30 @@ impl Renderer {
         let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
         let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0], &state);
 
-        Self {
+        Renderer {
+            game_state,
             projection,
             depth_map,
             state,
             robot_renderer,
             floor_renderer,
         }
+    }
+}
+
+pub struct Renderer {
+    game_state: Arc<RwLock<GameState>>,
+    // TODO check whether `projection` should be moved into `RenderState`
+    projection: Projection,
+    depth_map: DepthTexture,
+    state: RenderState,
+    robot_renderer: RobotRenderer,
+    floor_renderer: FloorRenderer,
+}
+
+impl Renderer {
+    pub fn update(&mut self) {
+        self.state.update(&self.game_state.read().unwrap());
     }
 
     pub fn resize(

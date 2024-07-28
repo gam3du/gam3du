@@ -1,10 +1,10 @@
 use std::{
-    sync::{mpsc::Sender, Arc, RwLock},
+    sync::{mpsc::Sender, Arc},
     time::{Duration, Instant},
 };
 
 use bindings::event::{ApplicationEvent, EngineEvent, EventRouter};
-use engine_robot::{GameState, RenderState, Renderer};
+use engine_robot::{Renderer, RendererBuilder};
 use log::{debug, info, trace};
 use wgpu;
 use winit::{
@@ -18,7 +18,7 @@ use winit::{
 use crate::{graphics_context::GraphicsContext, surface_wrapper::SurfaceWrapper};
 
 pub struct Application {
-    game_state: Arc<RwLock<GameState>>,
+    renderer_builder: RendererBuilder,
     renderer: Option<Renderer>,
     pub(super) surface: SurfaceWrapper,
     context: GraphicsContext,
@@ -36,22 +36,11 @@ impl Application {
     pub async fn new(
         title: String,
         event_router: &mut EventRouter,
-        game_state: Arc<RwLock<GameState>>,
+        renderer_builder: RendererBuilder,
     ) -> Self {
         let mut surface = SurfaceWrapper::new();
         let context = GraphicsContext::init_async(&mut surface).await;
         let event_sender = event_router.clone_sender();
-
-        // let (sender, receiver) = channel();
-
-        // event_router.add_handler(Box::new(move |event| {
-        //     if matches!(event, EngineEvent::ApiCall { .. }) {
-        //         sender.send(event).unwrap();
-        //         None
-        //     } else {
-        //         Some(event)
-        //     }
-        // }));
 
         Self {
             renderer: None,
@@ -61,10 +50,8 @@ impl Application {
             title,
             frame_counter: 0,
             frame_time: Instant::now(),
-            // receiver,
-            // current_command: None,
             event_sink: event_sender,
-            game_state,
+            renderer_builder,
         }
     }
 }
@@ -80,16 +67,13 @@ impl ApplicationHandler<EngineEvent> for Application {
 
         self.window = Some(window);
 
-        let render_state = RenderState::new(&self.game_state.read().unwrap());
-
         // First-time init of the scene
         if self.renderer.is_none() {
-            self.renderer.replace(Renderer::init(
+            self.renderer.replace(self.renderer_builder.build(
                 &self.context.adapter,
                 &self.context.device,
                 &self.context.queue,
                 self.surface.config(),
-                render_state,
             ));
         }
     }
@@ -212,7 +196,7 @@ impl ApplicationHandler<EngineEvent> for Application {
                     return;
                 };
 
-                renderer.state.update(&self.game_state.read().unwrap());
+                renderer.update();
 
                 let frame = self.surface.acquire(&self.context);
                 let texture_view = frame.texture.create_view(&wgpu::TextureViewDescriptor {

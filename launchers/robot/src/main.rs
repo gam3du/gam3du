@@ -24,7 +24,7 @@ use bindings::{
     api::{Api, Identifier},
     event::EventRouter,
 };
-use engine_robot::GameLoop;
+use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
 use log::info;
@@ -77,7 +77,7 @@ fn main() {
     let mut application = pollster::block_on(Application::new(
         "demo scene".into(),
         &mut event_router,
-        game_state,
+        RendererBuilder::new(game_state),
     ));
 
     // framework::start(application);
