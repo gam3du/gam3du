@@ -16,5 +16,8 @@
 #![allow(clippy::unwrap_used)]
 #![allow(missing_docs)]
 
-pub mod framework;
+pub mod application;
 pub mod logging;
+
+mod graphics_context;
+mod surface_wrapper;

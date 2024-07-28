@@ -25,7 +25,7 @@ use bindings::{
     event::EventRouter,
 };
 use engine_robot::GameLoop;
-use gam3du_framework::framework::Application;
+use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
 use log::info;
 use tiny_http::{Response, Server};
