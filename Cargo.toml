@@ -4,6 +4,7 @@ members = [
     "bindings",
     "bindings/python",
     "engines/robot",
+    "launchers/robot",
     "libs/ecs",
     "libs/ecs-kawogi",
     "framework",
@@ -20,6 +21,7 @@ readme = "README.md"
 bindings = { path = "bindings" }
 bind-python = { path = "bindings/python" }
 engine-robot = { path = "engines/robot" }
+gam3du-framework = { path = "framework" }
 lib-ecs = { path = "libs/ecs" }
 lib-ecs-kawogi = { path = "libs/ecs-kawogi" }
 

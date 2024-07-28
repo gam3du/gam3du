@@ -25,9 +25,9 @@ use bindings::{
     event::EventRouter,
 };
 use engine_robot::GameLoop;
-use gam3du::framework::Application;
-use gam3du::logging::init_logger;
-use gam3du::python::runner;
+use gam3du_framework::framework::Application;
+use gam3du_framework::logging::init_logger;
+use gam3du_framework::python::runner;
 use log::info;
 use tiny_http::{Response, Server};
 use winit::event_loop::{ControlFlow, EventLoop};

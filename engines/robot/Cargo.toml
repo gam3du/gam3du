@@ -7,11 +7,11 @@ license.workspace = true
 license-file.workspace = true
 
 [dependencies]
-glam.workspace = true
-bytemuck.workspace = true
+bytemuck = { workspace = true, features = ["derive"] }
 wgpu.workspace = true
 log.workspace = true
 bindings.workspace = true
+glam = { workspace = true, features = ["bytemuck"] }
 
 [lints]
 workspace = true
