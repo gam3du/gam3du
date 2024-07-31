@@ -34,6 +34,7 @@ use log::info;
 use tiny_http::{Response, Server};
 use winit::event_loop::{ControlFlow, EventLoop};
 
+#[allow(clippy::too_many_lines)] // TODO may fix later
 fn main() {
     init_logger();
 

@@ -1,6 +1,8 @@
 use std::io::{self, Write};
 
-use bindings::api::{Api, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor};
+use bindings::api::{
+    Api, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
+};
 
 pub fn generate(out: &mut impl Write, api: &Api) -> io::Result<()> {
     // TODO add documentation comments for api
@@ -33,20 +35,20 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
             write!(out, ", ")?;
         }
         generate_parameter(out, parameter)?;
-        if let Some(default) = &parameter.default {
-            match default {
-                bindings::api::Value::Integer(default) => write!(out, "={}", default)?,
-                bindings::api::Value::Float(default) => write!(out, "={}", default)?,
-                bindings::api::Value::Boolean(true) => write!(out, "={}", "True")?,
-                bindings::api::Value::Boolean(false) => write!(out, "={}", "False")?,
-                bindings::api::Value::String(default) => write!(out, "={:?}", default)?,
-                bindings::api::Value::List(default) => match &**default {
-                    bindings::api::Value::Integer(default) => write!(out, "={}", default)?,
-                    bindings::api::Value::Float(default) => write!(out, "={}", default)?,
-                    bindings::api::Value::Boolean(true) => write!(out, "={}", "True")?,
-                    bindings::api::Value::Boolean(false) => write!(out, "={}", "False")?,
-                    bindings::api::Value::String(default) => write!(out, "={:?}", default)?,
-                    bindings::api::Value::List(_) => unreachable!("3D lists are not supported"),
+        if let Some(ref default) = parameter.default {
+            match *default {
+                Value::Integer(default) => write!(out, "={default}")?,
+                Value::Float(default) => write!(out, "={default}")?,
+                Value::Boolean(true) => write!(out, "=True")?,
+                Value::Boolean(false) => write!(out, "=False")?,
+                Value::String(ref default) => write!(out, "={default:?}")?,
+                Value::List(ref default) => match **default {
+                    Value::Integer(default) => write!(out, "={default}")?,
+                    Value::Float(default) => write!(out, "={default}")?,
+                    Value::Boolean(true) => write!(out, "=True")?,
+                    Value::Boolean(false) => write!(out, "=False")?,
+                    Value::String(ref default) => write!(out, "={default:?}")?,
+                    Value::List(_) => unreachable!("3D lists are not supported"),
                 },
             }
         }
