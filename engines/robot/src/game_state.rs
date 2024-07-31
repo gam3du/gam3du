@@ -5,6 +5,7 @@ use std::{
 };
 
 use bindings::api::Identifier;
+use bindings::api::Value;
 use glam::{FloatExt, IVec3, Vec3};
 use log::{debug, error};
 
@@ -31,7 +32,7 @@ impl GameState {
         self.robot.update();
     }
 
-    pub(crate) fn process_command(&mut self, command: &Identifier) {
+    pub(crate) fn process_command(&mut self, command: &Identifier, _parameters: &[Value]) {
         match command.0.as_str() {
             "move forward" => {
                 self.robot.complete_animation();

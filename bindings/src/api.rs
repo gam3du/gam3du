@@ -64,6 +64,8 @@ pub struct ParameterDescriptor {
     pub description: RichText,
     /// Data type of this parameter
     pub typ: TypeDescriptor,
+    /// If the parameter is omitted, use a default value
+    pub default: Option<Value>,
 }
 
 /// Describes the set of valid values for a parameter or variable.
@@ -83,4 +85,14 @@ impl TypeDescriptor {
     pub const MAX_UNSIGNED_INTEGER: u64 = (1 << Self::INTEGER_BITS) - 1;
     pub const MAX_SIGNED_INTEGER: i64 = (1 << (Self::INTEGER_BITS - 1)) - 1;
     pub const MIN_INTEGER: i64 = -(1 << (Self::INTEGER_BITS - 1));
+}
+
+/// A value for a parameter.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Value {
+    Integer(i64),
+    Float(f32),
+    Boolean(bool),
+    String(String),
+    List(Box<Value>),
 }

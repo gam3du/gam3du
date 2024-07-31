@@ -3,7 +3,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use log::debug;
 use winit::event::WindowEvent;
 
-use crate::api::Identifier;
+use crate::api::{Identifier, Value};
 
 #[derive(Clone, Debug)]
 pub enum EngineEvent {
@@ -19,6 +19,7 @@ pub enum EngineEvent {
     },
     RobotEvent {
         command: Identifier,
+        parameters: Vec<Value>,
     },
     Application {
         event: ApplicationEvent,

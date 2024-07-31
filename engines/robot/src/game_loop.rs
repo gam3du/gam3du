@@ -42,8 +42,11 @@ impl GameLoop {
                             EngineEvent::Window { event: _ } => todo!(),
                             EngineEvent::Device { event: _ } => todo!(),
                             EngineEvent::ApiCall { .. } => todo!(),
-                            EngineEvent::RobotEvent { command } => {
-                                game_state.process_command(&command);
+                            EngineEvent::RobotEvent {
+                                command,
+                                parameters,
+                            } => {
+                                game_state.process_command(&command, &parameters);
                             }
                             EngineEvent::Application { event } => match event {
                                 ApplicationEvent::Exit => {

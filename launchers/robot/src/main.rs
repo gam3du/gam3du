@@ -187,9 +187,11 @@ fn http_server(command_sender: &Sender<EngineEvent>, api: &Api) {
 
         let response = Response::from_string(format!("{command:?}"));
 
+        // FIXME: Extract parameters from response
         command_sender
             .send(EngineEvent::RobotEvent {
                 command: Identifier(url.to_owned()),
+                parameters: vec![],
             })
             .unwrap();
 

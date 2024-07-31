@@ -5,6 +5,9 @@ use bindings::api::{Api, FunctionDescriptor, Identifier, ParameterDescriptor, Ty
 pub fn generate(out: &mut impl Write, api: &Api) -> io::Result<()> {
     // TODO add documentation comments for api
 
+    writeln!(out, "import robot_api_internal")?;
+    writeln!(out)?;
+
     api.functions
         .iter()
         .try_for_each(|function| generate_function(out, function))?;
@@ -30,6 +33,23 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
             write!(out, ", ")?;
         }
         generate_parameter(out, parameter)?;
+        if let Some(default) = &parameter.default {
+            match default {
+                bindings::api::Value::Integer(default) => write!(out, "={}", default)?,
+                bindings::api::Value::Float(default) => write!(out, "={}", default)?,
+                bindings::api::Value::Boolean(true) => write!(out, "={}", "True")?,
+                bindings::api::Value::Boolean(false) => write!(out, "={}", "False")?,
+                bindings::api::Value::String(default) => write!(out, "={:?}", default)?,
+                bindings::api::Value::List(default) => match &**default {
+                    bindings::api::Value::Integer(default) => write!(out, "={}", default)?,
+                    bindings::api::Value::Float(default) => write!(out, "={}", default)?,
+                    bindings::api::Value::Boolean(true) => write!(out, "={}", "True")?,
+                    bindings::api::Value::Boolean(false) => write!(out, "={}", "False")?,
+                    bindings::api::Value::String(default) => write!(out, "={:?}", default)?,
+                    bindings::api::Value::List(_) => unreachable!("3D lists are not supported"),
+                },
+            }
+        }
     }
 
     write!(out, ")")?;
@@ -39,13 +59,10 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
     }
     writeln!(out, ":")?;
 
-    write!(out, "\trobot_api.message(\"{name}\"")?;
+    write!(out, "\trobot_api_internal.message(\"{name}\"")?;
     for parameter in parameters {
-        write!(out, ", check_type(")?;
-        generate_parameter(out, parameter)?;
         write!(out, ", ")?;
-        write!(out, "{:?}", serde_json::to_string(&parameter.typ)?)?;
-        write!(out, ")")?;
+        generate_parameter(out, parameter)?;
     }
     writeln!(out, ")",)?;
 
@@ -60,6 +77,7 @@ pub fn generate_parameter(out: &mut impl Write, parameter: &ParameterDescriptor)
         caption: _,
         description: _,
         typ: _,
+        default: _,
     } = *parameter;
 
     write!(out, "{name}", name = identifier(name))?;

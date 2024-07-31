@@ -126,10 +126,13 @@ mod rust_py_module {
         time::Duration,
     };
 
-    use bindings::{api::Identifier, event::EngineEvent};
+    use bindings::{api, event::EngineEvent};
 
     use super::{PyObject, PyResult, TryFromBorrowedObject, VirtualMachine};
-    use rustpython_vm::builtins::PyStr;
+    use rustpython_vm::{
+        builtins::PyStr,
+        function::{KwArgs, PosArgs},
+    };
 
     pub(super) static COMMAND_QUEUE: Mutex<Option<Sender<EngineEvent>>> = Mutex::new(None);
 
@@ -248,12 +251,12 @@ mod rust_py_module {
         }
     }
 
-    struct ConvertIdentifier(Option<String>);
+    struct IdentifierConverter(Option<String>);
 
-    impl ConvertIdentifier {
-        fn inner(self, vm: &VirtualMachine, api: &Api) -> PyResult<Identifier> {
+    impl IdentifierConverter {
+        fn convert(self, vm: &VirtualMachine, api: &Api) -> PyResult<api::Identifier> {
             match self.0 {
-                Some(name) if api.check_identifier(&name) => Ok(Identifier(name)),
+                Some(name) if api.check_identifier(&name) => Ok(api::Identifier(name)),
                 Some(name) => {
                     Err(vm.new_value_error(format!("{name:?} is not an identifier name")))
                 }
@@ -262,7 +265,7 @@ mod rust_py_module {
         }
     }
 
-    impl<'obj> TryFromBorrowedObject<'obj> for ConvertIdentifier {
+    impl<'obj> TryFromBorrowedObject<'obj> for IdentifierConverter {
         fn try_from_borrowed_object(_: &VirtualMachine, obj: &'obj PyObject) -> PyResult<Self> {
             let identifier: Option<&PyStr> = obj.payload();
             let identifier = identifier.map(|pystr| pystr.as_ref().to_owned());
@@ -270,16 +273,59 @@ mod rust_py_module {
         }
     }
 
+    struct ParameterConverter(PosArgs, KwArgs);
+
+    impl ParameterConverter {
+        fn new(pos_args: PosArgs, kwargs: KwArgs) -> Self {
+            Self(pos_args, kwargs)
+        }
+
+        fn convert(
+            self,
+            _vm: &VirtualMachine,
+            _api: &Api,
+            _command: &api::Identifier,
+        ) -> PyResult<Vec<api::Value>> {
+            // TODO: Extract parameters
+            std::hint::black_box(&self.0);
+            std::hint::black_box(&self.1);
+            // let robot_event = api.find(command);
+            // let actuals = vec![];
+            // for parameter in robot_event.parameters() {
+            //     if let Some(actual) = find_positional_match(parameter, self.0) {
+            //         actuals.push(actual);
+            //         continue;
+            //     }
+            //     if let Some(actual) = find_keyword_match(parameter, self.1) {
+            //         actuals.push(actual);
+            //         continue;
+            //     }
+            // }
+            // return Ok(actuals)
+            Ok(vec![])
+        }
+    }
+
     #[pyfunction]
-    fn message(name: ConvertIdentifier, vm: &VirtualMachine) -> PyResult<()> {
+    fn message(
+        name: IdentifierConverter,
+        args: PosArgs,
+        kwargs: KwArgs,
+        vm: &VirtualMachine,
+    ) -> PyResult<()> {
         let api = Api {};
-        let name = name.inner(vm, &api)?;
-        let result = COMMAND_QUEUE
-            .lock()
-            .unwrap()
-            .as_mut()
-            .unwrap()
-            .send(EngineEvent::RobotEvent { command: name });
+        let command = name.convert(vm, &api)?;
+        let parameters = ParameterConverter::new(args, kwargs).convert(vm, &api, &command)?;
+        let result =
+            COMMAND_QUEUE
+                .lock()
+                .unwrap()
+                .as_mut()
+                .unwrap()
+                .send(EngineEvent::RobotEvent {
+                    command: command,
+                    parameters,
+                });
 
         // If sending the message fails, the application
         // is probably already exiting.

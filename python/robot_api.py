@@ -1,10 +1,11 @@
 import robot_api_internal
 
-def move_forward():
-	robot_api_internal.message("move forward")
+def move_forward(duration=1000):
+	robot_api_internal.message("move forward", duration)
 
-def turn_left():
-	robot_api_internal.message("turn left")
+def turn_left(duration=1000):
+	robot_api_internal.message("turn left", duration)
 
-def turn_right():
-	robot_api_internal.message("turn right")
+def turn_right(duration=1000):
+	robot_api_internal.message("turn right", duration)
+
