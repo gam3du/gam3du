@@ -67,6 +67,10 @@ fn main() {
                 sender.send(api_call).unwrap();
                 None
             }
+            api_call @ EngineEvent::RobotEvent { .. } => {
+                sender.send(api_call).unwrap();
+                None
+            }
             EngineEvent::Application {
                 event: ApplicationEvent::Exit,
             } => {
@@ -184,8 +188,7 @@ fn http_server(command_sender: &Sender<EngineEvent>, api: &Api) {
         let response = Response::from_string(format!("{command:?}"));
 
         command_sender
-            .send(EngineEvent::ApiCall {
-                api: Identifier("robot".into()),
+            .send(EngineEvent::RobotEvent {
                 command: Identifier(url.to_owned()),
             })
             .unwrap();

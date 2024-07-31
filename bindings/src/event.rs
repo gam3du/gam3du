@@ -17,6 +17,9 @@ pub enum EngineEvent {
         api: Identifier,
         command: Identifier,
     },
+    RobotEvent {
+        command: Identifier,
+    },
     Application {
         event: ApplicationEvent,
     },

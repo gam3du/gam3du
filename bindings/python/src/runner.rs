@@ -279,10 +279,7 @@ mod rust_py_module {
             .unwrap()
             .as_mut()
             .unwrap()
-            .send(EngineEvent::ApiCall {
-                api: Identifier("robot".into()),
-                command: name,
-            });
+            .send(EngineEvent::RobotEvent { command: name });
 
         // If sending the message fails, the application
         // is probably already exiting.
