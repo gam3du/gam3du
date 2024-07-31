@@ -323,7 +323,7 @@ mod rust_py_module {
                 .as_mut()
                 .unwrap()
                 .send(EngineEvent::RobotEvent {
-                    command: command,
+                    command,
                     parameters,
                 });
 
