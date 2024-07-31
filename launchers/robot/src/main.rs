@@ -14,10 +14,13 @@
 #![allow(clippy::indexing_slicing)]
 #![allow(clippy::panic)]
 
-use std::sync::mpsc::channel;
 use std::sync::{mpsc::Sender, Arc};
-use std::thread::{self, JoinHandle};
+use std::thread::JoinHandle;
 use std::time::Duration;
+use std::{
+    sync::mpsc::{channel, sync_channel},
+    thread,
+};
 
 use bindings::event::{ApplicationEvent, EngineEvent};
 use bindings::{
@@ -43,6 +46,20 @@ fn main() {
     let mut event_router = EventRouter::default();
     let event_sender = event_router.clone_sender();
 
+    let (exit_sender, exit_receiver) = sync_channel::<()>(0);
+    ctrlc::set_handler({
+        let event_sender = event_sender.clone();
+        move || {
+            drop(event_sender.send(EngineEvent::Application {
+                event: ApplicationEvent::Exit,
+            }));
+            let _ = exit_sender.send(());
+            thread::sleep(Duration::from_secs(1));
+            std::process::exit(0)
+        }
+    })
+    .expect("Error setting Ctrl-C handler");
+
     let game_loop_thread = {
         let (sender, receiver) = channel();
         event_router.add_handler(Box::new(move |event| match event {
@@ -65,7 +82,7 @@ fn main() {
         let source_path = "python/test.py";
         let event_sender = event_sender.clone();
         let api = api.clone();
-        thread::spawn(move || bind_python::runner(&source_path, event_sender, &api))
+        thread::spawn(move || bind_python::runner(&source_path, event_sender, &api, exit_receiver))
     };
 
     let webserver_thread = {

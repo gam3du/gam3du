@@ -51,6 +51,7 @@ serde = "1.0.203"
 json5 = "0.4.1"
 serde_json = "1.0.117"
 tiny_http = "0.12.0"
+ctrlc = "3.4.4"
 
 [workspace.lints.rust]
 # more lints can be found in [lints.clippy]

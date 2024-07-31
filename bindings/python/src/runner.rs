@@ -2,12 +2,17 @@
 // TODO re-enable this later and review all occurrences
 #![allow(clippy::cast_precision_loss)]
 
-use std::{fs::read_to_string, path::Path, sync::mpsc::Sender};
+use std::{
+    fs::read_to_string,
+    path::Path,
+    sync::mpsc::{Receiver, Sender},
+};
 
 use bindings::{api::Api, event::EngineEvent};
 use log::{error, info};
 use rustpython_vm::{
-    compiler::Mode, pymodule, PyObject, PyResult, TryFromBorrowedObject, VirtualMachine,
+    compiler::Mode, pymodule, signal::UserSignal, PyObject, PyResult, Settings,
+    TryFromBorrowedObject, VirtualMachine,
 };
 
 #[allow(clippy::missing_panics_doc)]
@@ -15,6 +20,7 @@ pub fn runner(
     source_path: &(impl AsRef<Path> + ToString),
     sender: Sender<EngineEvent>,
     _api: &Api,
+    exit_receiver: Receiver<()>,
 ) {
     let source = read_to_string(source_path).unwrap();
     let path_string = source_path.as_ref().display().to_string();
@@ -24,9 +30,27 @@ pub fn runner(
         .unwrap()
         .replace(sender);
 
+    let (user_signal_sender, user_signal_receiver) = rustpython_vm::signal::user_signal_channel();
+    let make_interrupt: UserSignal = Box::new(|vm| {
+        // Copied from rustpython_vm::stdlib::signal::_signal::default_int_handler
+        let exec_type = vm.ctx.exceptions.keyboard_interrupt.to_owned();
+        Err(vm.new_exception_empty(exec_type))
+    });
+    std::mem::forget(std::thread::spawn(move || match exit_receiver.recv() {
+        Ok(()) => user_signal_sender.send(make_interrupt),
+        Err(_) => todo!(),
+    }));
+
     let interpreter = rustpython::InterpreterConfig::new()
+        .settings({
+            let mut settings = Settings::default();
+            settings.no_sig_int = true;
+            settings
+        })
         .init_stdlib()
         .init_hook(Box::new(|vm| {
+            vm.set_user_signal_channel(user_signal_receiver);
+
             vm.add_native_module(
                 "robot_api_internal".to_owned(),
                 Box::new(rust_py_module::make_module),
@@ -103,7 +127,6 @@ mod rust_py_module {
     };
 
     use bindings::{api::Identifier, event::EngineEvent};
-    use log::debug;
 
     use super::{PyObject, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython_vm::builtins::PyStr;
@@ -251,8 +274,7 @@ mod rust_py_module {
     fn message(name: ConvertIdentifier, vm: &VirtualMachine) -> PyResult<()> {
         let api = Api {};
         let name = name.inner(vm, &api)?;
-        debug!("Called message with {name:?}");
-        COMMAND_QUEUE
+        let result = COMMAND_QUEUE
             .lock()
             .unwrap()
             .as_mut()
@@ -260,8 +282,15 @@ mod rust_py_module {
             .send(EngineEvent::ApiCall {
                 api: Identifier("robot".into()),
                 command: name,
-            })
-            .unwrap();
+            });
+
+        // If sending the message fails, the application
+        // is probably already exiting.
+        match result {
+            Ok(()) => (),
+            Err(_) => return Ok(()),
+        }
+
         thread::sleep(Duration::from_millis(1000));
         Ok(())
     }

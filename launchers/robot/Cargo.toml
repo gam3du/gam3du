@@ -7,6 +7,8 @@ license.workspace = true
 license-file.workspace = true
 
 [dependencies]
+ctrlc.workspace = true
+
 gam3du-framework.workspace = true
 engine-robot.workspace = true
 bindings.workspace = true
