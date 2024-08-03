@@ -27,7 +27,7 @@ pub struct GameLoop {
     /// Contains the current state which will be updates by the game loop.
     /// This might be shared with renderers.
     /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
-    pub game_state: Arc<RwLock<GameState>>,
+    game_state: Arc<RwLock<GameState>>,
 }
 
 impl GameLoop {
@@ -39,9 +39,15 @@ impl GameLoop {
                 'next_event: loop {
                     match event_source.try_recv() {
                         Ok(engine_event) => match engine_event {
-                            EngineEvent::Window { event: _ } => todo!(),
-                            EngineEvent::Device { event: _ } => todo!(),
-                            EngineEvent::ApiCall { .. } => todo!(),
+                            EngineEvent::Window { event } => {
+                                debug!("{event:?}");
+                            }
+                            EngineEvent::Device { event } => {
+                                debug!("{event:?}");
+                            }
+                            EngineEvent::ApiCall { api, command } => {
+                                debug!("api: {api:?}, command: {command:?}");
+                            }
                             EngineEvent::RobotEvent {
                                 command,
                                 parameters,
@@ -74,5 +80,10 @@ impl GameLoop {
                 // game loop is running too slow
             }
         }
+    }
+
+    #[must_use]
+    pub fn clone_state(&self) -> Arc<RwLock<GameState>> {
+        Arc::clone(&self.game_state)
     }
 }

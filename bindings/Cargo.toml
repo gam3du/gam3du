@@ -7,7 +7,6 @@ license.workspace = true
 license-file.workspace = true
 
 [dependencies]
-log.workspace = true
 serde = { workspace = true, features = ["derive"] }
 winit.workspace = true
 

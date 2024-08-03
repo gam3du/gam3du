@@ -14,7 +14,8 @@
 #![allow(clippy::indexing_slicing)]
 #![allow(clippy::panic)]
 
-use std::sync::{mpsc::Sender, Arc};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::Sender;
 use std::thread::JoinHandle;
 use std::time::Duration;
 use std::{
@@ -22,132 +23,102 @@ use std::{
     thread,
 };
 
+use bindings::api::{Api, Identifier};
 use bindings::event::{ApplicationEvent, EngineEvent};
-use bindings::{
-    api::{Api, Identifier},
-    event::EventRouter,
-};
 use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
-use log::info;
+use log::{debug, error, info};
 use tiny_http::{Response, Server};
 use winit::event_loop::{ControlFlow, EventLoop};
 
-#[allow(clippy::too_many_lines)] // TODO may fix later
+static EXIT_FLAG: AtomicBool = AtomicBool::new(false);
+
+#[allow(clippy::too_many_lines)] // TODO maybe fix later
 fn main() {
     init_logger();
 
     let game_loop = GameLoop::default();
-    let game_state = Arc::clone(&game_loop.game_state);
+    let (event_sender, event_receiver) = channel();
 
     let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
     let api: Api = serde_json::from_str(&api_json).unwrap();
 
-    let mut event_router = EventRouter::default();
-    let event_sender = event_router.clone_sender();
-
-    let (exit_sender, exit_receiver) = sync_channel::<()>(0);
     ctrlc::set_handler({
         let event_sender = event_sender.clone();
         move || {
-            drop(event_sender.send(EngineEvent::Application {
-                event: ApplicationEvent::Exit,
-            }));
-            let _ = exit_sender.send(());
-            thread::sleep(Duration::from_secs(1));
-            std::process::exit(0)
+            debug!("CTRL + C received");
+            drop(event_sender.send(ApplicationEvent::Exit.into()));
         }
     })
     .expect("Error setting Ctrl-C handler");
 
-    let game_loop_thread = {
-        let (sender, receiver) = channel();
-        event_router.add_handler(Box::new(move |event| match event {
-            api_call @ EngineEvent::ApiCall { .. } => {
-                sender.send(api_call).unwrap();
-                None
-            }
-            api_call @ EngineEvent::RobotEvent { .. } => {
-                sender.send(api_call).unwrap();
-                None
-            }
-            EngineEvent::Application {
-                event: ApplicationEvent::Exit,
-            } => {
-                sender.send(event.clone()).unwrap();
-                Some(event)
-            }
-            other => Some(other),
-        }));
-        thread::spawn(move || game_loop.run(&receiver))
-    };
-
+    let (python_sender, exit_receiver) = sync_channel::<()>(0);
     let python_thread = {
         let source_path = "python/test.py";
         let event_sender = event_sender.clone();
         let api = api.clone();
-        thread::spawn(move || bind_python::runner(&source_path, event_sender, &api, exit_receiver))
+        thread::spawn(move || {
+            debug!("thread[python]: start interpreter");
+            bind_python::runner(&source_path, event_sender, &api, exit_receiver);
+            debug!("thread[python]: exit");
+        })
     };
 
     let webserver_thread = {
         let event_sender = event_sender.clone();
         let api = api.clone();
-        thread::spawn(move || http_server(&event_sender, &api))
+        thread::spawn(move || {
+            debug!("thread[webserver]: starting server");
+            http_server(&event_sender, &api, &EXIT_FLAG);
+            debug!("thread[webserver]: exit");
+        })
     };
 
     let mut application = pollster::block_on(Application::new(
-        "demo scene".into(),
-        &mut event_router,
-        RendererBuilder::new(game_state),
+        "Robot".into(),
+        event_sender,
+        RendererBuilder::new(game_loop.clone_state()),
     ));
 
-    // framework::start(application);
-    let event_loop = EventLoop::with_user_event().build().unwrap();
+    let window_event_loop = EventLoop::with_user_event().build().unwrap();
+    window_event_loop.set_control_flow(ControlFlow::Poll);
+    let window_proxy = window_event_loop.create_proxy();
 
-    // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
-    // dispatched any events. This is ideal for games and similar applications.
-    event_loop.set_control_flow(ControlFlow::Poll);
+    let game_loop_thread = {
+        thread::spawn(move || {
+            debug!("thread[game loop]: starting game loop");
+            game_loop.run(&event_receiver);
+            debug!("thread[game loop]: game loop returned");
+            debug!("thread[game loop]: instruct window event loop to stop now");
+            window_proxy
+                .send_event(ApplicationEvent::Exit.into())
+                .unwrap();
+            debug!("thread[game loop]: instruct python vm to stop now");
+            python_sender.send(()).unwrap();
+            debug!("thread[game loop]: instruct webserver to stop now");
+            EXIT_FLAG.store(true, Ordering::Relaxed);
+            debug!("thread[game loop]: exit");
+        })
+    };
 
-    let proxy = event_loop.create_proxy();
-
-    event_router.add_handler(Box::new(move |engine_event| match engine_event {
-        event @ EngineEvent::Application {
-            event: ApplicationEvent::Exit,
-        } => {
-            proxy.send_event(event.clone()).unwrap();
-            Some(event)
-        }
-        other => Some(other),
-    }));
-
-    let event_thread = thread::spawn(move || event_router.run());
-
-    //let app = Application::new(title, receiver, event_sender);
-    log::info!("Entering event loop...");
-    event_loop.run_app(&mut application).unwrap();
+    log::info!("main: Entering event loop...");
+    window_event_loop.run_app(&mut application).unwrap();
+    drop(application);
+    log::debug!("main: window event loop exited");
 
     // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
-
-    // FIXME Event thread doesn't exit, yet
-    // python_thread.join().unwrap();
-    // game_loop_thread.join().unwrap();
-    // webserver_tread.join().unwrap();
-    // event_thread.join().unwrap();
 
     let mut python_thread = Some(python_thread);
     let mut game_loop_thread = Some(game_loop_thread);
     let mut webserver_thread = Some(webserver_thread);
-    let mut event_thread = Some(event_thread);
-    while python_thread.is_some()
-        || game_loop_thread.is_some()
-        || webserver_thread.is_some()
-        || event_thread.is_some()
-    {
+    while python_thread.is_some() || game_loop_thread.is_some() || webserver_thread.is_some() {
         info!("Waiting for all threads to exit …");
         if python_thread.as_ref().is_some_and(JoinHandle::is_finished) {
             info!("Python stopped");
             python_thread.take().unwrap().join().unwrap();
+        } else if python_thread.is_some() {
+            info!("Waiting for Python");
         }
         if game_loop_thread
             .as_ref()
@@ -155,6 +126,8 @@ fn main() {
         {
             info!("Game loop stopped");
             game_loop_thread.take().unwrap().join().unwrap();
+        } else if game_loop_thread.is_some() {
+            info!("Waiting for game loop");
         }
         if webserver_thread
             .as_ref()
@@ -162,20 +135,31 @@ fn main() {
         {
             info!("webserver stopped");
             webserver_thread.take().unwrap().join().unwrap();
+        } else if webserver_thread.is_some() {
+            info!("Waiting for webserver");
         }
-        if event_thread.as_ref().is_some_and(JoinHandle::is_finished) {
-            info!("event router stopped");
-            event_thread.take().unwrap().join().unwrap();
-        }
-
         thread::sleep(Duration::from_secs(1));
     }
 }
 
-fn http_server(command_sender: &Sender<EngineEvent>, api: &Api) {
+fn http_server(command_sender: &Sender<EngineEvent>, api: &Api, exit_flag: &'static AtomicBool) {
     let server = Server::http("0.0.0.0:8000").unwrap();
 
-    for request in server.incoming_requests() {
+    'next_request: loop {
+        let request = match server.recv_timeout(Duration::from_millis(50)) {
+            Ok(Some(request)) => request,
+            Ok(None) => {
+                if exit_flag.load(Ordering::Relaxed) {
+                    break 'next_request;
+                }
+                continue 'next_request;
+            }
+            Err(error) => {
+                error!("{error}");
+                break 'next_request;
+            }
+        };
+
         let url = request.url();
         let Some(url) = url.strip_prefix(&format!("/{}/", api.name)) else {
             request

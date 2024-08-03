@@ -1,4 +1,4 @@
-use bindings::event::{ApplicationEvent, EngineEvent, EventRouter};
+use bindings::event::{ApplicationEvent, EngineEvent};
 use engines::Renderer;
 use log::{debug, info, trace};
 use std::{
@@ -31,12 +31,11 @@ pub struct Application<RendererBuilder: engines::RendererBuilder> {
 impl<RendererBuilder: engines::RendererBuilder> Application<RendererBuilder> {
     pub async fn new(
         title: String,
-        event_router: &mut EventRouter,
+        event_sender: Sender<EngineEvent>,
         renderer_builder: RendererBuilder,
     ) -> Self {
         let mut surface = SurfaceWrapper::new();
         let context = GraphicsContext::init_async(&mut surface).await;
-        let event_sender = event_router.clone_sender();
 
         Self {
             renderer: None,
@@ -94,7 +93,7 @@ impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
             EngineEvent::Application {
                 event: ApplicationEvent::Exit,
             } => {
-                info!("Application event loop received an ExitEvent. Shutting down event loop.");
+                info!("Window event loop received an ExitEvent. Shutting down event loop.");
                 event_loop.exit();
             }
             other => todo!("unknown event: {other:?}"),
@@ -123,11 +122,7 @@ impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
 
             WindowEvent::CloseRequested => {
                 trace!("WindowEvent::CloseRequested()");
-                self.event_sink
-                    .send(EngineEvent::Application {
-                        event: ApplicationEvent::Exit,
-                    })
-                    .unwrap();
+                self.event_sink.send(ApplicationEvent::Exit.into()).unwrap();
             }
 
             WindowEvent::KeyboardInput {
@@ -153,11 +148,7 @@ impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
                         #[allow(clippy::single_match)]
                         match key {
                             NamedKey::Escape => {
-                                self.event_sink
-                                    .send(EngineEvent::Application {
-                                        event: ApplicationEvent::Exit,
-                                    })
-                                    .unwrap();
+                                self.event_sink.send(ApplicationEvent::Exit.into()).unwrap();
                             }
                             _ => {
                                 self.event_sink.send(EngineEvent::Window { event }).unwrap();

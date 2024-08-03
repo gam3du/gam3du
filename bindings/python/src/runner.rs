@@ -3,27 +3,26 @@
 #![allow(clippy::cast_precision_loss)]
 
 use std::{
-    fs::read_to_string,
     path::Path,
     sync::mpsc::{Receiver, Sender},
 };
 
 use bindings::{api::Api, event::EngineEvent};
-use log::{error, info};
+use log::error;
 use rustpython_vm::{
-    compiler::Mode, pymodule, signal::UserSignal, PyObject, PyResult, Settings,
-    TryFromBorrowedObject, VirtualMachine,
+    pymodule, signal::UserSignal, PyObject, PyResult, Settings, TryFromBorrowedObject,
+    VirtualMachine,
 };
 
 #[allow(clippy::missing_panics_doc)]
 pub fn runner(
-    source_path: &(impl AsRef<Path> + ToString),
+    _source_path: &(impl AsRef<Path> + ToString),
     sender: Sender<EngineEvent>,
     _api: &Api,
     exit_receiver: Receiver<()>,
 ) {
-    let source = read_to_string(source_path).unwrap();
-    let path_string = source_path.as_ref().display().to_string();
+    // let source = read_to_string(source_path).unwrap();
+    // let path_string = source_path.as_ref().display().to_string();
 
     rust_py_module::COMMAND_QUEUE
         .lock()
@@ -84,31 +83,31 @@ pub fn runner(
             Err(exc) => {
                 let mut msg = String::new();
                 vm.write_exception(&mut msg, &exc).unwrap();
-                panic!("{msg}");
+                error!("Python thread exited with exception: {msg}");
             }
         }
 
-        let scope = vm.new_scope_with_builtins();
-        let compile = vm.compile(&source, Mode::Exec, path_string);
+        // let scope = vm.new_scope_with_builtins();
+        // let compile = vm.compile(&source, Mode::Exec, path_string);
 
-        match compile {
-            Ok(py_code) => match vm.run_code_obj(py_code, scope) {
-                Ok(code_result) => {
-                    info!("Success: {code_result:?}");
-                }
-                Err(exception) => {
-                    let mut output = String::new();
-                    vm.write_exception(&mut output, &exception).unwrap();
-                    error!("Syntax error: {output}");
-                }
-            },
-            Err(err) => {
-                let exception = vm.new_syntax_error(&err, Some(&source));
-                let mut output = String::new();
-                vm.write_exception(&mut output, &exception).unwrap();
-                error!("Runtime error: {output}");
-            }
-        }
+        // match compile {
+        //     Ok(py_code) => match vm.run_code_obj(py_code, scope) {
+        //         Ok(code_result) => {
+        //             info!("Success: {code_result:?}");
+        //         }
+        //         Err(exception) => {
+        //             let mut output = String::new();
+        //             vm.write_exception(&mut output, &exception).unwrap();
+        //             error!("Syntax error: {output}");
+        //         }
+        //     },
+        //     Err(err) => {
+        //         let exception = vm.new_syntax_error(&err, Some(&source));
+        //         let mut output = String::new();
+        //         vm.write_exception(&mut output, &exception).unwrap();
+        //         error!("Runtime error: {output}");
+        //     }
+        // }
     });
 }
 

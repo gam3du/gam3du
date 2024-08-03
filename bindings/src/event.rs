@@ -1,6 +1,3 @@
-use std::sync::mpsc::{channel, Receiver, Sender};
-
-use log::debug;
 use winit::event::WindowEvent;
 
 use crate::api::{Identifier, Value};
@@ -31,56 +28,8 @@ pub enum ApplicationEvent {
     Exit,
 }
 
-pub trait EventHandler: Send {
-    fn handle_event(&self, event: EngineEvent) -> Option<EngineEvent>;
-}
-
-pub struct EventRouter {
-    sender: Sender<EngineEvent>,
-    receiver: Receiver<EngineEvent>,
-    handlers: Vec<Box<dyn Fn(EngineEvent) -> Option<EngineEvent> + Send>>,
-}
-
-impl EventRouter {
-    #[must_use]
-    pub fn clone_sender(&self) -> Sender<EngineEvent> {
-        self.sender.clone()
-    }
-
-    pub fn add_handler(&mut self, handler: Box<dyn Fn(EngineEvent) -> Option<EngineEvent> + Send>) {
-        self.handlers.push(handler);
-    }
-
-    pub fn run(&self) {
-        'next_event: while let Ok(mut event) = self.receiver.recv() {
-            for handler in &self.handlers {
-                let Some(handled_event) = handler(event) else {
-                    continue 'next_event;
-                };
-                event = handled_event;
-            }
-
-            if matches!(
-                event,
-                EngineEvent::Application {
-                    event: ApplicationEvent::Exit
-                }
-            ) {
-                debug!("exiting event router");
-                break 'next_event;
-            }
-        }
-    }
-}
-
-impl Default for EventRouter {
-    fn default() -> Self {
-        let (sender, receiver) = channel();
-
-        EventRouter {
-            sender,
-            receiver,
-            handlers: Vec::new(),
-        }
+impl From<ApplicationEvent> for EngineEvent {
+    fn from(event: ApplicationEvent) -> Self {
+        Self::Application { event }
     }
 }
