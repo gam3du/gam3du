@@ -18,11 +18,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::thread::JoinHandle;
 use std::time::Duration;
-use std::{
-    sync::mpsc::{channel, sync_channel},
-    thread,
-};
+use std::{sync::mpsc::channel, thread};
 
+use bind_python::PythonThread;
 use bindings::api::{Api, Identifier};
 use bindings::event::{ApplicationEvent, EngineEvent};
 use engine_robot::{GameLoop, RendererBuilder};
@@ -53,17 +51,7 @@ fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
-    let (python_sender, exit_receiver) = sync_channel::<()>(0);
-    let python_thread = {
-        let source_path = "python/test.py";
-        let event_sender = event_sender.clone();
-        let api = api.clone();
-        thread::spawn(move || {
-            debug!("thread[python]: start interpreter");
-            bind_python::runner(&source_path, event_sender, &api, exit_receiver);
-            debug!("thread[python]: exit");
-        })
-    };
+    let python_thread = bind_python::run(event_sender.clone());
 
     let webserver_thread = {
         let event_sender = event_sender.clone();
@@ -95,7 +83,8 @@ fn main() {
                 .send_event(ApplicationEvent::Exit.into())
                 .unwrap();
             debug!("thread[game loop]: instruct python vm to stop now");
-            python_sender.send(()).unwrap();
+            python_thread.stop();
+            python_thread.join().unwrap();
             debug!("thread[game loop]: instruct webserver to stop now");
             EXIT_FLAG.store(true, Ordering::Relaxed);
             debug!("thread[game loop]: exit");
@@ -109,12 +98,15 @@ fn main() {
 
     // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
 
-    let mut python_thread = Some(python_thread);
+    let mut python_thread = None; // Some(python_thread);
     let mut game_loop_thread = Some(game_loop_thread);
     let mut webserver_thread = Some(webserver_thread);
     while python_thread.is_some() || game_loop_thread.is_some() || webserver_thread.is_some() {
         info!("Waiting for all threads to exit …");
-        if python_thread.as_ref().is_some_and(JoinHandle::is_finished) {
+        if python_thread
+            .as_ref()
+            .is_some_and(PythonThread::is_finished)
+        {
             info!("Python stopped");
             python_thread.take().unwrap().join().unwrap();
         } else if python_thread.is_some() {

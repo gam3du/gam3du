@@ -1,26 +1,51 @@
-#![warn(clippy::all, clippy::pedantic)]
 // TODO re-enable this later and review all occurrences
 #![allow(clippy::cast_precision_loss)]
 
 use std::{
-    path::Path,
-    sync::mpsc::{Receiver, Sender},
+    sync::mpsc::Sender,
+    thread::{self, JoinHandle},
 };
 
-use bindings::{api::Api, event::EngineEvent};
-use log::error;
+use bindings::event::EngineEvent;
+use log::{debug, error};
 use rustpython_vm::{
-    pymodule, signal::UserSignal, PyObject, PyResult, Settings, TryFromBorrowedObject,
-    VirtualMachine,
+    pymodule,
+    signal::{UserSignal, UserSignalSender},
+    PyObject, PyResult, Settings, TryFromBorrowedObject, VirtualMachine,
 };
+
+pub struct PythonThread {
+    join_handle: JoinHandle<()>,
+    user_signal_sender: UserSignalSender,
+}
+
+impl PythonThread {
+    pub fn stop(&self) {
+        let make_interrupt: UserSignal = Box::new(|vm| {
+            // Copied from rustpython_vm::stdlib::signal::_signal::default_int_handler
+            let exec_type = vm.ctx.exceptions.keyboard_interrupt.to_owned();
+            Err(vm.new_exception_empty(exec_type))
+        });
+        self.user_signal_sender.send(make_interrupt).unwrap();
+    }
+
+    #[must_use]
+    pub fn is_finished(&self) -> bool {
+        self.join_handle.is_finished()
+    }
+
+    pub fn join(self) -> thread::Result<()> {
+        self.join_handle.join()
+    }
+}
 
 #[allow(clippy::missing_panics_doc)]
-pub fn runner(
-    _source_path: &(impl AsRef<Path> + ToString),
+pub fn run(
+    // _source_path: &(impl AsRef<Path> + ToString),
     sender: Sender<EngineEvent>,
-    _api: &Api,
-    exit_receiver: Receiver<()>,
-) {
+    // _api: &Api,
+    // exit_receiver: Receiver<()>,
+) -> PythonThread {
     // let source = read_to_string(source_path).unwrap();
     // let path_string = source_path.as_ref().display().to_string();
 
@@ -30,85 +55,95 @@ pub fn runner(
         .replace(sender);
 
     let (user_signal_sender, user_signal_receiver) = rustpython_vm::signal::user_signal_channel();
-    let make_interrupt: UserSignal = Box::new(|vm| {
-        // Copied from rustpython_vm::stdlib::signal::_signal::default_int_handler
-        let exec_type = vm.ctx.exceptions.keyboard_interrupt.to_owned();
-        Err(vm.new_exception_empty(exec_type))
-    });
-    std::mem::forget(std::thread::spawn(move || match exit_receiver.recv() {
-        Ok(()) => user_signal_sender.send(make_interrupt),
-        Err(_) => todo!(),
-    }));
+    // let make_interrupt: UserSignal = Box::new(|vm| {
+    //     // Copied from rustpython_vm::stdlib::signal::_signal::default_int_handler
+    //     let exec_type = vm.ctx.exceptions.keyboard_interrupt.to_owned();
+    //     Err(vm.new_exception_empty(exec_type))
+    // });
+    // std::mem::forget(std::thread::spawn(move || match exit_receiver.recv() {
+    //     Ok(()) => user_signal_sender.send(make_interrupt),
+    //     Err(_) => todo!(),
+    // }));
 
-    let interpreter = rustpython::InterpreterConfig::new()
-        .settings({
-            let mut settings = Settings::default();
-            settings.no_sig_int = true;
-            settings
-        })
-        .init_stdlib()
-        .init_hook(Box::new(|vm| {
-            vm.set_user_signal_channel(user_signal_receiver);
+    let join_handle = thread::spawn(|| {
+        debug!("thread[python]: start interpreter");
 
-            vm.add_native_module(
-                "robot_api_internal".to_owned(),
-                Box::new(rust_py_module::make_module),
-            );
+        let interpreter = rustpython::InterpreterConfig::new()
+            .settings({
+                let mut settings = Settings::default();
+                settings.no_sig_int = true;
+                settings
+            })
+            .init_stdlib()
+            .init_hook(Box::new(|vm| {
+                vm.set_user_signal_channel(user_signal_receiver);
 
-            // vm.add_native_module(
-            //     "robot_api2".to_owned(),
-            //     Box::new(|vm: &VirtualMachine| {
-            //         let module = PyModule::new();
-            //         // ???
-            //         module.into_ref(&vm.ctx)
-            //     }),
-            // );
-        }))
-        .interpreter();
+                vm.add_native_module(
+                    "robot_api_internal".to_owned(),
+                    Box::new(rust_py_module::make_module),
+                );
 
-    interpreter.enter(|vm| {
-        vm.insert_sys_path(vm.new_pyobj("python"))
-            .expect("add path");
+                // vm.add_native_module(
+                //     "robot_api2".to_owned(),
+                //     Box::new(|vm: &VirtualMachine| {
+                //         let module = PyModule::new();
+                //         // ???
+                //         module.into_ref(&vm.ctx)
+                //     }),
+                // );
+            }))
+            .interpreter();
 
-        match vm.import("robot", 0) {
-            Ok(module) => {
-                let init_fn = module.get_attr("python_callback", vm).unwrap();
-                init_fn.call((), vm).unwrap();
+        interpreter.enter(|vm| {
+            vm.insert_sys_path(vm.new_pyobj("python"))
+                .expect("add path");
 
-                let take_string_fn = module.get_attr("take_string", vm).unwrap();
-                take_string_fn
-                    .call((String::from("Rust string sent to python"),), vm)
-                    .unwrap();
+            match vm.import("robot", 0) {
+                Ok(module) => {
+                    let init_fn = module.get_attr("python_callback", vm).unwrap();
+                    init_fn.call((), vm).unwrap();
+
+                    let take_string_fn = module.get_attr("take_string", vm).unwrap();
+                    take_string_fn
+                        .call((String::from("Rust string sent to python"),), vm)
+                        .unwrap();
+                }
+                Err(exc) => {
+                    let mut msg = String::new();
+                    vm.write_exception(&mut msg, &exc).unwrap();
+                    error!("Python thread exited with exception: {msg}");
+                }
             }
-            Err(exc) => {
-                let mut msg = String::new();
-                vm.write_exception(&mut msg, &exc).unwrap();
-                error!("Python thread exited with exception: {msg}");
-            }
-        }
 
-        // let scope = vm.new_scope_with_builtins();
-        // let compile = vm.compile(&source, Mode::Exec, path_string);
+            // let scope = vm.new_scope_with_builtins();
+            // let compile = vm.compile(&source, Mode::Exec, path_string);
 
-        // match compile {
-        //     Ok(py_code) => match vm.run_code_obj(py_code, scope) {
-        //         Ok(code_result) => {
-        //             info!("Success: {code_result:?}");
-        //         }
-        //         Err(exception) => {
-        //             let mut output = String::new();
-        //             vm.write_exception(&mut output, &exception).unwrap();
-        //             error!("Syntax error: {output}");
-        //         }
-        //     },
-        //     Err(err) => {
-        //         let exception = vm.new_syntax_error(&err, Some(&source));
-        //         let mut output = String::new();
-        //         vm.write_exception(&mut output, &exception).unwrap();
-        //         error!("Runtime error: {output}");
-        //     }
-        // }
+            // match compile {
+            //     Ok(py_code) => match vm.run_code_obj(py_code, scope) {
+            //         Ok(code_result) => {
+            //             info!("Success: {code_result:?}");
+            //         }
+            //         Err(exception) => {
+            //             let mut output = String::new();
+            //             vm.write_exception(&mut output, &exception).unwrap();
+            //             error!("Syntax error: {output}");
+            //         }
+            //     },
+            //     Err(err) => {
+            //         let exception = vm.new_syntax_error(&err, Some(&source));
+            //         let mut output = String::new();
+            //         vm.write_exception(&mut output, &exception).unwrap();
+            //         error!("Runtime error: {output}");
+            //     }
+            // }
+            debug!("thread[python]: exit");
+        });
     });
+
+    PythonThread {
+        join_handle,
+        user_signal_sender,
+    }
 }
 
 #[pymodule]
