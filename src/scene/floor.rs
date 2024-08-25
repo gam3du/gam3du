@@ -190,7 +190,6 @@ impl Floor {
             depth_stencil: Some(DepthTexture::depth_stencil_state()),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-            cache: None,
         })
     }
 
