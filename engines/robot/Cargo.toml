@@ -1,0 +1,18 @@
+[package]
+name = "engine-robot"
+description = "A robot moving on a 2d grid performing simple tasks"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+license-file.workspace = true
+
+[dependencies]
+engines.workspace = true
+bytemuck = { workspace = true, features = ["derive"] }
+wgpu.workspace = true
+log.workspace = true
+bindings.workspace = true
+glam = { workspace = true, features = ["bytemuck"] }
+
+[lints]
+workspace = true

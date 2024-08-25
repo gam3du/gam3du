@@ -1,24 +1,44 @@
-[package]
-name = "gam3du"
+[workspace]
+resolver = "2"
+members = [
+    "bindings",
+    "bindings/python",
+    "engines",
+    "engines/robot",
+    "launchers/robot",
+    "libs/ecs",
+    "libs/ecs-kawogi",
+    "framework",
+]
+
+[workspace.package]
 version = "0.1.0"
 edition = "2021"
-description = "A game engine written for educational purposes. The main goals are learning/teaching software development, ease of use and having fun!"
 license = "MIT"
 license-file = "LICENSE-MIT"
+readme = "README.md"
 
-[dependencies]
+[workspace.dependencies]
+bindings = { path = "bindings" }
+bind-python = { path = "bindings/python" }
+engines = { path = "engines" }
+engine-robot = { path = "engines/robot" }
+gam3du-framework = { path = "framework" }
+lib-ecs = { path = "libs/ecs" }
+lib-ecs-kawogi = { path = "libs/ecs-kawogi" }
+
 # Python interpreter
 rustpython = "0.3.1"
 rustpython-vm = "0.3.1"
 
 # simplifies bit/byte-level operations
-bytemuck = { version = "1.16.0", features = ["derive"] }
+bytemuck = "1.16.0"
 
 # Abstraction layer for the paltform's graphics API
 wgpu = "0.20.1"
 
 # Basic vector and matrix types and operations thereon
-glam = { version = "0.28.0", features = ["bytemuck"] }
+glam = "0.28.0"
 
 rand = "0.8.5"
 
@@ -27,12 +47,13 @@ log = "0.4.21"
 env_logger = "0.11.3"
 winit = "0.30.1"
 
-serde = { version = "1.0.203", features = ["derive"] }
-json5 = { version = "0.4.1" }
+serde = "1.0.203"
+json5 = "0.4.1"
 serde_json = "1.0.117"
 tiny_http = "0.12.0"
+ctrlc = "3.4.4"
 
-[lints.rust]
+[workspace.lints.rust]
 # more lints can be found in [lints.clippy]
 
 ######################################################################################################################
@@ -95,7 +116,7 @@ variant_size_differences = "warn"
 # non_exhaustive_omitted_patterns = "warn"
 # unnameable_types = "warn"
 
-[lints.clippy]
+[workspace.lints.clippy]
 # more lints can be found in [lints.rust]
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
@@ -145,7 +166,7 @@ shadow_unrelated = "warn"
 
 absolute_paths = "warn"
 alloc_instead_of_core = "warn"
-allow_attributes = "warn"
+# allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
 as_underscore = "warn"
 assertions_on_result_states = "warn"

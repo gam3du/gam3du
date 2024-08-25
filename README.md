@@ -84,7 +84,7 @@ At the moment we're still trying to get our act together. We'll update this sect
 1. [Install the Rust toolchain](https://www.rust-lang.org/learn/get-started)
 2. Clone this repository: `git clone git@github.com:gam3du/gam3du.git`
 3. Change into the project directory: `cd gam3du`
-4. Build and run the code: `cargo run --bin=python_robot`
+4. Build and run the code: `cargo run --bin=launcher-robot`
 
 This will open a new window, showing a plane where a Python-controlled robot is moving across the grid.
 

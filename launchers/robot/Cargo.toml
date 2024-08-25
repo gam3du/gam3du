@@ -1,0 +1,25 @@
+[package]
+name = "launcher-robot"
+version = "0.1.0"
+edition.workspace = true
+description = "A simple robot moving across a 2D-plane."
+license.workspace = true
+license-file.workspace = true
+
+[dependencies]
+ctrlc.workspace = true
+
+gam3du-framework.workspace = true
+engine-robot.workspace = true
+bindings.workspace = true
+bind-python.workspace = true
+
+pollster.workspace = true
+log.workspace = true
+winit.workspace = true
+
+serde_json.workspace = true
+tiny_http.workspace = true
+
+[lints]
+workspace = true
