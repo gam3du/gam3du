@@ -29,6 +29,7 @@ Documentation on how to use the project shall go to our [Wiki](https://github.co
 - All identifiers and comments shall be written in American English.
 - The use of clippy is mandatory
 - The use of rustfmt is mandatory
+- avoid using abbreviations in identifiers
 - Handling all compile errors before pushing to a public branch is mandatory - it shall always be possible to build those branches.
 - Handling all warnings in a timely manner is highly recommended. It is ok to suppress specific warnings with an explanatation and maybe a `TODO` marker
 - If you suppress any linter message, add a short description about _why_ this was necessary.
