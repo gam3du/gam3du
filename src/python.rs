@@ -5,9 +5,10 @@
 use std::{fs::read_to_string, path::Path, sync::mpsc::Sender};
 
 use log::{error, info};
+use rust_py_module::make_module;
 use rustpython_vm::{
-    compiler::Mode, pyclass, pymodule, PyObject, PyPayload, PyResult, TryFromBorrowedObject,
-    VirtualMachine,
+    compiler::Mode, extend_module, pyclass, pymodule, PyObject, PyPayload, PyResult,
+    TryFromBorrowedObject, VirtualMachine,
 };
 
 use crate::{api::Api, scene::Command};
@@ -29,6 +30,13 @@ pub fn runner(source_path: &(impl AsRef<Path> + ToString), sender: Sender<Comman
                 "robot_api".to_owned(),
                 Box::new(rust_py_module::make_module),
             );
+
+            // let my_module = make_module(&vm);
+            // let function_name = "my_function";
+            // let my_implementation = || todo!();
+            // extend_module!(vm, &my_module, {
+            //     function_name => my_implementation,
+            // });
 
             // vm.add_native_module(
             //     "robot_api2".to_owned(),

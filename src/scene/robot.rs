@@ -291,6 +291,7 @@ impl Robot {
             depth_stencil: Some(DepthTexture::depth_stencil_state()),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         })
     }
 
@@ -342,6 +343,7 @@ impl Robot {
             depth_stencil: Some(DepthTexture::depth_stencil_state()),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
+            cache: None,
         })
     }
 
