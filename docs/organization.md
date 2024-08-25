@@ -26,6 +26,7 @@ Documentation on how to use the project shall go to our [Wiki](https://github.co
 
 ## Code conventions and style
 
+- All identifiers and comments shall be written in American English.
 - The use of clippy is mandatory
 - The use of rustfmt is mandatory
 - Handling all compile errors before pushing to a public branch is mandatory - it shall always be possible to build those branches.
@@ -33,3 +34,5 @@ Documentation on how to use the project shall go to our [Wiki](https://github.co
 - If you suppress any linter message, add a short description about _why_ this was necessary.
 - Make use of `todo!` and `unimplemented!` or add `// TODO [your github name] your message` comments if you know your implementation still has holes but it helps you to make progress.
 - Use `// FIXME [your github name] <your message>` if you spot/create any error you cannot or don't want to fix (yet).
+
+Avoid _super smart_ solutions if they impair readability. _Gam3du_ is an educational project and shall be accessible to newbies. Sometimes complexity cannot be avoided. Try to encapsulate those parts as good as possible and add an explanation why this particular solution has been chosen and how it works (maybe add a link to external resources explaining the algorithm).
