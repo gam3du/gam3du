@@ -71,7 +71,7 @@ pub fn run(
         let interpreter = rustpython::InterpreterConfig::new()
             .settings({
                 let mut settings = Settings::default();
-                settings.no_sig_int = true;
+                settings.install_signal_handlers = false;
                 settings
             })
             .init_stdlib()
