@@ -1,5 +1,5 @@
 use crate::game_state::GameState;
-use bindings::event::{ApplicationEvent, EngineEvent};
+use runtimes::event::{ApplicationEvent, EngineEvent};
 use log::debug;
 use std::{
     sync::{

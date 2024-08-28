@@ -1,14 +1,14 @@
 [workspace]
 resolver = "2"
 members = [
-    "bindings",
-    "bindings/python",
     "engines",
     "engines/robot",
+    "framework",
     "launchers/robot",
     "libs/ecs",
     "libs/ecs-kawogi",
-    "framework",
+    "runtimes",
+    "runtimes/python",
 ]
 
 [workspace.package]
@@ -19,8 +19,8 @@ license-file = "LICENSE-MIT"
 readme = "README.md"
 
 [workspace.dependencies]
-bindings = { path = "bindings" }
-bind-python = { path = "bindings/python" }
+runtimes = { path = "runtimes" }
+runtime-python = { path = "runtimes/python" }
 engines = { path = "engines" }
 engine-robot = { path = "engines/robot" }
 gam3du-framework = { path = "framework" }
@@ -32,7 +32,7 @@ rustpython = "0.4.0"
 rustpython-vm = "0.4.0"
 
 # simplifies bit/byte-level operations
-bytemuck = "1.17.0"
+bytemuck = "1.17.1"
 
 # Abstraction layer for the paltform's graphics API
 wgpu = "22.1.0"

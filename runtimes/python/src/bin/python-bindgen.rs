@@ -6,8 +6,8 @@
 
 use std::io::BufWriter;
 
-use bind_python::bindgen;
-use bindings::api::Api;
+use runtime_python::bindgen;
+use runtimes::api::Api;
 
 fn main() {
     // let move_forward = FunctionDescriptor {

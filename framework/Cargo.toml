@@ -8,7 +8,7 @@ license-file.workspace = true
 
 [dependencies]
 engines.workspace = true
-bindings.workspace = true
+runtimes.workspace = true
 
 # Abstraction layer for the platform's graphics API
 wgpu.workspace = true

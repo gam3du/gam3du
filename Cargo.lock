@@ -242,25 +242,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
-name = "bind-python"
-version = "0.1.0"
-dependencies = [
- "bindings",
- "log",
- "rustpython",
- "rustpython-vm",
- "serde_json",
-]
-
-[[package]]
-name = "bindings"
-version = "0.1.0"
-dependencies = [
- "serde",
- "winit",
-]
-
-[[package]]
 name = "bit-set"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -339,9 +320,9 @@ checksum = "79296716171880943b8470b5f8d03aa55eb2e645a4874bdbb28adb49162e012c"
 
 [[package]]
 name = "bytemuck"
-version = "1.17.0"
+version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6fd4c6dcc3b0aea2f5c0b4b82c2b15fe39ddbc76041a310848f4706edf76bb31"
+checksum = "773d90827bc3feecfb67fab12e24de0749aad83c74b9504ecde46237b5cd24e2"
 dependencies = [
  "bytemuck_derive",
 ]
@@ -787,11 +768,11 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 name = "engine-robot"
 version = "0.1.0"
 dependencies = [
- "bindings",
  "bytemuck",
  "engines",
  "glam",
  "log",
+ "runtimes",
  "wgpu",
 ]
 
@@ -917,10 +898,10 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 name = "gam3du-framework"
 version = "0.1.0"
 dependencies = [
- "bindings",
  "engines",
  "env_logger 0.11.5",
  "log",
+ "runtimes",
  "wgpu",
  "winit",
 ]
@@ -1319,13 +1300,13 @@ checksum = "507460a910eb7b32ee961886ff48539633b788a36b65692b95f225b844c82553"
 name = "launcher-robot"
 version = "0.1.0"
 dependencies = [
- "bind-python",
- "bindings",
  "ctrlc",
  "engine-robot",
  "gam3du-framework",
  "log",
  "pollster",
+ "runtime-python",
+ "runtimes",
  "serde_json",
  "tiny_http",
  "winit",
@@ -2412,6 +2393,25 @@ dependencies = [
  "quote",
  "syn 1.0.109",
  "syn-ext",
+]
+
+[[package]]
+name = "runtime-python"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "runtimes",
+ "rustpython",
+ "rustpython-vm",
+ "serde_json",
+]
+
+[[package]]
+name = "runtimes"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "winit",
 ]
 
 [[package]]

@@ -1,13 +1,3 @@
 {
     "rust-analyzer.check.command": "clippy",
-    "rust-analyzer.linkedProjects": [
-        "bindings/Cargo.toml",
-        "bindings/python/Cargo.toml",
-        "engines/Cargo.toml",
-        "engines/robot/Cargo.toml",
-        "framework/Cargo.toml",
-        "launchers/robot/Cargo.toml",
-        "libs/ecs/Cargo.toml",
-        "libs/ecs-kawogi/Cargo.toml"
-    ]
 }

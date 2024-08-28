@@ -1,6 +1,6 @@
 [package]
-name = "bindings"
-description = "Common types, macros and helper functions for language bindings"
+name = "runtimes"
+description = "Common types, macros and helper functions for language runtimes"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

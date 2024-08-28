@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use bindings::api::{
+use runtimes::api::{
     Api, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
 };
 

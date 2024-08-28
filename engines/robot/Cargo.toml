@@ -11,7 +11,7 @@ engines.workspace = true
 bytemuck = { workspace = true, features = ["derive"] }
 wgpu.workspace = true
 log.workspace = true
-bindings.workspace = true
+runtimes.workspace = true
 glam = { workspace = true, features = ["bytemuck"] }
 
 [lints]

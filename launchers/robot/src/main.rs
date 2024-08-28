@@ -20,9 +20,9 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 use std::{sync::mpsc::channel, thread};
 
-use bind_python::PythonThread;
-use bindings::api::{Api, Identifier};
-use bindings::event::{ApplicationEvent, EngineEvent};
+use runtime_python::PythonThread;
+use runtimes::api::{Api, Identifier};
+use runtimes::event::{ApplicationEvent, EngineEvent};
 use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
@@ -51,7 +51,7 @@ fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
-    let python_thread = bind_python::run(event_sender.clone());
+    let python_thread = runtime_python::run(event_sender.clone());
 
     let webserver_thread = {
         let event_sender = event_sender.clone();
