@@ -1,13 +1,13 @@
 [package]
-name = "bind-python"
-description = "Python bindings to extend and control a gam3du engine"
+name = "runtime-python"
+description = "Python runtimes to extend and control a gam3du engine"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 license-file.workspace = true
 
 [dependencies]
-bindings.workspace = true
+runtimes.workspace = true
 serde_json.workspace = true
 log.workspace = true
 rustpython-vm.workspace = true

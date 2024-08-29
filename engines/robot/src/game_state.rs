@@ -4,8 +4,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use bindings::api::Identifier;
-use bindings::api::Value;
+use runtimes::api::Identifier;
+use runtimes::api::Value;
 use glam::{FloatExt, IVec3, Vec3};
 use log::{debug, error};
 

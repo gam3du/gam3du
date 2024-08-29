@@ -11,8 +11,8 @@ ctrlc.workspace = true
 
 gam3du-framework.workspace = true
 engine-robot.workspace = true
-bindings.workspace = true
-bind-python.workspace = true
+runtimes.workspace = true
+runtime-python.workspace = true
 
 pollster.workspace = true
 log.workspace = true

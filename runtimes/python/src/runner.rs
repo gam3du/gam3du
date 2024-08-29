@@ -6,7 +6,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use bindings::event::EngineEvent;
+use runtimes::event::EngineEvent;
 use log::{debug, error};
 use rustpython_vm::{
     pymodule,
@@ -71,7 +71,7 @@ pub fn run(
         let interpreter = rustpython::InterpreterConfig::new()
             .settings({
                 let mut settings = Settings::default();
-                settings.no_sig_int = true;
+                settings.install_signal_handlers = false;
                 settings
             })
             .init_stdlib()
@@ -160,7 +160,7 @@ mod rust_py_module {
         time::Duration,
     };
 
-    use bindings::{api, event::EngineEvent};
+    use runtimes::{api, event::EngineEvent};
 
     use super::{PyObject, PyResult, TryFromBorrowedObject, VirtualMachine};
     use rustpython_vm::{

@@ -1,0 +1,123 @@
+<mxfile host="65bd71144e">
+    <diagram id="2KSqYS7HcdBWXXMJBx4O" name="Page-1">
+        <mxGraphModel dx="1010" dy="1039" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="32" value="" style="whiteSpace=wrap;html=1;dashed=1;dashPattern=8 8;fillStyle=auto;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="210" width="740" height="180" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="2" target="40" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="2" value="User Script" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="40" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="Application Script" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="150" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="3" target="42" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="110" y="210" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="30" style="edgeStyle=none;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;" parent="1" source="28" target="36" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="170" y="210" as="sourcePoint"/>
+                        <mxPoint x="490" y="390" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="10" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="7" target="9" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="Framework" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="90" y="330" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="Platform" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="90" y="410" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="Framework" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="810" width="480" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="API" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0a30a;fontColor=#000000;strokeColor=#BD7000;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="750" width="480" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="Python" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e51400;fontColor=#ffffff;strokeColor=#B20000;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="730" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="Lua" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fa6800;fontColor=#000000;strokeColor=#C73500;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="730" width="60" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="C-FFI" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6d8764;fontColor=#ffffff;strokeColor=#3A5431;" parent="1" vertex="1">
+                    <mxGeometry x="190" y="730" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="Webservice" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#76608a;fontColor=#ffffff;strokeColor=#432D57;" parent="1" vertex="1">
+                    <mxGeometry x="260" y="730" width="80" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="WASM" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a0522d;fontColor=#ffffff;strokeColor=#6D1F00;" parent="1" vertex="1">
+                    <mxGeometry x="340" y="730" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="Java" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#a20025;fontColor=#ffffff;strokeColor=#6F0000;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="730" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" value="JavaScript" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0050ef;fontColor=#ffffff;strokeColor=#001DBC;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="730" width="70" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="wgpu" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6a00ff;fontColor=#ffffff;strokeColor=#3700CC;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="850" width="160" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="cpal" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6a00ff;fontColor=#ffffff;strokeColor=#3700CC;" parent="1" vertex="1">
+                    <mxGeometry x="230" y="850" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="winit" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#6a00ff;fontColor=#ffffff;strokeColor=#3700CC;" parent="1" vertex="1">
+                    <mxGeometry x="370" y="850" width="180" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="23" target="13" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="Python&lt;br&gt;Script" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="610" width="70" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="24" target="14" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="Lua&lt;br&gt;Script" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="140" y="610" width="70" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="Challenges:&lt;br&gt;&lt;br&gt;- What about UI-Elements?&lt;br&gt;- Shall we rely on system's Python/Lua-interpreters or embed our own?&lt;br&gt;- Will the web-version have the same feature-set? (Java in the web? Javascript on the Desktop?)&lt;br&gt;- How to deal with API changes that might break user scripts?" style="text;strokeColor=none;align=left;fillColor=none;html=1;verticalAlign=top;whiteSpace=wrap;rounded=0;horizontal=1;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="930" width="720" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" parent="1" source="28" target="7" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="Engine" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="250" width="240" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="Engine" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="770" width="480" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="Libs/Utils" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="210" y="330" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" value="User scripts are meant to customize/modify an existing game or application.&lt;br&gt;They can be written against the API defined by the application script." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="270" y="40" width="460" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" value="Application scripts take the basic building blocks of the selected engine to create actual games or applications by communicating with the engine's API." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="270" y="150" width="460" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="39" value="Provides the application logic and game loop. Also contains the event handlers and renderer. Can be controlled by an API." style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="330" y="250" width="460" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="Application API" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="140" y="130" width="120" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="Engine API" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="230" width="240" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" value="this is written in Rust and part of the gam3du project" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+                    <mxGeometry x="510" y="370" width="290" height="20" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

@@ -25,6 +25,9 @@ use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
 use log::{debug, error};
+use runtime_python::PythonThread;
+use runtimes::api::{Api, Identifier};
+use runtimes::event::{ApplicationEvent, EngineEvent};
 use tiny_http::{Response, Server};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -49,7 +52,7 @@ fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
-    let python_thread = bind_python::run(event_sender.clone());
+    let python_thread = runtime_python::run(event_sender.clone());
 
     let webserver_thread = {
         let event_sender = event_sender.clone();
