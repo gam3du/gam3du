@@ -16,17 +16,15 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
-use std::thread::JoinHandle;
 use std::time::Duration;
 use std::{sync::mpsc::channel, thread};
 
-use bind_python::PythonThread;
 use bindings::api::{Api, Identifier};
 use bindings::event::{ApplicationEvent, EngineEvent};
 use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
-use log::{debug, error, info};
+use log::{debug, error};
 use tiny_http::{Response, Server};
 use winit::event_loop::{ControlFlow, EventLoop};
 
@@ -84,10 +82,10 @@ fn main() {
                 .unwrap();
             debug!("thread[game loop]: instruct python vm to stop now");
             python_thread.stop();
-            python_thread.join().unwrap();
             debug!("thread[game loop]: instruct webserver to stop now");
             EXIT_FLAG.store(true, Ordering::Relaxed);
             debug!("thread[game loop]: exit");
+            python_thread
         })
     };
 
@@ -95,43 +93,19 @@ fn main() {
     window_event_loop.run_app(&mut application).unwrap();
     drop(application);
     log::debug!("main: window event loop exited");
-
     // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
 
-    let mut python_thread = None; // Some(python_thread);
-    let mut game_loop_thread = Some(game_loop_thread);
-    let mut webserver_thread = Some(webserver_thread);
-    while python_thread.is_some() || game_loop_thread.is_some() || webserver_thread.is_some() {
-        info!("Waiting for all threads to exit …");
-        if python_thread
-            .as_ref()
-            .is_some_and(PythonThread::is_finished)
-        {
-            info!("Python stopped");
-            python_thread.take().unwrap().join().unwrap();
-        } else if python_thread.is_some() {
-            info!("Waiting for Python");
-        }
-        if game_loop_thread
-            .as_ref()
-            .is_some_and(JoinHandle::is_finished)
-        {
-            info!("Game loop stopped");
-            game_loop_thread.take().unwrap().join().unwrap();
-        } else if game_loop_thread.is_some() {
-            info!("Waiting for game loop");
-        }
-        if webserver_thread
-            .as_ref()
-            .is_some_and(JoinHandle::is_finished)
-        {
-            info!("webserver stopped");
-            webserver_thread.take().unwrap().join().unwrap();
-        } else if webserver_thread.is_some() {
-            info!("Waiting for webserver");
-        }
-        thread::sleep(Duration::from_secs(1));
-    }
+    // Every thread should have received an exit-notification by now
+
+    debug!("Waiting for game loop to exit …");
+    #[allow(clippy::shadow_unrelated)] // this is related, but got moved through a foreign thread
+    let python_thread = game_loop_thread.join().unwrap();
+
+    debug!("Waiting for python vm to exit …");
+    python_thread.join().unwrap();
+
+    debug!("Waiting for webserver to exit …");
+    webserver_thread.join().unwrap();
 }
 
 fn http_server(command_sender: &Sender<EngineEvent>, api: &Api, exit_flag: &'static AtomicBool) {
