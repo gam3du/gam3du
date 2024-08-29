@@ -1,6 +1,6 @@
-use runtimes::event::{ApplicationEvent, EngineEvent};
 use engines::Renderer;
 use log::{debug, info, trace};
+use runtimes::event::{ApplicationEvent, EngineEvent};
 use std::{
     sync::{mpsc::Sender, Arc},
     time::{Duration, Instant},

@@ -6,8 +6,8 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use runtimes::event::EngineEvent;
 use log::{debug, error};
+use runtimes::event::EngineEvent;
 use rustpython_vm::{
     pymodule,
     signal::{UserSignal, UserSignalSender},

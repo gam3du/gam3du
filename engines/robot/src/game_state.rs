@@ -4,10 +4,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use runtimes::api::Identifier;
-use runtimes::api::Value;
 use glam::{FloatExt, IVec3, Vec3};
 use log::{debug, error};
+use runtimes::api::Identifier;
+use runtimes::api::Value;
 
 use crate::tile::{tile, LinePattern, LineSegment, Tile};
 
