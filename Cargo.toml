@@ -40,6 +40,7 @@ wgpu = "22.1.0"
 # Basic vector and matrix types and operations thereon
 glam = "0.29.0"
 
+json = "0.12.4"
 rand = "0.8.5"
 
 pollster = "0.3.0"

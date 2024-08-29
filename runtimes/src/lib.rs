@@ -5,3 +5,4 @@
 
 pub mod api;
 pub mod event;
+mod message;
