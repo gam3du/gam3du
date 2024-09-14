@@ -1,6 +1,6 @@
+#![allow(missing_docs, reason = "TODO remove before release")]
 #![expect(
     dead_code,
-    missing_docs,
     clippy::expect_used,
     clippy::unwrap_used,
     reason = "TODO remove and fix, once this design makes it into production"

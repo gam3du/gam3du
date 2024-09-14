@@ -67,7 +67,7 @@ struct EntityComponentSystem {
 }
 
 impl EntityComponentSystem {
-    pub fn new() -> EntityComponentSystem {
+    pub(crate) fn new() -> EntityComponentSystem {
         EntityComponentSystem {
             //entities: Vec::new(),
         }

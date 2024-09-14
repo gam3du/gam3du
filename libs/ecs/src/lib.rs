@@ -1,11 +1,12 @@
+#![allow(missing_docs, reason = "TODO remove before release")]
 #![expect(
     clippy::missing_panics_doc,
-    missing_docs,
     clippy::print_stdout,
     clippy::unwrap_used,
     // clippy::expect_used,
     // clippy::indexing_slicing,
     // clippy::panic,
+    clippy::todo,
     reason = "TODO remove before release"
 )]
 

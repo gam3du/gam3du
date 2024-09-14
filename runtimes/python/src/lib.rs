@@ -1,5 +1,5 @@
+#![allow(missing_docs, reason = "TODO remove before release")]
 #![expect(
-    missing_docs,
     clippy::missing_errors_doc,
     clippy::missing_panics_doc,
     clippy::unwrap_used,

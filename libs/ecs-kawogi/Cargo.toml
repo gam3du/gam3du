@@ -3,6 +3,7 @@ name = "lib-ecs-kawogi"
 description = "An experimental Entity Component System implementation"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]

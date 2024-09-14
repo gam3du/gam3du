@@ -1,6 +1,6 @@
+#![allow(missing_docs, reason = "TODO remove before release")]
 #![expect(
     unused_crate_dependencies,
-    missing_docs,
     clippy::print_stdout,
     clippy::unwrap_used,
     reason = "TODO remove before release"

@@ -3,6 +3,7 @@ name = "engine-robot"
 description = "A robot moving on a 2d grid performing simple tasks"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]

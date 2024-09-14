@@ -3,6 +3,7 @@ name = "runtimes"
 description = "Common types, macros and helper functions for language runtimes"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]

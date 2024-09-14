@@ -3,6 +3,7 @@ name = "engines"
 description = "Traits and structs to be used to create gam3du engines"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]

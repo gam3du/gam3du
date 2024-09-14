@@ -3,6 +3,7 @@ name = "runtime-python"
 description = "Python runtimes to extend and control a gam3du engine"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]

@@ -1,3 +1,4 @@
+#![allow(missing_docs, reason = "TODO remove before release")]
 #![expect(
     clippy::cast_precision_loss,
     clippy::expect_used,
@@ -8,7 +9,6 @@
     // clippy::print_stdout,
     clippy::todo,
     clippy::unwrap_used,
-    missing_docs,
     reason = "TODO remove before release"
 )]
 
