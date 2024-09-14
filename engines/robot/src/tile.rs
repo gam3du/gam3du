@@ -1,3 +1,7 @@
+#![expect(
+    clippy::allow_attributes_without_reason,
+    reason = "false positives for Pod/Zeroable macros"
+)]
 use std::ops;
 
 use bytemuck::{Pod, Zeroable};
@@ -29,8 +33,10 @@ impl ops::BitOrAssign<LineSegment> for LinePattern {
 }
 
 #[derive(Clone, Copy)]
-// their meaning is clear from the context
-#[allow(clippy::min_ident_chars)]
+#[expect(
+    clippy::min_ident_chars,
+    reason = "their meaning is clear from the context"
+)]
 pub(super) enum LineSegment {
     /// positive x
     E = 0,

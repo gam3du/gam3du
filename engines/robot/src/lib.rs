@@ -1,13 +1,13 @@
-// TODO remove and fix before release
-#![allow(missing_docs)]
-#![allow(clippy::indexing_slicing)]
-#![allow(clippy::todo)]
-#![allow(clippy::panic)]
-#![allow(clippy::unwrap_used)]
-#![allow(clippy::unwrap_in_result)]
-#![allow(clippy::missing_panics_doc)]
-// TODO remove ASAP!
-#![allow(dead_code)]
+#![expect(
+    missing_docs,
+    clippy::indexing_slicing,
+    // clippy::todo,
+    // clippy::panic,
+    clippy::unwrap_used,
+    // clippy::unwrap_in_result,
+    clippy::missing_panics_doc,
+    reason = "TODO remove and fix before release"
+)]
 
 mod camera;
 mod game_loop;

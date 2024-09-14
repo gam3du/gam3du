@@ -1,13 +1,13 @@
-// false positives with multiple crates
-#![allow(unused_crate_dependencies)]
-// TODO remove and fix before release
-#![allow(missing_docs)]
-#![allow(clippy::missing_errors_doc)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(clippy::unwrap_used)]
-#![allow(clippy::expect_used)]
-#![allow(clippy::panic)]
-#![allow(clippy::todo)]
+#![expect(
+    missing_docs,
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::unwrap_used,
+    clippy::expect_used,
+    // clippy::panic,
+    // clippy::todo,
+    reason = "TODO remove and fix before release"
+)]
 
 pub mod bindgen;
 mod runner;

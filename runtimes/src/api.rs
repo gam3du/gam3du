@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 pub struct RichText(pub String);
 
 /// A technical name of an element (api, function, parameter, …).
+///
 /// For compatibility reasons only the ASCII-characters `a-z`, `0-9` and ` ` are allowed.
 /// No uppercase letters, dashes/minus, underscores, dots, etc. are permitted.
 /// An single space serves as a separator between words; they may not appear

@@ -1,8 +1,10 @@
-#![allow(clippy::allow_attributes_without_reason)]
-#![allow(unused_crate_dependencies)]
-#![allow(missing_docs)]
-#![allow(clippy::print_stdout)]
-#![allow(clippy::unwrap_used)]
+#![expect(
+    unused_crate_dependencies,
+    missing_docs,
+    clippy::print_stdout,
+    clippy::unwrap_used,
+    reason = "TODO remove before release"
+)]
 
 use std::io::BufWriter;
 

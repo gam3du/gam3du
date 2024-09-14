@@ -20,8 +20,10 @@ pub(super) struct FloorRenderer {
 }
 
 impl FloorRenderer {
-    // `time` will be moved to global scope anyway
-    #[allow(clippy::similar_names)]
+    #[expect(
+        clippy::similar_names,
+        reason = "`time` will be moved to global scope anyway"
+    )]
     #[must_use]
     pub(super) fn new(
         device: &wgpu::Device,

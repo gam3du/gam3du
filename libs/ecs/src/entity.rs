@@ -3,6 +3,10 @@ use std::{any::TypeId, collections::HashMap, mem};
 use super::{component::Component, state::State};
 
 pub struct Entity {
+    #[expect(
+        dead_code,
+        reason = "TODO likely used in future at least for debugging"
+    )]
     name: String,
     components: HashMap<TypeId, Vec<Box<dyn Component>>>,
 }

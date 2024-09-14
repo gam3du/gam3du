@@ -1,18 +1,13 @@
-// has false positives; enable every now and then to see whether there are actually missed opportunities
-#![allow(missing_copy_implementations)]
-// usually too noisy. Disable every now and then to see whether there are actually identifiers that need to be improved.
-#![allow(unused_crate_dependencies)]
-// TODO re-enable this later and review all occurrences
-#![allow(clippy::cast_precision_loss)]
-// TODO remove before release
-#![allow(clippy::allow_attributes_without_reason)]
-#![allow(clippy::missing_panics_doc)]
-#![allow(missing_docs)]
-#![allow(clippy::print_stdout)]
-#![allow(clippy::unwrap_used)]
-#![allow(clippy::expect_used)]
-#![allow(clippy::indexing_slicing)]
-#![allow(clippy::panic)]
+#![expect(
+    // clippy::missing_panics_doc,
+    missing_docs,
+    // clippy::print_stdout,
+    clippy::unwrap_used,
+    clippy::expect_used,
+    // clippy::indexing_slicing,
+    // clippy::panic,
+    reason = "TODO remove before release"
+)]
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
@@ -30,7 +25,6 @@ use winit::event_loop::{ControlFlow, EventLoop};
 
 static EXIT_FLAG: AtomicBool = AtomicBool::new(false);
 
-#[allow(clippy::too_many_lines)] // TODO maybe fix later
 fn main() {
     init_logger();
 
@@ -98,7 +92,10 @@ fn main() {
     // Every thread should have received an exit-notification by now
 
     debug!("Waiting for game loop to exit …");
-    #[allow(clippy::shadow_unrelated)] // this is related, but got moved through a foreign thread
+    #[expect(
+        clippy::shadow_unrelated,
+        reason = "this is related, but got moved through a foreign thread"
+    )]
     let python_thread = game_loop_thread.join().unwrap();
 
     debug!("Waiting for python vm to exit …");

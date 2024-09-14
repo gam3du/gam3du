@@ -144,8 +144,6 @@ impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
                 match *logical_key {
                     Key::Named(key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Named({key:?})");
-                        // more branches will follow for sure …
-                        #[allow(clippy::single_match)]
                         match key {
                             NamedKey::Escape => {
                                 self.event_sink.send(ApplicationEvent::Exit.into()).unwrap();

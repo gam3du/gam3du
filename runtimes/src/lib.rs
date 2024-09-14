@@ -1,7 +1,4 @@
-// too many false positives
-#![allow(missing_copy_implementations)]
-// TODO remove and fix before release
-#![allow(missing_docs)]
+#![expect(missing_docs, reason = "TODO remove and fix before release")]
 
 pub mod api;
 pub mod event;

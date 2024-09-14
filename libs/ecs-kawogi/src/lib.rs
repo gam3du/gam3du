@@ -1,8 +1,10 @@
-// TODO remove and fix, once this design makes it into production
-#![allow(dead_code)]
-#![allow(missing_docs)]
-#![allow(clippy::expect_used)]
-#![allow(clippy::unwrap_used)]
+#![expect(
+    dead_code,
+    missing_docs,
+    clippy::expect_used,
+    clippy::unwrap_used,
+    reason = "TODO remove and fix, once this design makes it into production"
+)]
 
 use std::{
     collections::{hash_map, HashMap},

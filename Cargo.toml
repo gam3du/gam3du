@@ -14,7 +14,6 @@ members = [
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-license = "MIT"
 license-file = "LICENSE-MIT"
 readme = "README.md"
 
@@ -32,7 +31,7 @@ rustpython = "0.4.0"
 rustpython-vm = "0.4.0"
 
 # simplifies bit/byte-level operations
-bytemuck = "1.17.1"
+bytemuck = "1.18.0"
 
 # Abstraction layer for the paltform's graphics API
 wgpu = "22.1.0"
@@ -40,17 +39,16 @@ wgpu = "22.1.0"
 # Basic vector and matrix types and operations thereon
 glam = "0.29.0"
 
-json = "0.12.4"
+serde_json = "1.0.128"
 rand = "0.8.5"
 
 pollster = "0.3.0"
 log = "0.4.22"
-env_logger = "0.11.3"
+env_logger = "0.11.5"
 winit = "0.30.5"
 
-serde = "1.0.209"
+serde = "1.0.210"
 json5 = "0.4.1"
-serde_json = "1.0.127"
 tiny_http = "0.12.0"
 ctrlc = "3.4.5"
 
@@ -67,14 +65,14 @@ missing_docs = "warn"
 dead_code = "warn"
 
 # disable in your project if these report false positives for build-dependencies
-unused_crate_dependencies = "warn"
+# unused_crate_dependencies = "warn"
 
 ######################################################################################################################
 # Maintenance lints that are generally overridden, but can be used temporarily for clean-up and maintenance
 ######################################################################################################################
 
 # generally too eager and suggests too big datatypes but helps to see whether there are missed opportunities
-missing_copy_implementations = "warn"
+# missing_copy_implementations = "warn"
 
 ######################################################################################################################
 # Lints that should only be overridden for a small scope with a comment explaining the exception
@@ -165,6 +163,7 @@ shadow_unrelated = "warn"
 # Lints that should only be overridden for a small scope with a comment explaining the exception
 ######################################################################################################################
 
+allow-attributes_without_reason = "warn"
 absolute_paths = "warn"
 alloc_instead_of_core = "warn"
 # allow_attributes = "warn"

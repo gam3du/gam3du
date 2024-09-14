@@ -1,3 +1,7 @@
+#![expect(
+    clippy::allow_attributes_without_reason,
+    reason = "false positives for Pod/Zeroable macros"
+)]
 use std::mem::size_of;
 
 use bytemuck::{offset_of, Pod, Zeroable};
@@ -23,8 +27,10 @@ pub(super) struct RobotRenderer {
 }
 
 impl RobotRenderer {
-    // TODO partition this function into smaller parts
-    #[allow(clippy::too_many_lines)]
+    #[expect(
+        clippy::too_many_lines,
+        reason = "TODO partition this function into smaller parts"
+    )]
     #[must_use]
     pub(super) fn new(
         device: &wgpu::Device,
@@ -350,7 +356,7 @@ impl RobotRenderer {
         texture_view
     }
 
-    #[allow(clippy::similar_names)] // those are code names
+    #[expect(clippy::similar_names, reason = "those are code names")]
     fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
         let front = 0.4;
         let back = -0.4;
@@ -425,8 +431,10 @@ impl RobotRenderer {
     }
 
     fn create_texels(size: usize) -> Vec<u8> {
-        // testure doesn't need to be precise
-        #[allow(clippy::cast_precision_loss)]
+        #[expect(
+            clippy::cast_precision_loss,
+            reason = "texture doesn't need to be precise"
+        )]
         (0..size * size)
             .map(|id| {
                 // get high five for recognizing this ;)

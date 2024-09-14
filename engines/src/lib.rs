@@ -1,5 +1,4 @@
-// TODO remove before release
-#![allow(missing_docs)]
+#![expect(missing_docs, reason = "TODO remove before release")]
 
 pub trait RendererBuilder {
     type Renderer: Renderer;

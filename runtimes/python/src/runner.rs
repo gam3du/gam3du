@@ -1,6 +1,3 @@
-// TODO re-enable this later and review all occurrences
-#![allow(clippy::cast_precision_loss)]
-
 use std::{
     sync::mpsc::Sender,
     thread::{self, JoinHandle},
@@ -39,7 +36,6 @@ impl PythonThread {
     }
 }
 
-#[allow(clippy::missing_panics_doc)]
 pub fn run(
     // _source_path: &(impl AsRef<Path> + ToString),
     sender: Sender<EngineEvent>,
@@ -147,11 +143,10 @@ pub fn run(
 }
 
 #[pymodule]
-// those are required by the Python API
-#[allow(
+#[expect(
     clippy::unnecessary_wraps,
-    clippy::needless_pass_by_value,
-    clippy::unused_self
+    clippy::unused_self,
+    reason = "those are required by the Python API"
 )]
 mod rust_py_module {
     use std::{

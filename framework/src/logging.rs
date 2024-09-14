@@ -6,6 +6,8 @@ pub fn init_logger() {
         .filter_level(log::LevelFilter::Trace)
         // We keep wgpu at Error level, as it's very noisy.
         .filter_module("wgpu_core", log::LevelFilter::Info)
+        // Workaround for https://github.com/gfx-rs/wgpu/issues/6043
+        .filter_module("wgpu_core::device::resource", log::LevelFilter::Warn)
         .filter_module("wgpu_hal", log::LevelFilter::Info)
         .filter_module("naga", log::LevelFilter::Info)
         .filter_module("calloop", log::LevelFilter::Info)

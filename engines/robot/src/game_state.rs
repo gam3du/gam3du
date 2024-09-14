@@ -38,23 +38,20 @@ impl GameState {
                 self.robot.complete_animation();
                 let segment = LineSegment::from(self.robot.orientation);
 
-                // TODO make this a safe function
-                #[allow(clippy::cast_sign_loss)]
+                #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
                 let start_index =
                     (self.robot.position.y * 10 + self.robot.position.x + 55) as usize;
                 self.floor.tiles[start_index].line_pattern |= segment;
 
                 let offset = self.robot.orientation.as_ivec3();
                 if offset.x != 0 && offset.y != 0 {
-                    // TODO make this a safe function
-                    #[allow(clippy::cast_sign_loss)]
+                    #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
                     let index0 = (self.robot.position.y * 10
                         + (self.robot.position.x + offset.x)
                         + 55) as usize;
                     self.floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
 
-                    // TODO make this a safe function
-                    #[allow(clippy::cast_sign_loss)]
+                    #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
                     let index1 = ((self.robot.position.y + offset.y) * 10
                         + self.robot.position.x
                         + 55) as usize;
@@ -63,8 +60,7 @@ impl GameState {
 
                 self.robot.position += offset;
 
-                // TODO make this a safe function
-                #[allow(clippy::cast_sign_loss)]
+                #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
                 let end_index = (self.robot.position.y * 10 + self.robot.position.x + 55) as usize;
                 self.floor.tiles[end_index].line_pattern |= -segment;
                 self.floor.tainted = self.tick;
@@ -102,9 +98,9 @@ impl GameState {
         };
     }
 
-    pub(crate) fn is_idle(&mut self) -> bool {
-        self.robot.is_idle()
-    }
+    // pub(crate) fn is_idle(&mut self) -> bool {
+    //     self.robot.is_idle()
+    // }
 }
 
 pub(crate) struct Robot {
@@ -116,10 +112,10 @@ pub(crate) struct Robot {
 }
 
 impl Robot {
-    #[must_use]
-    pub(crate) fn is_idle(&self) -> bool {
-        self.current_animation.is_none()
-    }
+    // #[must_use]
+    // pub(crate) fn is_idle(&self) -> bool {
+    //     self.current_animation.is_none()
+    // }
 
     fn complete_animation(&mut self) {
         if let Some(current_animation) = self.current_animation.take() {
@@ -160,9 +156,9 @@ pub(super) struct Floor {
 }
 
 impl Floor {
-    fn tile_count(&self) -> u32 {
-        u32::try_from(self.tiles.len()).unwrap()
-    }
+    // fn tile_count(&self) -> u32 {
+    //     u32::try_from(self.tiles.len()).unwrap()
+    // }
 
     fn create_tiles() -> Vec<Tile> {
         let mut vertex_data = Vec::new();
@@ -252,8 +248,10 @@ impl Animation {
 }
 
 // TODO W.I.P.
-// their meaning is clear from the context
-#[allow(clippy::min_ident_chars)]
+#[expect(
+    clippy::min_ident_chars,
+    reason = "their meaning is clear from the context"
+)]
 #[derive(Clone, Copy, Default)]
 #[repr(u8)]
 pub(crate) enum Orientation {
