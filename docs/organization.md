@@ -18,7 +18,7 @@ Description of the project's structure and technical documentation shall be plac
 
 ### Code
 
-Code shall be as self-descriptive as possible. In order to achieve that, avoid using abbreviations in identifiers. There's no need to document private functions and elements with obvious purpose (getters, setters, `new`, ...). Public elements however shall have at least a single line of documentation and a description of failure modes - clippy will help you to remember that :)
+Code shall be as self-descriptive as possible. In order to achieve that, avoid using abbreviations in identifiers. There's no need to document private functions and elements with obvious purpose (getters, setters, `new`, ...). Public elements however shall have at least a single line of documentation and a description of failure modes - _clippy_ will help you to remember that :)
 
 ### User
 
