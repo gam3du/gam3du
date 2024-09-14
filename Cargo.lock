@@ -1349,13 +1349,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "lib-ecs"
-version = "0.1.0"
-dependencies = [
- "glam",
-]
-
-[[package]]
 name = "lib-ecs-kawogi"
 version = "0.1.0"
 dependencies = [

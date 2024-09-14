@@ -5,7 +5,7 @@ members = [
     "engines/robot",
     "framework",
     "launchers/robot",
-    "libs/ecs",
+    # "libs/ecs",
     "libs/ecs-kawogi",
     "runtimes",
     "runtimes/python",
