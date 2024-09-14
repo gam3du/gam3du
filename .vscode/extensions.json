@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "fill-labs.dependi",
+        "hediet.vscode-drawio",
+        "tamasfe.even-better-toml",
+        "davidanson.vscode-markdownlint",
+        "rust-lang.rust-analyzer"
+    ]
+}
