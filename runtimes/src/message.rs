@@ -5,43 +5,57 @@
 
 use std::num::NonZeroU128;
 
-pub(crate) enum Message {
+use crate::api::Identifier;
+
+pub(crate) enum ClientToServerMessage {
     Request(RequestMessage),
+}
+
+pub(crate) enum ServerToClientMessage {
     Response(ResponseMessage),
     ErrorResponse(ErrorResponseMessage),
     Event(EventMessage),
 }
 
+// pub(crate) enum Message {
+//     Request(RequestMessage),
+//     Response(ResponseMessage),
+//     ErrorResponse(ErrorResponseMessage),
+//     Event(EventMessage),
+// }
+
 /// Name of a communication partner (Script, API or whatever we decide :) )
 /// TODO Maybe these can be replaced by numeric IDs, if the framework provides a lookup-table
-type EndpointName = String;
+type EndpointName = Identifier;
 
 /// UUID to track and associate messages
-type MessageId = NonZeroU128;
+// TODO this should rather be a `CallId` or similar because a single call may involve several messages (request, response, error, …)
+pub(crate) type MessageId = NonZeroU128;
 
 /// Asks the receiver to perform an operation and return a response containing the result.
 pub(crate) struct RequestMessage {
     /// UUID used to track corresponding messages
-    id: MessageId,
-    /// Name of the sending/requesting endpoint
-    /// This is required as the receiver will provide a single mpsc-channel which cannot distinguish between senders.
-    // TODO maybe there an mpsc-implementation that can distinguish between multiple senders?
-    source: EndpointName,
-    /// Name of the communication partner who's responsible to respond to the request
-    target: EndpointName,
+    pub(crate) id: MessageId,
+    // /// Name of the sending/requesting endpoint
+    // /// This is required as the receiver will provide a single mpsc-channel which cannot distinguish between senders.
+    // // TODO maybe there an mpsc-implementation that can distinguish between multiple senders?
+    // source: EndpointName,
+    // /// Name of the communication partner who's responsible to respond to the request
+    // target: EndpointName,
     /// The actual function that shall be triggered
-    command: String,
+    pub(crate) command: Identifier,
     /// The list of arguments to be passed to the called function
-    arguments: serde_json::Value,
+    pub(crate) arguments: serde_json::Value,
 }
 
 /// Contains the result of a requested operation
+// TODO find a better name to reflect a positive result value (e.g. `OkResultMessage` or `OkResponseMessage`)
 pub(crate) struct ResponseMessage {
     /// this shall match the id of the corresponding request
-    id: MessageId,
+    pub(crate) id: MessageId,
     /// The result of the requested operation
     /// This might contain application errors if the request could not be fulfilled successfully
-    result: serde_json::Value,
+    pub(crate) result: serde_json::Value,
 }
 
 /// Indicates that a request could not be made into a proper function call.
@@ -68,4 +82,25 @@ pub(crate) struct EventMessage {
     name: String,
     /// The payload of this event
     content: serde_json::Value,
+}
+
+impl From<ErrorResponseMessage> for ServerToClientMessage {
+    fn from(value: ErrorResponseMessage) -> Self {
+        Self::ErrorResponse(value)
+    }
+}
+impl From<ResponseMessage> for ServerToClientMessage {
+    fn from(value: ResponseMessage) -> Self {
+        Self::Response(value)
+    }
+}
+impl From<EventMessage> for ServerToClientMessage {
+    fn from(value: EventMessage) -> Self {
+        Self::Event(value)
+    }
+}
+impl From<RequestMessage> for ClientToServerMessage {
+    fn from(value: RequestMessage) -> Self {
+        Self::Request(value)
+    }
 }
