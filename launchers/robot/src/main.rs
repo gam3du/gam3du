@@ -43,7 +43,7 @@ fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
-    let python_thread = runtime_python::run(event_sender.clone());
+    let python_thread = runtime_python::run("python".into(), "robot".into(), event_sender.clone());
 
     let webserver_thread = {
         let event_sender = event_sender.clone();
@@ -57,7 +57,7 @@ fn main() {
 
     let mut application = pollster::block_on(Application::new(
         "Robot".into(),
-        event_sender,
+        event_sender.clone(),
         RendererBuilder::new(game_loop.clone_state()),
     ));
 

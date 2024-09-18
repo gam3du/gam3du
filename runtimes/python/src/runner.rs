@@ -3,7 +3,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
-use log::{debug, error};
+use log::{debug, error, info};
 use runtimes::event::EngineEvent;
 use rustpython_vm::{
     pymodule,
@@ -37,29 +37,16 @@ impl PythonThread {
 }
 
 pub fn run(
-    // _source_path: &(impl AsRef<Path> + ToString),
+    sys_path: String,
+    main_module_name: String,
     sender: Sender<EngineEvent>,
-    // _api: &Api,
-    // exit_receiver: Receiver<()>,
 ) -> PythonThread {
-    // let source = read_to_string(source_path).unwrap();
-    // let path_string = source_path.as_ref().display().to_string();
-
     rust_py_module::COMMAND_QUEUE
         .lock()
         .unwrap()
         .replace(sender);
 
     let (user_signal_sender, user_signal_receiver) = rustpython_vm::signal::user_signal_channel();
-    // let make_interrupt: UserSignal = Box::new(|vm| {
-    //     // Copied from rustpython_vm::stdlib::signal::_signal::default_int_handler
-    //     let exec_type = vm.ctx.exceptions.keyboard_interrupt.to_owned();
-    //     Err(vm.new_exception_empty(exec_type))
-    // });
-    // std::mem::forget(std::thread::spawn(move || match exit_receiver.recv() {
-    //     Ok(()) => user_signal_sender.send(make_interrupt),
-    //     Err(_) => todo!(),
-    // }));
 
     let join_handle = thread::spawn(|| {
         debug!("thread[python]: start interpreter");
@@ -78,31 +65,18 @@ pub fn run(
                     "robot_api_internal".to_owned(),
                     Box::new(rust_py_module::make_module),
                 );
-
-                // vm.add_native_module(
-                //     "robot_api2".to_owned(),
-                //     Box::new(|vm: &VirtualMachine| {
-                //         let module = PyModule::new();
-                //         // ???
-                //         module.into_ref(&vm.ctx)
-                //     }),
-                // );
             }))
             .interpreter();
 
         interpreter.enter(|vm| {
-            vm.insert_sys_path(vm.new_pyobj("python"))
+            vm.insert_sys_path(vm.new_pyobj(sys_path))
                 .expect("add path");
 
-            match vm.import("robot", 0) {
-                Ok(module) => {
-                    let init_fn = module.get_attr("python_callback", vm).unwrap();
-                    init_fn.call((), vm).unwrap();
+            let main_module_name = vm.ctx.intern_str(main_module_name);
 
-                    let take_string_fn = module.get_attr("take_string", vm).unwrap();
-                    take_string_fn
-                        .call((String::from("Rust string sent to python"),), vm)
-                        .unwrap();
+            match vm.import(main_module_name, 0) {
+                Ok(_module) => {
+                    info!("Python thread completed successfully");
                 }
                 Err(exc) => {
                     let mut msg = String::new();
@@ -111,27 +85,6 @@ pub fn run(
                 }
             }
 
-            // let scope = vm.new_scope_with_builtins();
-            // let compile = vm.compile(&source, Mode::Exec, path_string);
-
-            // match compile {
-            //     Ok(py_code) => match vm.run_code_obj(py_code, scope) {
-            //         Ok(code_result) => {
-            //             info!("Success: {code_result:?}");
-            //         }
-            //         Err(exception) => {
-            //             let mut output = String::new();
-            //             vm.write_exception(&mut output, &exception).unwrap();
-            //             error!("Syntax error: {output}");
-            //         }
-            //     },
-            //     Err(err) => {
-            //         let exception = vm.new_syntax_error(&err, Some(&source));
-            //         let mut output = String::new();
-            //         vm.write_exception(&mut output, &exception).unwrap();
-            //         error!("Runtime error: {output}");
-            //     }
-            // }
             debug!("thread[python]: exit");
         });
     });
