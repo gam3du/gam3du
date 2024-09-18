@@ -33,7 +33,7 @@ impl GameState {
     }
 
     pub(crate) fn process_command(&mut self, command: &Identifier, _arguments: &[Value]) {
-        match command.0.as_str() {
+        match command.0.as_ref() {
             "move forward" => {
                 self.robot.complete_animation();
                 let segment = LineSegment::from(self.robot.orientation);

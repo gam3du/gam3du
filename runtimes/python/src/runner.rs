@@ -257,7 +257,7 @@ struct IdentifierConverter(Option<String>);
 impl IdentifierConverter {
     fn convert(self, vm: &VirtualMachine, api: &Api) -> PyResult<Identifier> {
         match self.0 {
-            Some(name) if api.check_identifier(&name) => Ok(Identifier(name)),
+            Some(name) if api.check_identifier(&name) => Ok(Identifier(name.into())),
             Some(name) => Err(vm.new_value_error(format!("{name:?} is not an identifier name"))),
             None => Err(vm.new_type_error("Identifier name must be a string".to_owned())),
         }

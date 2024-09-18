@@ -6,6 +6,7 @@
 )]
 
 use std::{
+    borrow::Cow,
     fmt::Display,
     ops::Range,
     sync::mpsc::{self, Receiver, Sender, TryRecvError},
@@ -33,7 +34,7 @@ pub struct RichText(pub String);
 /// It emphasizes best that such a name mangling _must_ occur and is a desired behavior
 /// as a space is rarely accepted within identifiers.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct Identifier(pub String);
+pub struct Identifier(pub Cow<'static, str>);
 
 impl Display for Identifier {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -132,7 +133,7 @@ pub enum Value {
     List(Box<Value>),
 }
 
-pub trait ApiServer {
+pub trait ApiServer: Send {
     fn api_name(&self) -> &Identifier;
 
     fn send_response(&mut self, id: MessageId, result: serde_json::Value);
