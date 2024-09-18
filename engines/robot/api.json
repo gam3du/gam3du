@@ -1,6 +1,6 @@
 {
   "name": "robot",
-  "caption": "A simple robot that can be moced across a 2D-plane and draw lines",
+  "caption": "A simple robot that can be moved across a 2D-plane and draw lines",
   "description": "Once upon a time there was a lonely robot with the serial number `#C0D1E`. …",
   "functions": [
     {
