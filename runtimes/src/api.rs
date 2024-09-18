@@ -8,7 +8,7 @@
 use std::{
     fmt::Display,
     ops::Range,
-    sync::mpsc::{Receiver, Sender, TryRecvError},
+    sync::mpsc::{self, Receiver, Sender, TryRecvError},
 };
 
 use rand::{thread_rng, Rng};
@@ -32,7 +32,7 @@ pub struct RichText(pub String);
 /// to make sure they fit into the target ecosystem. This is why a space was chosen:
 /// It emphasizes best that such a name mangling _must_ occur and is a desired behavior
 /// as a space is rarely accepted within identifiers.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Identifier(pub String);
 
 impl Display for Identifier {
@@ -42,7 +42,7 @@ impl Display for Identifier {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Api {
+pub struct ApiDescriptor {
     /// technical name of this API
     pub name: Identifier,
     /// a single-line explanation what this api is for
@@ -102,6 +102,26 @@ impl TypeDescriptor {
     pub const MIN_INTEGER: i64 = -(1 << (Self::INTEGER_BITS - 1));
 }
 
+/// creates a connected pair of endpoints
+#[must_use]
+pub fn channel(api_name: &Identifier) -> (ApiClientEndpoint, ApiServerEndpoint) {
+    let (script_to_engine_sender, script_to_engine_receiver) = mpsc::channel();
+    let (engine_to_script_sender, engine_to_script_receiver) = mpsc::channel();
+
+    let client_endpoint = ApiClientEndpoint::new(
+        api_name.clone(),
+        script_to_engine_sender,
+        engine_to_script_receiver,
+    );
+    let server_endpoint = ApiServerEndpoint::new(
+        api_name.clone(),
+        script_to_engine_receiver,
+        engine_to_script_sender,
+    );
+
+    (client_endpoint, server_endpoint)
+}
+
 /// A value for a parameter.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Value {
@@ -112,8 +132,25 @@ pub enum Value {
     List(Box<Value>),
 }
 
+pub trait ApiServer {
+    fn api_name(&self) -> &Identifier;
+
+    fn send_response(&mut self, id: MessageId, result: serde_json::Value);
+
+    fn poll_request(&mut self) -> Option<ClientToServerMessage>;
+}
+
+pub trait ApiClient: Send {
+    fn api_name(&self) -> &Identifier;
+
+    fn send_command(&mut self, command: Identifier, arguments: Vec<Value>) -> MessageId;
+
+    fn poll_response(&mut self) -> Option<ServerToClientMessage>;
+}
+
 /// Handles transmission of commands to [`ApiServerEndpoint`]s and provides methods for polling responses.
 pub struct ApiClientEndpoint {
+    api_name: Identifier,
     /// Used to send requests to the connected [`ApiServerEndpoint`]
     sender: Sender<ClientToServerMessage>,
     /// Used poll for responses from the the connected [`ApiServerEndpoint`]
@@ -123,13 +160,28 @@ pub struct ApiClientEndpoint {
 impl ApiClientEndpoint {
     #[must_use]
     pub fn new(
+        api_name: Identifier,
         sender: Sender<ClientToServerMessage>,
         receiver: Receiver<ServerToClientMessage>,
     ) -> Self {
-        Self { sender, receiver }
+        Self {
+            api_name,
+            sender,
+            receiver,
+        }
     }
 
-    pub fn send_command(&mut self, command: Identifier, arguments: Vec<Value>) -> MessageId {
+    fn send_to_server(&mut self, message: impl Into<ClientToServerMessage>) {
+        self.sender.send(message.into()).unwrap();
+    }
+}
+
+impl ApiClient for ApiClientEndpoint {
+    fn api_name(&self) -> &Identifier {
+        &self.api_name
+    }
+
+    fn send_command(&mut self, command: Identifier, arguments: Vec<Value>) -> MessageId {
         let id = thread_rng().r#gen();
 
         let request = RequestMessage {
@@ -143,11 +195,7 @@ impl ApiClientEndpoint {
         id
     }
 
-    fn send_to_server(&mut self, message: impl Into<ClientToServerMessage>) {
-        self.sender.send(message.into()).unwrap();
-    }
-
-    pub fn poll_response(&mut self) -> Option<ServerToClientMessage> {
+    fn poll_response(&mut self) -> Option<ServerToClientMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
             Err(TryRecvError::Empty) => None,
@@ -158,6 +206,7 @@ impl ApiClientEndpoint {
 
 /// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
 pub struct ApiServerEndpoint {
+    api_name: Identifier,
     /// Used poll for requests from the the connected [`ApiClientEndpoint`]
     receiver: Receiver<ClientToServerMessage>,
     /// Used to send responses to the connected [`ApiClientEndpoint`]
@@ -167,26 +216,37 @@ pub struct ApiServerEndpoint {
 impl ApiServerEndpoint {
     #[must_use]
     pub fn new(
+        api_name: Identifier,
         receiver: Receiver<ClientToServerMessage>,
         sender: Sender<ServerToClientMessage>,
     ) -> Self {
-        Self { receiver, sender }
-    }
-
-    pub fn send_response(&mut self, id: MessageId, result: serde_json::Value) {
-        let response = ResponseMessage { id, result };
-        self.send_to_client(response);
+        Self {
+            api_name,
+            receiver,
+            sender,
+        }
     }
 
     fn send_to_client(&mut self, message: impl Into<ServerToClientMessage>) {
         self.sender.send(message.into()).unwrap();
     }
+}
 
-    pub fn poll_request(&mut self) -> Option<ClientToServerMessage> {
+impl ApiServer for ApiServerEndpoint {
+    fn send_response(&mut self, id: MessageId, result: serde_json::Value) {
+        let response = ResponseMessage { id, result };
+        self.send_to_client(response);
+    }
+
+    fn poll_request(&mut self) -> Option<ClientToServerMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
             Err(TryRecvError::Empty) => None,
             Err(error @ TryRecvError::Disconnected) => panic!("{error}"),
         }
+    }
+
+    fn api_name(&self) -> &Identifier {
+        &self.api_name
     }
 }

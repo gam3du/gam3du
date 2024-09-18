@@ -1,10 +1,10 @@
 use std::io::{self, Write};
 
 use runtimes::api::{
-    Api, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
+    ApiDescriptor, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
 };
 
-pub fn generate(out: &mut impl Write, api: &Api) -> io::Result<()> {
+pub fn generate(out: &mut impl Write, api: &ApiDescriptor) -> io::Result<()> {
     // TODO add documentation comments for api
 
     writeln!(out, "import robot_api_internal")?;

@@ -1,7 +1,7 @@
 use crate::game_state::GameState;
 use log::debug;
 use runtimes::{
-    api::ApiServerEndpoint,
+    api::{ApiServer, ApiServerEndpoint},
     event::{ApplicationEvent, EngineEvent},
     message::{ClientToServerMessage, RequestMessage},
 };

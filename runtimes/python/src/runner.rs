@@ -1,11 +1,12 @@
 use std::{
-    sync::Mutex,
+    collections::HashMap,
+    sync::{LazyLock, Mutex},
     thread::{self, JoinHandle},
     time::Duration,
 };
 
 use log::{debug, error, info};
-use runtimes::api::{ApiClientEndpoint, Identifier, Value};
+use runtimes::api::{ApiClient, Identifier, Value};
 use rustpython_vm::{
     builtins::PyStr,
     function::{KwArgs, PosArgs},
@@ -14,7 +15,85 @@ use rustpython_vm::{
     PyObject, PyResult, Settings, TryFromBorrowedObject, VirtualMachine,
 };
 
-pub(super) static API_ENDPOINT: Mutex<Option<ApiClientEndpoint>> = Mutex::new(None);
+// FIXME this should be one lookup table per Python VM; workaround: one table per python thread might be enough
+pub(super) static API_CLIENTS: LazyLock<Mutex<HashMap<Identifier, Box<dyn ApiClient>>>> =
+    LazyLock::new(Mutex::default);
+
+pub struct RunnerBuilder {
+    sys_path: String,
+    main_module_name: String,
+    api_clients: HashMap<Identifier, Box<dyn ApiClient>>,
+}
+
+impl RunnerBuilder {
+    #[must_use]
+    pub fn new(sys_path: String, main_module_name: String) -> Self {
+        Self {
+            sys_path,
+            main_module_name,
+            api_clients: HashMap::new(),
+        }
+    }
+
+    pub fn add_api_client(&mut self, api_client: Box<dyn ApiClient>) {
+        self.api_clients
+            .insert(api_client.api_name().clone(), api_client);
+    }
+
+    pub fn build_and_run(self) -> PythonThread {
+        let mut api_clients = API_CLIENTS.lock().unwrap();
+        api_clients.extend(self.api_clients);
+
+        let (user_signal_sender, user_signal_receiver) =
+            rustpython_vm::signal::user_signal_channel();
+
+        let join_handle = thread::spawn(|| {
+            debug!("thread[python]: start interpreter");
+
+            let interpreter = rustpython::InterpreterConfig::new()
+                .settings({
+                    let mut settings = Settings::default();
+                    settings.install_signal_handlers = false;
+                    settings
+                })
+                .init_stdlib()
+                .init_hook(Box::new(|vm| {
+                    vm.set_user_signal_channel(user_signal_receiver);
+
+                    vm.add_native_module(
+                        "robot_api_internal".to_owned(),
+                        Box::new(rust_py_module::make_module),
+                    );
+                }))
+                .interpreter();
+
+            interpreter.enter(|vm| {
+                vm.insert_sys_path(vm.new_pyobj(self.sys_path))
+                    .expect("add path");
+
+                let main_module_name = vm.ctx.intern_str(self.main_module_name);
+
+                match vm.import(main_module_name, 0) {
+                    Ok(_module) => {
+                        info!("Python thread completed successfully");
+                    }
+                    Err(exc) => {
+                        let mut msg = String::new();
+                        vm.write_exception(&mut msg, &exc).unwrap();
+                        error!("Python thread exited with exception: {msg}");
+                    }
+                }
+
+                debug!("thread[python]: exit");
+            });
+        });
+
+        PythonThread {
+            join_handle,
+            user_signal_sender,
+        }
+    }
+}
 
 pub struct PythonThread {
     join_handle: JoinHandle<()>,
@@ -38,62 +117,6 @@ impl PythonThread {
 
     pub fn join(self) -> thread::Result<()> {
         self.join_handle.join()
-    }
-}
-
-pub fn run(
-    sys_path: String,
-    main_module_name: String,
-    api_endpoint: ApiClientEndpoint,
-) -> PythonThread {
-    API_ENDPOINT.lock().unwrap().replace(api_endpoint);
-
-    let (user_signal_sender, user_signal_receiver) = rustpython_vm::signal::user_signal_channel();
-
-    let join_handle = thread::spawn(|| {
-        debug!("thread[python]: start interpreter");
-
-        let interpreter = rustpython::InterpreterConfig::new()
-            .settings({
-                let mut settings = Settings::default();
-                settings.install_signal_handlers = false;
-                settings
-            })
-            .init_stdlib()
-            .init_hook(Box::new(|vm| {
-                vm.set_user_signal_channel(user_signal_receiver);
-
-                vm.add_native_module(
-                    "robot_api_internal".to_owned(),
-                    Box::new(rust_py_module::make_module),
-                );
-            }))
-            .interpreter();
-
-        interpreter.enter(|vm| {
-            vm.insert_sys_path(vm.new_pyobj(sys_path))
-                .expect("add path");
-
-            let main_module_name = vm.ctx.intern_str(main_module_name);
-
-            match vm.import(main_module_name, 0) {
-                Ok(_module) => {
-                    info!("Python thread completed successfully");
-                }
-                Err(exc) => {
-                    let mut msg = String::new();
-                    vm.write_exception(&mut msg, &exc).unwrap();
-                    error!("Python thread exited with exception: {msg}");
-                }
-            }
-
-            debug!("thread[python]: exit");
-        });
-    });
-
-    PythonThread {
-        join_handle,
-        user_signal_sender,
     }
 }
 
@@ -175,17 +198,21 @@ mod rust_py_module {
 }
 
 fn message(
+    // api_name: Identifier,
     name: IdentifierConverter,
     args: PosArgs,
     kwargs: KwArgs,
     vm: &VirtualMachine,
 ) -> PyResult<()> {
+    // TODO move the api selection into the caller
+    let api_name = Identifier("robot".into());
     let api = Api {};
     let command = name.convert(vm, &api)?;
     let parameters = ParameterConverter::new(args, kwargs).convert(vm, &api, &command)?;
-    let mut api_endpoint = API_ENDPOINT.lock().unwrap();
-    let api_endpoint = api_endpoint.as_mut().unwrap();
-    let _message_id = api_endpoint.send_command(command, parameters);
+
+    let mut api_clients = API_CLIENTS.lock().unwrap();
+    let api_client = api_clients.get_mut(&api_name).unwrap();
+    let _message_id = api_client.send_command(command, parameters);
 
     // TODO this becomes relevant again, once `send_command` implements proper error handling
     // If sending the message fails, the application

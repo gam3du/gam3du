@@ -6,17 +6,15 @@
 )]
 
 use std::sync::atomic::{AtomicBool, Ordering};
-// use std::sync::mpsc::Sender;
-// use std::time::Duration;
 use std::{sync::mpsc::channel, thread};
 
 use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
 use log::debug;
-use runtimes::api::{ApiClientEndpoint, ApiServerEndpoint};
+use runtime_python::RunnerBuilder;
+use runtimes::api::{self, ApiDescriptor};
 use runtimes::event::ApplicationEvent;
-// use tiny_http::{Response, Server};
 use winit::event_loop::{ControlFlow, EventLoop};
 
 static EXIT_FLAG: AtomicBool = AtomicBool::new(false);
@@ -24,19 +22,13 @@ static EXIT_FLAG: AtomicBool = AtomicBool::new(false);
 fn main() {
     init_logger();
 
-    let (script_to_engine_sender, script_to_engine_receiver) = channel();
-    let (engine_to_script_sender, engine_to_script_receiver) = channel();
+    let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
+    let robot_api: ApiDescriptor = serde_json::from_str(&api_json).unwrap();
 
-    let robot_api_script_endpoint =
-        ApiClientEndpoint::new(script_to_engine_sender, engine_to_script_receiver);
-    let robot_api_engine_endpoint =
-        ApiServerEndpoint::new(script_to_engine_receiver, engine_to_script_sender);
+    let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(&robot_api.name);
 
     let game_loop = GameLoop::default();
     let (event_sender, event_receiver) = channel();
-
-    // let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
-    // let api: Api = serde_json::from_str(&api_json).unwrap();
 
     ctrlc::set_handler({
         let event_sender = event_sender.clone();
@@ -47,8 +39,11 @@ fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
-    let python_thread =
-        runtime_python::run("python".into(), "robot".into(), robot_api_script_endpoint);
+    let python_sys_path = "python".into();
+    let python_main_module = "robot".into();
+    let mut python_builder = RunnerBuilder::new(python_sys_path, python_main_module);
+    python_builder.add_api_client(Box::new(robot_api_script_endpoint));
+    let python_thread = python_builder.build_and_run();
 
     // let webserver_thread = {
     //     let event_sender = event_sender.clone();

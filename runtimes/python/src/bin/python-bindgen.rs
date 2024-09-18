@@ -9,7 +9,7 @@
 use std::io::BufWriter;
 
 use runtime_python::bindgen;
-use runtimes::api::Api;
+use runtimes::api::ApiDescriptor;
 
 fn main() {
     // let move_forward = FunctionDescriptor {
@@ -58,7 +58,7 @@ fn main() {
 
     // TODO make the engine a command line parameter
     let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
-    let api: Api = serde_json::from_str(&api_json).unwrap();
+    let api: ApiDescriptor = serde_json::from_str(&api_json).unwrap();
     println!("{api:#?}");
 
     // let mut out = String::new();

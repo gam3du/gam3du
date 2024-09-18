@@ -4,12 +4,10 @@
     clippy::missing_panics_doc,
     clippy::unwrap_used,
     clippy::expect_used,
-    // clippy::panic,
-    // clippy::todo,
     reason = "TODO remove and fix before release"
 )]
 
 pub mod bindgen;
 mod runner;
 
-pub use runner::{run, PythonThread};
+pub use runner::{PythonThread, RunnerBuilder};
