@@ -773,6 +773,7 @@ dependencies = [
  "glam",
  "log",
  "runtimes",
+ "serde_json",
  "wgpu",
 ]
 

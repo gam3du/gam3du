@@ -12,7 +12,7 @@ use std::{sync::mpsc::channel, thread};
 use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
-use log::debug;
+use log::{debug, error};
 use runtime_python::RunnerBuilder;
 use runtimes::api::{self, ApiDescriptor};
 use runtimes::event::{ApplicationEvent, EngineEvent};
@@ -91,7 +91,9 @@ fn main() {
     let python_thread = game_loop_thread.join().unwrap();
 
     debug!("Waiting for python vm to exit …");
-    python_thread.join().unwrap();
+    if let Err(error) = python_thread.join() {
+        error!("python thread joined: {error:?}");
+    }
 
     // debug!("Waiting for webserver to exit …");
     // webserver_thread.join().unwrap();

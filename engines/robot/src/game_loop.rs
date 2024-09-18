@@ -74,12 +74,16 @@ impl GameLoop {
                             Some(ClientToServerMessage::Request(request)) => {
                                 let RequestMessage {
                                     // TODO remember id to send a matching response once the command completed
-                                    id: _,
+                                    id,
                                     command,
                                     arguments,
                                 } = request;
 
-                                game_state.process_command(&command, &arguments);
+                                if let Err(error) =
+                                    game_state.process_command(id, &command, &arguments)
+                                {
+                                    robot_api_endpoint.send_error(id, error);
+                                }
                             }
                             None => break 'next_robot_api_event,
                         }
@@ -87,6 +91,12 @@ impl GameLoop {
                 }
 
                 game_state.update();
+
+                // report back which commands could be completed in this update
+                for command_id in game_state.drain_completed_commands() {
+                    // FIXME needs to somehow route the command_id back into the originating controller
+                    self.robot_controllers[0].send_response(command_id, serde_json::Value::Null);
+                }
             }
 
             // compute the timestamp of the next game loop iteration

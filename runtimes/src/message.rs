@@ -30,7 +30,7 @@ type EndpointName = Identifier;
 
 /// UUID to track and associate messages
 // TODO this should rather be a `CallId` or similar because a single call may involve several messages (request, response, error, …)
-pub(crate) type MessageId = NonZeroU128;
+pub type MessageId = NonZeroU128;
 
 /// Asks the receiver to perform an operation and return a response containing the result.
 pub struct RequestMessage {
@@ -52,10 +52,10 @@ pub struct RequestMessage {
 // TODO find a better name to reflect a positive result value (e.g. `OkResultMessage` or `OkResponseMessage`)
 pub struct ResponseMessage {
     /// this shall match the id of the corresponding request
-    pub(crate) id: MessageId,
+    pub id: MessageId,
     /// The result of the requested operation
     /// This might contain application errors if the request could not be fulfilled successfully
-    pub(crate) result: serde_json::Value,
+    pub result: serde_json::Value,
 }
 
 /// Indicates that a request could not be made into a proper function call.
@@ -65,10 +65,10 @@ pub struct ResponseMessage {
 // TODO deserves a better name
 pub struct ErrorResponseMessage {
     /// this shall match the id of the corresponding request
-    id: MessageId,
+    pub id: MessageId,
     /// A readable description of what went wrong
     // TODO maybe this could be an enum of known error causes
-    message: String,
+    pub message: String,
 }
 
 /// Represents anything that happened without being triggered by a request.

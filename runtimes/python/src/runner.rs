@@ -5,8 +5,11 @@ use std::{
     time::Duration,
 };
 
-use log::{debug, error, info};
-use runtimes::api::{ApiClient, Identifier, Value};
+use log::{debug, error, info, trace};
+use runtimes::{
+    api::{ApiClient, Identifier, Value},
+    message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
+};
 use rustpython_vm::{
     builtins::PyStr,
     function::{KwArgs, PosArgs},
@@ -212,33 +215,28 @@ fn message(
 
     let mut api_clients = API_CLIENTS.lock().unwrap();
     let api_client = api_clients.get_mut(&api_name).unwrap();
-    let _message_id = api_client.send_command(command, parameters);
+    let message_id = api_client.send_command(command, parameters);
 
-    // TODO this becomes relevant again, once `send_command` implements proper error handling
-    // If sending the message fails, the application
-    // is probably already exiting.
-    // match result {
-    //     Ok(()) => (),
-    //     Err(_) => return Ok(()),
-    // }
-
-    // TODO activate this code as soon as the engine sends proper reponses to commands
     // TODO move this polling into the python bindgen layer to enable user scripts to perform async calls rather than blocking
-    // let response = loop {
-    //     match api_endpoint.poll_response() {
-    //         Some(response) => break response,
-    //         None => thread::sleep(Duration::from_millis(10)),
-    //     }
-    // };
+    let response = loop {
+        match api_client.poll_response() {
+            Some(response) => break response,
+            None => thread::sleep(Duration::from_millis(10)),
+        }
+    };
 
-    // match response {
-    //     ServerToClientMessage::Response(_) => todo!(),
-    //     ServerToClientMessage::ErrorResponse(_) => todo!(),
-    //     ServerToClientMessage::Event(_) => todo!(),
-    // }
+    match response {
+        ServerToClientMessage::Response(ResponseMessage { id, result }) => {
+            assert_eq!(message_id, id, "request-response id mismatch");
+            trace!("command successfully returned: {result}");
+        }
+        ServerToClientMessage::ErrorResponse(ErrorResponseMessage { id, message }) => {
+            assert_eq!(message_id, id, "request-response id mismatch");
+            error!("command returned an error: {message}");
+        }
+        ServerToClientMessage::Event(_) => todo!(),
+    }
 
-    // TODO remove this in favor of waiting for a response from the engine
-    thread::sleep(Duration::from_millis(1000));
     Ok(())
 }
 

@@ -1,13 +1,16 @@
+mod animation;
+
 use std::{
-    f32::consts::{PI, TAU},
+    f32::consts::TAU,
     ops::{AddAssign, SubAssign},
     time::{Duration, Instant},
 };
 
-use glam::{FloatExt, IVec3, Vec3};
-use log::{debug, error};
-use runtimes::api::Identifier;
+use animation::RobotAnimation;
+use glam::{IVec3, Vec3};
+use log::debug;
 use runtimes::api::Value;
+use runtimes::{api::Identifier, message::MessageId};
 
 use crate::tile::{tile, LinePattern, LineSegment, Tile};
 
@@ -24,78 +27,118 @@ pub struct GameState {
     pub(crate) robot: Robot,
     /// current state of the floor
     pub(crate) floor: Floor,
+
+    current_command_id: Option<MessageId>,
+    completed_command_ids: Vec<MessageId>,
 }
 
 impl GameState {
     pub(crate) fn update(&mut self) {
         self.tick.0 += 1;
-        self.robot.update();
+        if self.robot.update() {
+            self.complete_command();
+        }
     }
 
-    pub(crate) fn process_command(&mut self, command: &Identifier, _arguments: &[Value]) {
+    pub(crate) fn process_command(
+        &mut self,
+        command_id: MessageId,
+        command: &Identifier,
+        _arguments: &[Value],
+    ) -> Result<(), String> {
         match command.0.as_ref() {
             "move forward" => {
-                self.robot.complete_animation();
-                let segment = LineSegment::from(self.robot.orientation);
-
-                #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
-                let start_index =
-                    (self.robot.position.y * 10 + self.robot.position.x + 55) as usize;
-                self.floor.tiles[start_index].line_pattern |= segment;
-
-                let offset = self.robot.orientation.as_ivec3();
-                if offset.x != 0 && offset.y != 0 {
-                    #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
-                    let index0 = (self.robot.position.y * 10
-                        + (self.robot.position.x + offset.x)
-                        + 55) as usize;
-                    self.floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
-
-                    #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
-                    let index1 = ((self.robot.position.y + offset.y) * 10
-                        + self.robot.position.x
-                        + 55) as usize;
-                    self.floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
-                }
-
-                self.robot.position += offset;
-
-                #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
-                let end_index = (self.robot.position.y * 10 + self.robot.position.x + 55) as usize;
-                self.floor.tiles[end_index].line_pattern |= -segment;
-                self.floor.tainted = self.tick;
-
-                self.robot.current_animation = Some(Animation::Move {
-                    start: self.robot.animation_position,
-                    end: self.robot.position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
-                    start_time: Instant::now(),
-                    duration: Duration::from_millis(1_000),
-                });
+                self.move_forward(command_id);
             }
             "turn left" => {
-                self.robot.complete_animation();
-                self.robot.orientation += 1;
-                self.robot.current_animation = Some(Animation::Rotate {
-                    start: self.robot.animation_angle,
-                    end: self.robot.orientation.angle(),
-                    start_time: Instant::now(),
-                    duration: Duration::from_millis(1_000),
-                });
+                self.turn_left(command_id);
             }
             "turn right" => {
-                self.robot.complete_animation();
-                self.robot.orientation -= 1;
-                self.robot.current_animation = Some(Animation::Rotate {
-                    start: self.robot.animation_angle,
-                    end: self.robot.orientation.angle(),
-                    start_time: Instant::now(),
-                    duration: Duration::from_millis(1_000),
-                });
+                self.turn_right(command_id);
             }
             other => {
-                error!("Unknown Command: {other}");
+                return Err(format!("Unknown Command: {other}"));
             }
         };
+        Ok(())
+    }
+
+    fn renew_command(&mut self, command_id: MessageId) {
+        if let Some(completed_id) = self.current_command_id.replace(command_id) {
+            self.completed_command_ids.push(completed_id);
+        }
+    }
+
+    fn complete_command(&mut self) {
+        if let Some(completed_id) = self.current_command_id.take() {
+            self.completed_command_ids.push(completed_id);
+        }
+    }
+
+    fn turn_right(&mut self, command_id: MessageId) {
+        self.turn(command_id, -1);
+    }
+
+    fn turn_left(&mut self, command_id: MessageId) {
+        self.turn(command_id, 1);
+    }
+
+    fn turn(&mut self, command_id: MessageId, step: i8) {
+        self.robot.complete_animation();
+        self.renew_command(command_id);
+        #[expect(clippy::cast_sign_loss, reason = "TODO make this less cumbersome")]
+        if step < 0 {
+            self.robot.orientation -= -step as u8;
+        } else {
+            self.robot.orientation += step as u8;
+        }
+        self.robot.current_animation = Some(RobotAnimation::Rotate {
+            start: self.robot.animation_angle,
+            end: self.robot.orientation.angle(),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(1_000),
+        });
+    }
+
+    fn move_forward(&mut self, command_id: MessageId) {
+        self.robot.complete_animation();
+        self.renew_command(command_id);
+        let segment = LineSegment::from(self.robot.orientation);
+
+        #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
+        let start_index = (self.robot.position.y * 10 + self.robot.position.x + 55) as usize;
+        self.floor.tiles[start_index].line_pattern |= segment;
+
+        let offset = self.robot.orientation.as_ivec3();
+        if offset.x != 0 && offset.y != 0 {
+            #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
+            let index0 =
+                (self.robot.position.y * 10 + (self.robot.position.x + offset.x) + 55) as usize;
+            self.floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
+
+            #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
+            let index1 =
+                ((self.robot.position.y + offset.y) * 10 + self.robot.position.x + 55) as usize;
+            self.floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
+        }
+
+        self.robot.position += offset;
+
+        #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
+        let end_index = (self.robot.position.y * 10 + self.robot.position.x + 55) as usize;
+        self.floor.tiles[end_index].line_pattern |= -segment;
+        self.floor.tainted = self.tick;
+
+        self.robot.current_animation = Some(RobotAnimation::Move {
+            start: self.robot.animation_position,
+            end: self.robot.position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
+            start_time: Instant::now(),
+            duration: Duration::from_millis(1_000),
+        });
+    }
+
+    pub(crate) fn drain_completed_commands(&mut self) -> impl Iterator<Item = MessageId> + '_ {
+        self.completed_command_ids.drain(..)
     }
 
     // pub(crate) fn is_idle(&mut self) -> bool {
@@ -108,7 +151,7 @@ pub(crate) struct Robot {
     pub(crate) animation_angle: f32,
     position: IVec3,
     orientation: Orientation,
-    current_animation: Option<Animation>,
+    current_animation: Option<RobotAnimation>,
 }
 
 impl Robot {
@@ -126,12 +169,14 @@ impl Robot {
         }
     }
 
-    fn update(&mut self) {
+    fn update(&mut self) -> bool {
         if let Some(animation) = self.current_animation.as_ref() {
             if animation.animate(&mut self.animation_position, &mut self.animation_angle) {
                 self.current_animation.take();
+                return true;
             }
         };
+        false
     }
 }
 
@@ -182,67 +227,6 @@ impl Default for Floor {
         Self {
             tiles,
             tainted: Tick::default(),
-        }
-    }
-}
-
-enum Animation {
-    Move {
-        start: Vec3,
-        end: Vec3,
-        start_time: Instant,
-        duration: Duration,
-    },
-    Rotate {
-        start: f32,
-        end: f32,
-        start_time: Instant,
-        duration: Duration,
-    },
-}
-
-impl Animation {
-    fn progress(&self) -> f32 {
-        match *self {
-            Animation::Move {
-                start_time,
-                duration,
-                ..
-            }
-            | Animation::Rotate {
-                start_time,
-                duration,
-                ..
-            } => start_time.elapsed().as_secs_f32() / duration.as_secs_f32(),
-        }
-    }
-
-    fn animate(&self, position: &mut Vec3, orientation: &mut f32) -> bool {
-        let progress = self.progress();
-        let animation_complete = progress >= 1.0;
-        self.animate_progress(progress, position, orientation);
-        animation_complete
-    }
-
-    fn complete(&self, position: &mut Vec3, orientation: &mut f32) {
-        self.animate_progress(1.0, position, orientation);
-    }
-
-    fn animate_progress(&self, progress: f32, position: &mut Vec3, orientation: &mut f32) {
-        let progress = progress.clamp(0.0, 1.0);
-        match *self {
-            Animation::Move { start, end, .. } => {
-                *position = start.lerp(end, progress);
-            }
-            Animation::Rotate { start, end, .. } => {
-                *orientation = if (start - end).abs() <= PI {
-                    start.lerp(end, progress)
-                } else if start < end {
-                    (start + TAU).lerp(end, progress)
-                } else {
-                    (start - TAU).lerp(end, progress)
-                };
-            }
         }
     }
 }

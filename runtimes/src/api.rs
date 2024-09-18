@@ -16,7 +16,8 @@ use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
 use crate::message::{
-    ClientToServerMessage, MessageId, RequestMessage, ResponseMessage, ServerToClientMessage,
+    ClientToServerMessage, ErrorResponseMessage, MessageId, RequestMessage, ResponseMessage,
+    ServerToClientMessage,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -138,6 +139,7 @@ pub trait ApiServer: Send {
     fn api_name(&self) -> &Identifier;
 
     fn send_response(&mut self, id: MessageId, result: serde_json::Value);
+    fn send_error(&mut self, id: MessageId, message: String);
 
     fn poll_request(&mut self) -> Option<ClientToServerMessage>;
 }
@@ -235,6 +237,11 @@ impl ApiServerEndpoint {
 }
 
 impl ApiServer for ApiServerEndpoint {
+    fn send_error(&mut self, id: MessageId, message: String) {
+        let response = ErrorResponseMessage { id, message };
+        self.send_to_client(response);
+    }
+
     fn send_response(&mut self, id: MessageId, result: serde_json::Value) {
         let response = ResponseMessage { id, result };
         self.send_to_client(response);
