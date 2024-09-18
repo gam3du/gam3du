@@ -12,7 +12,7 @@
           "name": "duration",
           "caption": "Duration of the move animation",
           "description": "Duration of the move animation. The duration is in milliseconds and must be smaller than 10000.",
-          "typ": {
+          "type": {
             "Integer": [
               0,
               10000
@@ -34,7 +34,7 @@
           "name": "duration",
           "caption": "Duration of the move animation",
           "description": "Duration of the move animation. The duration is in milliseconds and must be smaller than 10000.",
-          "typ": {
+          "type": {
             "Integer": [
               0,
               10000
@@ -56,7 +56,7 @@
           "name": "duration",
           "caption": "Duration of the move animation",
           "description": "Duration of the move animation. The duration is in milliseconds and must be smaller than 10000.",
-          "typ": {
+          "type": {
             "Integer": [
               0,
               10000

@@ -79,6 +79,7 @@ pub struct ParameterDescriptor {
     /// a multi-line explanation what this parameter is for
     pub description: RichText,
     /// Data type of this parameter
+    #[serde(rename = "type")]
     pub typ: TypeDescriptor,
     /// If the parameter is omitted, use a default value
     pub default: Option<Value>,
