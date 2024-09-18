@@ -1,6 +1,10 @@
 use crate::game_state::GameState;
 use log::debug;
-use runtimes::event::{ApplicationEvent, EngineEvent};
+use runtimes::{
+    api::ApiServerEndpoint,
+    event::{ApplicationEvent, EngineEvent},
+    message::{ClientToServerMessage, RequestMessage},
+};
 use std::{
     sync::{
         mpsc::{Receiver, TryRecvError},
@@ -31,7 +35,11 @@ pub struct GameLoop {
 }
 
 impl GameLoop {
-    pub fn run(self, event_source: &Receiver<EngineEvent>) {
+    pub fn run(
+        self,
+        event_source: &Receiver<EngineEvent>,
+        mut robot_api_endpoint: ApiServerEndpoint,
+    ) {
         let mut time = Instant::now();
         'game_loop: loop {
             {
@@ -45,15 +53,6 @@ impl GameLoop {
                             EngineEvent::Device { event } => {
                                 debug!("{event:?}");
                             }
-                            EngineEvent::ApiCall { api, command } => {
-                                debug!("api: {api:?}, command: {command:?}");
-                            }
-                            EngineEvent::RobotEvent {
-                                command,
-                                parameters,
-                            } => {
-                                game_state.process_command(&command, &parameters);
-                            }
                             EngineEvent::Application { event } => match event {
                                 ApplicationEvent::Exit => {
                                     debug!("Received Exit-event. Exiting game loop");
@@ -66,6 +65,22 @@ impl GameLoop {
                             break 'game_loop;
                         }
                         Err(TryRecvError::Empty) => break 'next_event,
+                    }
+                }
+
+                'next_robot_api_event: loop {
+                    match robot_api_endpoint.poll_request() {
+                        Some(ClientToServerMessage::Request(request)) => {
+                            let RequestMessage {
+                                // TODO remember id to send a matching response once the command completed
+                                id: _,
+                                command,
+                                arguments,
+                            } = request;
+
+                            game_state.process_command(&command, &arguments);
+                        }
+                        None => break 'next_robot_api_event,
                     }
                 }
 

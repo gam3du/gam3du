@@ -1,6 +1,5 @@
 //! Contains all the building blocks to specify an API and perform reflection thereon.
 #![expect(
-    dead_code,
     clippy::panic,
     clippy::unwrap_used,
     reason = "TODO fix after experimentation phase"
@@ -114,7 +113,7 @@ pub enum Value {
 }
 
 /// Handles transmission of commands to [`ApiServerEndpoint`]s and provides methods for polling responses.
-pub(crate) struct ApiClientEndpoint {
+pub struct ApiClientEndpoint {
     /// Used to send requests to the connected [`ApiServerEndpoint`]
     sender: Sender<ClientToServerMessage>,
     /// Used poll for responses from the the connected [`ApiServerEndpoint`]
@@ -122,18 +121,15 @@ pub(crate) struct ApiClientEndpoint {
 }
 
 impl ApiClientEndpoint {
-    pub(crate) fn new(
-        receiver: Receiver<ServerToClientMessage>,
+    #[must_use]
+    pub fn new(
         sender: Sender<ClientToServerMessage>,
+        receiver: Receiver<ServerToClientMessage>,
     ) -> Self {
         Self { sender, receiver }
     }
 
-    pub(crate) fn send_command(
-        &mut self,
-        command: Identifier,
-        arguments: serde_json::Value,
-    ) -> MessageId {
+    pub fn send_command(&mut self, command: Identifier, arguments: Vec<Value>) -> MessageId {
         let id = thread_rng().r#gen();
 
         let request = RequestMessage {
@@ -151,7 +147,7 @@ impl ApiClientEndpoint {
         self.sender.send(message.into()).unwrap();
     }
 
-    pub(crate) fn poll_response(&mut self) -> Option<ServerToClientMessage> {
+    pub fn poll_response(&mut self) -> Option<ServerToClientMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
             Err(TryRecvError::Empty) => None,
@@ -161,7 +157,7 @@ impl ApiClientEndpoint {
 }
 
 /// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
-pub(crate) struct ApiServerEndpoint {
+pub struct ApiServerEndpoint {
     /// Used poll for requests from the the connected [`ApiClientEndpoint`]
     receiver: Receiver<ClientToServerMessage>,
     /// Used to send responses to the connected [`ApiClientEndpoint`]
@@ -169,14 +165,15 @@ pub(crate) struct ApiServerEndpoint {
 }
 
 impl ApiServerEndpoint {
-    pub(crate) fn new(
+    #[must_use]
+    pub fn new(
         receiver: Receiver<ClientToServerMessage>,
         sender: Sender<ServerToClientMessage>,
     ) -> Self {
         Self { receiver, sender }
     }
 
-    pub(crate) fn send_response(&mut self, id: MessageId, result: serde_json::Value) {
+    pub fn send_response(&mut self, id: MessageId, result: serde_json::Value) {
         let response = ResponseMessage { id, result };
         self.send_to_client(response);
     }
@@ -185,7 +182,7 @@ impl ApiServerEndpoint {
         self.sender.send(message.into()).unwrap();
     }
 
-    pub(crate) fn poll_request(&mut self) -> Option<ClientToServerMessage> {
+    pub fn poll_request(&mut self) -> Option<ClientToServerMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
             Err(TryRecvError::Empty) => None,

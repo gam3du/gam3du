@@ -1,26 +1,22 @@
 #![allow(missing_docs, reason = "TODO remove before release")]
 #![expect(
-    // clippy::missing_panics_doc,
-    // clippy::print_stdout,
     clippy::unwrap_used,
     clippy::expect_used,
-    // clippy::indexing_slicing,
-    // clippy::panic,
     reason = "TODO remove before release"
 )]
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::Sender;
-use std::time::Duration;
+// use std::sync::mpsc::Sender;
+// use std::time::Duration;
 use std::{sync::mpsc::channel, thread};
 
 use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
-use log::{debug, error};
-use runtimes::api::{Api, Identifier};
-use runtimes::event::{ApplicationEvent, EngineEvent};
-use tiny_http::{Response, Server};
+use log::debug;
+use runtimes::api::{ApiClientEndpoint, ApiServerEndpoint};
+use runtimes::event::ApplicationEvent;
+// use tiny_http::{Response, Server};
 use winit::event_loop::{ControlFlow, EventLoop};
 
 static EXIT_FLAG: AtomicBool = AtomicBool::new(false);
@@ -28,11 +24,19 @@ static EXIT_FLAG: AtomicBool = AtomicBool::new(false);
 fn main() {
     init_logger();
 
+    let (script_to_engine_sender, script_to_engine_receiver) = channel();
+    let (engine_to_script_sender, engine_to_script_receiver) = channel();
+
+    let robot_api_script_endpoint =
+        ApiClientEndpoint::new(script_to_engine_sender, engine_to_script_receiver);
+    let robot_api_engine_endpoint =
+        ApiServerEndpoint::new(script_to_engine_receiver, engine_to_script_sender);
+
     let game_loop = GameLoop::default();
     let (event_sender, event_receiver) = channel();
 
-    let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
-    let api: Api = serde_json::from_str(&api_json).unwrap();
+    // let api_json = std::fs::read_to_string("engines/robot/api.json").unwrap();
+    // let api: Api = serde_json::from_str(&api_json).unwrap();
 
     ctrlc::set_handler({
         let event_sender = event_sender.clone();
@@ -43,17 +47,18 @@ fn main() {
     })
     .expect("Error setting Ctrl-C handler");
 
-    let python_thread = runtime_python::run("python".into(), "robot".into(), event_sender.clone());
+    let python_thread =
+        runtime_python::run("python".into(), "robot".into(), robot_api_script_endpoint);
 
-    let webserver_thread = {
-        let event_sender = event_sender.clone();
-        let api = api.clone();
-        thread::spawn(move || {
-            debug!("thread[webserver]: starting server");
-            http_server(&event_sender, &api, &EXIT_FLAG);
-            debug!("thread[webserver]: exit");
-        })
-    };
+    // let webserver_thread = {
+    //     let event_sender = event_sender.clone();
+    //     let api = api.clone();
+    //     thread::spawn(move || {
+    //         debug!("thread[webserver]: starting server");
+    //         http_server(&event_sender, &api, &EXIT_FLAG);
+    //         debug!("thread[webserver]: exit");
+    //     })
+    // };
 
     let mut application = pollster::block_on(Application::new(
         "Robot".into(),
@@ -68,7 +73,7 @@ fn main() {
     let game_loop_thread = {
         thread::spawn(move || {
             debug!("thread[game loop]: starting game loop");
-            game_loop.run(&event_receiver);
+            game_loop.run(&event_receiver, robot_api_engine_endpoint);
             debug!("thread[game loop]: game loop returned");
             debug!("thread[game loop]: instruct window event loop to stop now");
             window_proxy
@@ -101,48 +106,48 @@ fn main() {
     debug!("Waiting for python vm to exit …");
     python_thread.join().unwrap();
 
-    debug!("Waiting for webserver to exit …");
-    webserver_thread.join().unwrap();
+    // debug!("Waiting for webserver to exit …");
+    // webserver_thread.join().unwrap();
 }
 
-fn http_server(command_sender: &Sender<EngineEvent>, api: &Api, exit_flag: &'static AtomicBool) {
-    let server = Server::http("0.0.0.0:8000").unwrap();
+// fn http_server(command_sender: &Sender<EngineEvent>, api: &Api, exit_flag: &'static AtomicBool) {
+//     let server = Server::http("0.0.0.0:8000").unwrap();
 
-    'next_request: loop {
-        let request = match server.recv_timeout(Duration::from_millis(50)) {
-            Ok(Some(request)) => request,
-            Ok(None) => {
-                if exit_flag.load(Ordering::Relaxed) {
-                    break 'next_request;
-                }
-                continue 'next_request;
-            }
-            Err(error) => {
-                error!("{error}");
-                break 'next_request;
-            }
-        };
+//     'next_request: loop {
+//         let request = match server.recv_timeout(Duration::from_millis(50)) {
+//             Ok(Some(request)) => request,
+//             Ok(None) => {
+//                 if exit_flag.load(Ordering::Relaxed) {
+//                     break 'next_request;
+//                 }
+//                 continue 'next_request;
+//             }
+//             Err(error) => {
+//                 error!("{error}");
+//                 break 'next_request;
+//             }
+//         };
 
-        let url = request.url();
-        let Some(url) = url.strip_prefix(&format!("/{}/", api.name)) else {
-            request
-                .respond(Response::from_string("unknown api").with_status_code(404))
-                .unwrap();
-            continue;
-        };
+//         let url = request.url();
+//         let Some(url) = url.strip_prefix(&format!("/{}/", api.name)) else {
+//             request
+//                 .respond(Response::from_string("unknown api").with_status_code(404))
+//                 .unwrap();
+//             continue;
+//         };
 
-        let command = Identifier(url.to_owned());
+//         let command = Identifier(url.to_owned());
 
-        let response = Response::from_string(format!("{command:?}"));
+//         let response = Response::from_string(format!("{command:?}"));
 
-        // FIXME: Extract parameters from response
-        command_sender
-            .send(EngineEvent::RobotEvent {
-                command: Identifier(url.to_owned()),
-                parameters: vec![],
-            })
-            .unwrap();
+//         // FIXME: Extract parameters from response
+//         command_sender
+//             .send(EngineEvent::RobotEvent {
+//                 command: Identifier(url.to_owned()),
+//                 parameters: vec![],
+//             })
+//             .unwrap();
 
-        request.respond(response).unwrap();
-    }
-}
+//         request.respond(response).unwrap();
+//     }
+// }

@@ -5,13 +5,13 @@
 
 use std::num::NonZeroU128;
 
-use crate::api::Identifier;
+use crate::api::{Identifier, Value};
 
-pub(crate) enum ClientToServerMessage {
+pub enum ClientToServerMessage {
     Request(RequestMessage),
 }
 
-pub(crate) enum ServerToClientMessage {
+pub enum ServerToClientMessage {
     Response(ResponseMessage),
     ErrorResponse(ErrorResponseMessage),
     Event(EventMessage),
@@ -33,9 +33,9 @@ type EndpointName = Identifier;
 pub(crate) type MessageId = NonZeroU128;
 
 /// Asks the receiver to perform an operation and return a response containing the result.
-pub(crate) struct RequestMessage {
+pub struct RequestMessage {
     /// UUID used to track corresponding messages
-    pub(crate) id: MessageId,
+    pub id: MessageId,
     // /// Name of the sending/requesting endpoint
     // /// This is required as the receiver will provide a single mpsc-channel which cannot distinguish between senders.
     // // TODO maybe there an mpsc-implementation that can distinguish between multiple senders?
@@ -43,14 +43,14 @@ pub(crate) struct RequestMessage {
     // /// Name of the communication partner who's responsible to respond to the request
     // target: EndpointName,
     /// The actual function that shall be triggered
-    pub(crate) command: Identifier,
+    pub command: Identifier,
     /// The list of arguments to be passed to the called function
-    pub(crate) arguments: serde_json::Value,
+    pub arguments: Vec<Value>,
 }
 
 /// Contains the result of a requested operation
 // TODO find a better name to reflect a positive result value (e.g. `OkResultMessage` or `OkResponseMessage`)
-pub(crate) struct ResponseMessage {
+pub struct ResponseMessage {
     /// this shall match the id of the corresponding request
     pub(crate) id: MessageId,
     /// The result of the requested operation
@@ -63,7 +63,7 @@ pub(crate) struct ResponseMessage {
 /// Possible causes are: unknown recipient, unknown command, wrong argument configuration
 /// This message type exists to not overload framework-related errors with actual application errors.
 // TODO deserves a better name
-pub(crate) struct ErrorResponseMessage {
+pub struct ErrorResponseMessage {
     /// this shall match the id of the corresponding request
     id: MessageId,
     /// A readable description of what went wrong
@@ -72,7 +72,7 @@ pub(crate) struct ErrorResponseMessage {
 }
 
 /// Represents anything that happened without being triggered by a request.
-pub(crate) struct EventMessage {
+pub struct EventMessage {
     /// UUID used to track the event for debugging and detecting forwarding loops
     id: MessageId,
     /// Name of the sending/requesting endpoint
