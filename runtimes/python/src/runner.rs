@@ -6,6 +6,7 @@ use std::{
     time::Duration,
 };
 
+use gam3du_framework::module::Module;
 use log::{debug, error, info, trace};
 use runtimes::{
     api::{ApiClient, Identifier, Value},
@@ -81,8 +82,10 @@ impl PythonRunner {
             id,
         }
     }
+}
 
-    fn add_api_client(&self, api_client: Box<dyn ApiClient>) {
+impl Module for PythonRunner {
+    fn add_api_client(&mut self, api_client: Box<dyn ApiClient>) {
         API_CLIENTS.with_borrow_mut(|clients| {
             let api_clients = clients.get_mut(&self.id).unwrap();
             api_clients.insert(api_client.api_name().clone(), api_client);
@@ -105,10 +108,9 @@ impl PythonRunner {
             debug!("thread[python]: exit");
         });
     }
-}
 
-// impl  framework Module for PythonRunner {
-// }
+    fn wake(&self) {}
+}
 
 pub struct ThreadBuilder {
     sys_path: String,
@@ -141,7 +143,7 @@ impl ThreadBuilder {
         let join_handle = thread::spawn(|| {
             debug!("thread[python]: start interpreter");
 
-            let runner = PythonRunner::new(
+            let mut runner = PythonRunner::new(
                 self.sys_path,
                 self.main_module_name,
                 Some(user_signal_receiver),

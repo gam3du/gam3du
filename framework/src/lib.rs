@@ -16,4 +16,5 @@ pub mod application;
 pub mod logging;
 
 mod graphics_context;
+pub mod module;
 mod surface_wrapper;

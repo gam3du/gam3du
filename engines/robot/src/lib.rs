@@ -15,6 +15,7 @@ mod game_state;
 mod projection;
 mod render_state;
 mod renderer;
+mod scripting;
 mod tile;
 
 pub use game_loop::GameLoop;

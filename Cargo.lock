@@ -770,6 +770,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "engines",
+ "gam3du-framework",
  "glam",
  "log",
  "runtimes",
@@ -2393,6 +2394,7 @@ dependencies = [
 name = "runtime-python"
 version = "0.1.0"
 dependencies = [
+ "gam3du-framework",
  "log",
  "runtimes",
  "rustpython",
