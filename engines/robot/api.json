@@ -26,6 +26,28 @@
       "returns": null
     },
     {
+      "name": "draw forward",
+      "caption": "Makes the robot move to the next tile in its current orientation and draw a line onto the floor",
+      "description": "Makes the robot move to the next tile in its current orientation and draw a line onto the floor",
+      "parameters": [
+        {
+          "name": "duration",
+          "caption": "Duration of the move animation",
+          "description": "Duration of the move animation. The duration is in milliseconds and must be smaller than 10000.",
+          "type": {
+            "Integer": [
+              0,
+              10000
+            ]
+          },
+          "default": {
+            "Integer": 1000
+          }
+        }
+      ],
+      "returns": null
+    },
+    {
       "name": "turn left",
       "caption": "Turns the robot 45° in a counter-clockwise direction",
       "description": "Turns the robot 45° in a counter-clockwise direction",
@@ -67,6 +89,62 @@
           }
         }
       ],
+      "returns": null
+    },
+    {
+      "name": "color black",
+      "caption": "Colors the current tile black",
+      "description": "Colors the current tile black",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "color red",
+      "caption": "Colors the current tile red",
+      "description": "Colors the current tile red",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "color green",
+      "caption": "Colors the current tile green",
+      "description": "Colors the current tile green",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "color yellow",
+      "caption": "Colors the current tile yellow",
+      "description": "Colors the current tile yellow",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "color blue",
+      "caption": "Colors the current tile blue",
+      "description": "Colors the current tile blue",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "color magenta",
+      "caption": "Colors the current tile magenta",
+      "description": "Colors the current tile magenta",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "color cyan",
+      "caption": "Colors the current tile cyan",
+      "description": "Colors the current tile cyan",
+      "parameters": [],
+      "returns": null
+    },
+    {
+      "name": "color white",
+      "caption": "Colors the current tile white",
+      "description": "Colors the current tile white",
+      "parameters": [],
       "returns": null
     }
   ]

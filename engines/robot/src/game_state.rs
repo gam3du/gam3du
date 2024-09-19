@@ -1,4 +1,5 @@
 mod animation;
+mod floor;
 
 use std::{
     f32::consts::TAU,
@@ -7,12 +8,13 @@ use std::{
 };
 
 use animation::RobotAnimation;
+use floor::Floor;
 use glam::{IVec3, Vec3};
 use log::debug;
 use runtimes::api::Value;
 use runtimes::{api::Identifier, message::MessageId};
 
-use crate::tile::{tile, LinePattern, LineSegment, Tile};
+use crate::tile::LineSegment;
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub(crate) struct Tick(pub(crate) u64);
@@ -47,14 +49,41 @@ impl GameState {
         _arguments: &[Value],
     ) -> Result<(), String> {
         match command.0.as_ref() {
+            "draw forward" => {
+                self.move_forward(command_id, true)?;
+            }
             "move forward" => {
-                self.move_forward(command_id)?;
+                self.move_forward(command_id, false)?;
             }
             "turn left" => {
                 self.turn_left(command_id);
             }
             "turn right" => {
                 self.turn_right(command_id);
+            }
+            "color black" => {
+                self.color(command_id, Vec3::new(0.2, 0.2, 0.2));
+            }
+            "color red" => {
+                self.color(command_id, Vec3::new(0.8, 0.2, 0.2));
+            }
+            "color green" => {
+                self.color(command_id, Vec3::new(0.2, 0.8, 0.2));
+            }
+            "color yellow" => {
+                self.color(command_id, Vec3::new(0.8, 0.8, 0.2));
+            }
+            "color blue" => {
+                self.color(command_id, Vec3::new(0.2, 0.2, 0.8));
+            }
+            "color magenta" => {
+                self.color(command_id, Vec3::new(0.8, 0.0, 0.8));
+            }
+            "color cyan" => {
+                self.color(command_id, Vec3::new(0.2, 0.8, 0.8));
+            }
+            "color white" => {
+                self.color(command_id, Vec3::new(0.8, 0.8, 0.8));
             }
             other => {
                 return Err(format!("Unknown Command: {other}"));
@@ -100,47 +129,44 @@ impl GameState {
         });
     }
 
-    fn move_forward(&mut self, command_id: MessageId) -> Result<(), String> {
+    fn color(&mut self, command_id: MessageId, color: Vec3) {
+        self.robot.complete_animation();
+        self.completed_command_ids.push(command_id);
+
+        let start_pos = self.robot.position;
+        let start_index = Floor::to_index(start_pos).unwrap();
+        self.floor.tiles[start_index].set_color(color);
+        self.floor.tainted = self.tick;
+    }
+
+    fn move_forward(&mut self, command_id: MessageId, draw: bool) -> Result<(), String> {
         self.robot.complete_animation();
         self.renew_command(command_id);
         let segment = LineSegment::from(self.robot.orientation);
 
-        // TODO move that into `Floor`
-        let to_index = |pos: IVec3| -> Result<usize, String> {
-            let x = usize::try_from(pos.x + 5)
-                .map_err(|_err| "robot left the plane at -x".to_owned())?;
-            let y = usize::try_from(pos.y + 5)
-                .map_err(|_err| "robot left the plane at -y".to_owned())?;
-            if x >= 10 {
-                return Err("robot left the plane at +x".into());
-            }
-            if y >= 10 {
-                return Err("robot left the plane at +y".into());
-            }
-
-            Ok(x + 10 * y)
-        };
-
         let offset = self.robot.orientation.as_ivec3();
 
         let start_pos = self.robot.position;
-        let start_index = to_index(start_pos)?;
-
-        self.floor.tiles[start_index].line_pattern |= segment;
-
-        // draw adjacent diagonal corners
-        if offset.x != 0 && offset.y != 0 {
-            let index0 = to_index(start_pos + IVec3::new(offset.x, 0, 0))?;
-            self.floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
-            let index1 = to_index(start_pos + IVec3::new(0, offset.y, 0))?;
-            self.floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
-        }
-
         let end_pos = start_pos + offset;
-        let end_index = to_index(end_pos)?;
 
-        self.floor.tiles[end_index].line_pattern |= -segment;
-        self.floor.tainted = self.tick;
+        if draw {
+            let start_index = Floor::to_index(start_pos)?;
+
+            self.floor.tiles[start_index].line_pattern |= segment;
+
+            // draw adjacent diagonal corners
+            if offset.x != 0 && offset.y != 0 {
+                let index0 = Floor::to_index(start_pos + IVec3::new(offset.x, 0, 0))?;
+                self.floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
+                let index1 = Floor::to_index(start_pos + IVec3::new(0, offset.y, 0))?;
+                self.floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
+            }
+
+            let end_index = Floor::to_index(end_pos)?;
+
+            self.floor.tiles[end_index].line_pattern |= -segment;
+            self.floor.tainted = self.tick;
+        }
 
         self.robot.position = end_pos;
 
@@ -208,42 +234,6 @@ impl Default for Robot {
             animation_angle: orientation.angle(),
             orientation,
             position,
-        }
-    }
-}
-
-pub(super) struct Floor {
-    pub(super) tiles: Vec<Tile>,
-    pub(super) tainted: Tick,
-}
-
-impl Floor {
-    // fn tile_count(&self) -> u32 {
-    //     u32::try_from(self.tiles.len()).unwrap()
-    // }
-
-    fn create_tiles() -> Vec<Tile> {
-        let mut vertex_data = Vec::new();
-        for y in -5_i16..5 {
-            let bottom = f32::from(y);
-            for x in -5_i16..5 {
-                let left = f32::from(x);
-                let line_pattern = 0; //thread_rng.gen();
-                vertex_data.push(tile([left, bottom, 0.0], LinePattern(line_pattern)));
-            }
-        }
-
-        vertex_data
-    }
-}
-
-impl Default for Floor {
-    fn default() -> Self {
-        let tiles = Self::create_tiles();
-
-        Self {
-            tiles,
-            tainted: Tick::default(),
         }
     }
 }

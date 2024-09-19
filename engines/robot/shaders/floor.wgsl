@@ -9,6 +9,7 @@ struct FloorVertex {
     @builtin(position) position: vec4<f32>,
     @location(1) tex_coord: vec2<f32>,
     @location(2) line_pattern: u32,
+    @location(3) color: vec4<f32>,
 };
 
 @group(0)
@@ -23,6 +24,7 @@ var<uniform> time_vec: vec2<u32>;
 fn vs_floor(
     @location(0) position: vec4<f32>,
     @location(2) line_pattern: u32,
+    @location(3) color: vec4<f32>,
     @builtin(vertex_index) vertex_index: u32,
     @builtin(instance_index) instance_index: u32,
 ) -> FloorVertex {
@@ -43,6 +45,7 @@ fn vs_floor(
     vertex.tex_coord = vec2(f32(is_right), f32(is_top));
     vertex.position = transform * (position + vec4(vertex.tex_coord, 0.0, 0.0));
     vertex.line_pattern = line_pattern;
+    vertex.color = color;
 
     return vertex;
 }
@@ -72,7 +75,7 @@ fn fs_floor_tile(vertex: FloorVertex) -> @location(0) vec4<f32> {
     } else if border {
         return BORDER_COLOR;
     } else {
-        return BG_COLOR;
+        return vertex.color;
     }
 }
 

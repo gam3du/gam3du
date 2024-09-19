@@ -5,6 +5,7 @@
 use std::ops;
 
 use bytemuck::{Pod, Zeroable};
+use glam::Vec3;
 
 use crate::game_state::Orientation;
 
@@ -12,12 +13,20 @@ use crate::game_state::Orientation;
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
 pub(super) struct Tile {
     pub(super) pos: [f32; 4],
+    pub(super) color: [f32; 4],
     pub(super) line_pattern: LinePattern,
+}
+
+impl Tile {
+    pub(crate) fn set_color(&mut self, color: Vec3) {
+        self.color = [color.x, color.y, color.z, 1.0];
+    }
 }
 
 pub(super) fn tile(pos: [f32; 3], line_pattern: LinePattern) -> Tile {
     Tile {
         pos: [pos[0], pos[1], pos[2], 1.0],
+        color: [0.7, 0.7, 0.8, 1.0],
         line_pattern,
     }
 }

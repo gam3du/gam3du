@@ -248,7 +248,8 @@ struct Api;
 
 impl Api {
     fn check_identifier(&self, name: &str) -> bool {
-        name == "move forward" || name == "turn left" || name == "turn right"
+        true
+        //name == "move forward" || name == "turn left" || name == "turn right"
     }
 }
 

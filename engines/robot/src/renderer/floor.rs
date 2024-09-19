@@ -90,6 +90,11 @@ impl FloorRenderer {
                     shader_location: 0,
                 },
                 wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: offset_of!(Tile, color) as u64,
+                    shader_location: 3,
+                },
+                wgpu::VertexAttribute {
                     format: wgpu::VertexFormat::Uint32,
                     offset: offset_of!(Tile, line_pattern) as u64,
                     shader_location: 2,
