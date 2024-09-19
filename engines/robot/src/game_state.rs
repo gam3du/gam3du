@@ -48,7 +48,7 @@ impl GameState {
     ) -> Result<(), String> {
         match command.0.as_ref() {
             "move forward" => {
-                self.move_forward(command_id);
+                self.move_forward(command_id)?;
             }
             "turn left" => {
                 self.turn_left(command_id);
@@ -96,45 +96,62 @@ impl GameState {
             start: self.robot.animation_angle,
             end: self.robot.orientation.angle(),
             start_time: Instant::now(),
-            duration: Duration::from_millis(1_000),
+            duration: Duration::from_millis(200),
         });
     }
 
-    fn move_forward(&mut self, command_id: MessageId) {
+    fn move_forward(&mut self, command_id: MessageId) -> Result<(), String> {
         self.robot.complete_animation();
         self.renew_command(command_id);
         let segment = LineSegment::from(self.robot.orientation);
 
-        #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
-        let start_index = (self.robot.position.y * 10 + self.robot.position.x + 55) as usize;
-        self.floor.tiles[start_index].line_pattern |= segment;
+        // TODO move that into `Floor`
+        let to_index = |pos: IVec3| -> Result<usize, String> {
+            let x = usize::try_from(pos.x + 5)
+                .map_err(|_err| "robot left the plane at -x".to_owned())?;
+            let y = usize::try_from(pos.y + 5)
+                .map_err(|_err| "robot left the plane at -y".to_owned())?;
+            if x >= 10 {
+                return Err("robot left the plane at +x".into());
+            }
+            if y >= 10 {
+                return Err("robot left the plane at +y".into());
+            }
+
+            Ok(x + 10 * y)
+        };
 
         let offset = self.robot.orientation.as_ivec3();
-        if offset.x != 0 && offset.y != 0 {
-            #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
-            let index0 =
-                (self.robot.position.y * 10 + (self.robot.position.x + offset.x) + 55) as usize;
-            self.floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
 
-            #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
-            let index1 =
-                ((self.robot.position.y + offset.y) * 10 + self.robot.position.x + 55) as usize;
+        let start_pos = self.robot.position;
+        let start_index = to_index(start_pos)?;
+
+        self.floor.tiles[start_index].line_pattern |= segment;
+
+        // draw adjacent diagonal corners
+        if offset.x != 0 && offset.y != 0 {
+            let index0 = to_index(start_pos + IVec3::new(offset.x, 0, 0))?;
+            self.floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
+            let index1 = to_index(start_pos + IVec3::new(0, offset.y, 0))?;
             self.floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
         }
 
-        self.robot.position += offset;
+        let end_pos = start_pos + offset;
+        let end_index = to_index(end_pos)?;
 
-        #[expect(clippy::cast_sign_loss, reason = "TODO make this a safe function")]
-        let end_index = (self.robot.position.y * 10 + self.robot.position.x + 55) as usize;
         self.floor.tiles[end_index].line_pattern |= -segment;
         self.floor.tainted = self.tick;
+
+        self.robot.position = end_pos;
 
         self.robot.current_animation = Some(RobotAnimation::Move {
             start: self.robot.animation_position,
             end: self.robot.position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
             start_time: Instant::now(),
-            duration: Duration::from_millis(1_000),
+            duration: Duration::from_millis(500),
         });
+
+        Ok(())
     }
 
     pub(crate) fn drain_completed_commands(&mut self) -> impl Iterator<Item = MessageId> + '_ {

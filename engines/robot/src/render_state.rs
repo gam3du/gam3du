@@ -8,7 +8,7 @@ use crate::{
     tile::Tile,
 };
 
-const CAMERA_POS: Vec3 = Vec3::new(-2.0, -3.0, 2.0);
+const CAMERA_POS: Vec3 = Vec3::new(-1.0, -7.0, 6.0);
 
 /// Contains every game information that is required to render the scene.
 pub struct RenderState {
@@ -40,7 +40,7 @@ pub struct RenderState {
 impl RenderState {
     #[must_use]
     pub fn new(game_state: &GameState) -> Self {
-        let camera = Camera::new(CAMERA_POS, Vec3::ZERO);
+        let camera = Camera::new(CAMERA_POS, Vec3::new(0.0, -1.0, 0.0));
 
         Self {
             start_time: Instant::now(),

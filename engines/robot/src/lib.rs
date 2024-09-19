@@ -4,7 +4,7 @@
     // clippy::todo,
     // clippy::panic,
     clippy::unwrap_used,
-    // clippy::unwrap_in_result,
+    clippy::unwrap_in_result,
     clippy::missing_panics_doc,
     reason = "TODO remove and fix before release"
 )]

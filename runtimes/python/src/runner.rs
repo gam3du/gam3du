@@ -233,6 +233,8 @@ fn message(
         ServerToClientMessage::ErrorResponse(ErrorResponseMessage { id, message }) => {
             assert_eq!(message_id, id, "request-response id mismatch");
             error!("command returned an error: {message}");
+            let error = vm.new_runtime_error(message);
+            return Err(error);
         }
         ServerToClientMessage::Event(_) => todo!(),
     }

@@ -39,7 +39,7 @@ impl engines::RendererBuilder for RendererBuilder {
 
         let projection = Projection::new_perspective(
             (surface.width, surface.height),
-            45_f32.to_radians(),
+            65_f32.to_radians(),
             1.0..15.0,
         );
 
