@@ -13,7 +13,7 @@ use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
 use log::{debug, error};
-use runtime_python::RunnerBuilder;
+use runtime_python::ThreadBuilder;
 use runtimes::api::{self, ApiDescriptor};
 use runtimes::event::{ApplicationEvent, EngineEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -109,7 +109,7 @@ fn start_python_robot(
 
     let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(&robot_api.name);
 
-    let mut python_builder = RunnerBuilder::new(python_sys_path.into(), python_main_module.into());
+    let mut python_builder = ThreadBuilder::new(python_sys_path.into(), python_main_module.into());
     python_builder.add_api_client(Box::new(robot_api_script_endpoint));
     let python_thread = python_builder.build_and_run();
     (python_thread, robot_api_engine_endpoint)

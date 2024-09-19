@@ -12,4 +12,4 @@
 pub mod bindgen;
 mod runner;
 
-pub use runner::{PythonThread, RunnerBuilder};
+pub use runner::{PythonRunner, PythonThread, ThreadBuilder};

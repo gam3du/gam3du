@@ -1,6 +1,7 @@
 use std::{
+    cell::RefCell,
     collections::HashMap,
-    sync::{LazyLock, Mutex},
+    sync::atomic::{AtomicU64, Ordering},
     thread::{self, JoinHandle},
     time::Duration,
 };
@@ -11,41 +12,128 @@ use runtimes::{
     message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
 };
 use rustpython_vm::{
-    builtins::PyStr,
+    builtins::{PyStr, PyStrInterned},
     function::{KwArgs, PosArgs},
     pymodule,
-    signal::{UserSignal, UserSignalSender},
-    PyObject, PyResult, Settings, TryFromBorrowedObject, VirtualMachine,
+    signal::{UserSignal, UserSignalReceiver, UserSignalSender},
+    Interpreter, PyObject, PyResult, Settings, TryFromBorrowedObject, VirtualMachine,
 };
 
-// FIXME this should be one lookup table per Python VM; workaround: one table per python thread might be enough
-pub(super) static API_CLIENTS: LazyLock<Mutex<HashMap<Identifier, Box<dyn ApiClient>>>> =
-    LazyLock::new(Mutex::default);
+type VmApiClients = HashMap<String, HashMap<Identifier, Box<dyn ApiClient>>>;
 
-pub struct RunnerBuilder {
-    sys_path: String,
-    main_module_name: String,
-    api_clients: HashMap<Identifier, Box<dyn ApiClient>>,
+thread_local! {
+    pub(super) static API_CLIENTS: RefCell<VmApiClients> = RefCell::default();
 }
 
-impl RunnerBuilder {
+static VM_ID: AtomicU64 = AtomicU64::new(0);
+
+pub struct PythonRunner {
+    id: String,
+    main_module_name: &'static PyStrInterned,
+    interpreter: Interpreter,
+}
+
+impl PythonRunner {
+    fn new(
+        sys_path: String,
+        main_module_name: String,
+        user_signal_receiver: Option<UserSignalReceiver>,
+    ) -> Self {
+        let id = VM_ID.fetch_add(1, Ordering::Relaxed).to_string();
+
+        let id_clone = id.clone();
+        let interpreter = rustpython::InterpreterConfig::new()
+            .settings({
+                let mut settings = Settings::default();
+                settings.install_signal_handlers = false;
+                settings
+            })
+            .init_stdlib()
+            .init_hook(Box::new(|vm| {
+                // TODO find a better way to identify this VM than abusing this field
+                vm.wasm_id = Some(id_clone);
+
+                if let Some(user_signal_receiver) = user_signal_receiver {
+                    vm.set_user_signal_channel(user_signal_receiver);
+                }
+                vm.add_native_module(
+                    "robot_api_internal".to_owned(),
+                    Box::new(rust_py_module::make_module),
+                );
+            }))
+            .interpreter();
+
+        let mut interned_main_module_name = None;
+        interpreter.enter(|vm| {
+            vm.insert_sys_path(vm.new_pyobj(sys_path))
+                .expect("failed to add {sys_path} to python vm");
+
+            interned_main_module_name = Some(vm.ctx.intern_str(main_module_name));
+        });
+
+        API_CLIENTS.with_borrow_mut(|clients| {
+            clients.insert(id.clone(), HashMap::default());
+        });
+
+        Self {
+            interpreter,
+            main_module_name: interned_main_module_name.unwrap(),
+            id,
+        }
+    }
+
+    fn add_api_client(&self, api_client: Box<dyn ApiClient>) {
+        API_CLIENTS.with_borrow_mut(|clients| {
+            let api_clients = clients.get_mut(&self.id).unwrap();
+            api_clients.insert(api_client.api_name().clone(), api_client);
+        });
+    }
+
+    fn enter_main(&self) {
+        self.interpreter.enter(|vm| {
+            match vm.import(self.main_module_name, 0) {
+                Ok(_module) => {
+                    info!("Python thread completed successfully");
+                }
+                Err(exc) => {
+                    let mut msg = String::new();
+                    vm.write_exception(&mut msg, &exc).unwrap();
+                    error!("Python thread exited with exception: {msg}");
+                }
+            }
+
+            debug!("thread[python]: exit");
+        });
+    }
+}
+
+// impl  framework Module for PythonRunner {
+// }
+
+pub struct ThreadBuilder {
+    sys_path: String,
+    main_module_name: String,
+    api_clients: Vec<Box<dyn ApiClient>>,
+}
+
+impl ThreadBuilder {
     #[must_use]
     pub fn new(sys_path: String, main_module_name: String) -> Self {
         Self {
             sys_path,
             main_module_name,
-            api_clients: HashMap::new(),
+            api_clients: Vec::new(),
         }
     }
 
     pub fn add_api_client(&mut self, api_client: Box<dyn ApiClient>) {
-        self.api_clients
-            .insert(api_client.api_name().clone(), api_client);
+        self.api_clients.push(api_client);
     }
 
+    #[must_use]
     pub fn build_and_run(self) -> PythonThread {
-        let mut api_clients = API_CLIENTS.lock().unwrap();
-        api_clients.extend(self.api_clients);
+        // let mut api_clients = API_CLIENTS.lock().unwrap();
+        // api_clients.extend(self.api_clients);
 
         let (user_signal_sender, user_signal_receiver) =
             rustpython_vm::signal::user_signal_channel();
@@ -53,42 +141,17 @@ impl RunnerBuilder {
         let join_handle = thread::spawn(|| {
             debug!("thread[python]: start interpreter");
 
-            let interpreter = rustpython::InterpreterConfig::new()
-                .settings({
-                    let mut settings = Settings::default();
-                    settings.install_signal_handlers = false;
-                    settings
-                })
-                .init_stdlib()
-                .init_hook(Box::new(|vm| {
-                    vm.set_user_signal_channel(user_signal_receiver);
+            let runner = PythonRunner::new(
+                self.sys_path,
+                self.main_module_name,
+                Some(user_signal_receiver),
+            );
 
-                    vm.add_native_module(
-                        "robot_api_internal".to_owned(),
-                        Box::new(rust_py_module::make_module),
-                    );
-                }))
-                .interpreter();
+            for client in self.api_clients {
+                runner.add_api_client(client);
+            }
 
-            interpreter.enter(|vm| {
-                vm.insert_sys_path(vm.new_pyobj(self.sys_path))
-                    .expect("add path");
-
-                let main_module_name = vm.ctx.intern_str(self.main_module_name);
-
-                match vm.import(main_module_name, 0) {
-                    Ok(_module) => {
-                        info!("Python thread completed successfully");
-                    }
-                    Err(exc) => {
-                        let mut msg = String::new();
-                        vm.write_exception(&mut msg, &exc).unwrap();
-                        error!("Python thread exited with exception: {msg}");
-                    }
-                }
-
-                debug!("thread[python]: exit");
-            });
+            runner.enter_main();
         });
 
         PythonThread {
@@ -213,33 +276,36 @@ fn message(
     let command = name.convert(vm, &api)?;
     let parameters = ParameterConverter::new(args, kwargs).convert(vm, &api, &command)?;
 
-    let mut api_clients = API_CLIENTS.lock().unwrap();
-    let api_client = api_clients.get_mut(&api_name).unwrap();
-    let message_id = api_client.send_command(command, parameters);
+    let vm_id = vm.wasm_id.as_ref().unwrap();
 
-    // TODO move this polling into the python bindgen layer to enable user scripts to perform async calls rather than blocking
-    let response = loop {
-        match api_client.poll_response() {
-            Some(response) => break response,
-            None => thread::sleep(Duration::from_millis(10)),
-        }
-    };
+    API_CLIENTS.with_borrow_mut(|api_clients| {
+        let api_clients = api_clients.get_mut(vm_id).unwrap();
+        let api_client = api_clients.get_mut(&api_name).unwrap();
+        let message_id = api_client.send_command(command, parameters);
 
-    match response {
-        ServerToClientMessage::Response(ResponseMessage { id, result }) => {
-            assert_eq!(message_id, id, "request-response id mismatch");
-            trace!("command successfully returned: {result}");
-        }
-        ServerToClientMessage::ErrorResponse(ErrorResponseMessage { id, message }) => {
-            assert_eq!(message_id, id, "request-response id mismatch");
-            error!("command returned an error: {message}");
-            let error = vm.new_runtime_error(message);
-            return Err(error);
-        }
-        ServerToClientMessage::Event(_) => todo!(),
-    }
+        // TODO move this polling into the python bindgen layer to enable user scripts to perform async calls rather than blocking
+        let response = loop {
+            match api_client.poll_response() {
+                Some(response) => break response,
+                None => thread::sleep(Duration::from_millis(10)),
+            }
+        };
 
-    Ok(())
+        match response {
+            ServerToClientMessage::Response(ResponseMessage { id, result }) => {
+                assert_eq!(message_id, id, "request-response id mismatch");
+                trace!("command successfully returned: {result}");
+            }
+            ServerToClientMessage::ErrorResponse(ErrorResponseMessage { id, message }) => {
+                assert_eq!(message_id, id, "request-response id mismatch");
+                error!("command returned an error: {message}");
+                let error = vm.new_runtime_error(message);
+                return Err(error);
+            }
+            ServerToClientMessage::Event(_) => todo!(),
+        }
+        Ok(())
+    })
 }
 
 // TODO: Can we use this to store a reference to the real api struct?
