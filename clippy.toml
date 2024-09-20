@@ -1,3 +1,3 @@
 # it isn't unusual to name an enum variant by `module::EnumType::Variant`
-# which would be too long for the default setting if 2
+# which would be too long for the default setting of 2
 absolute-paths-max-segments = 3
