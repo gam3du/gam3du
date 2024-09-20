@@ -9,7 +9,7 @@ from robot_api import (
     turn_right,
 )
 
-turn_right()
+turn_right(10000)
 turn_right()
 turn_right()
 move_forward()
