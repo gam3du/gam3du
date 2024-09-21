@@ -9,6 +9,7 @@
     reason = "TODO remove and fix before release"
 )]
 
+mod api_client;
 pub mod bindgen;
 mod runner;
 
