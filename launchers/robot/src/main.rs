@@ -107,7 +107,7 @@ fn start_python_robot(
     let api_json = std::fs::read_to_string(robot_api_descriptor_path).unwrap();
     let robot_api: ApiDescriptor = serde_json::from_str(&api_json).unwrap();
 
-    let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(&robot_api.name);
+    let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);
 
     let mut python_builder = ThreadBuilder::new(python_sys_path.into(), python_main_module.into());
     python_builder.add_api_client(Box::new(robot_api_script_endpoint));

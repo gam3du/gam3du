@@ -46,46 +46,46 @@ impl GameState {
         &mut self,
         command_id: MessageId,
         command: &Identifier,
-        _arguments: &[Value],
+        arguments: &[Value],
     ) -> Result<(), String> {
-        match command.0.as_ref() {
-            "draw forward" => {
-                self.move_forward(command_id, true)?;
+        match (command.0.as_ref(), arguments) {
+            ("draw forward", [duration]) => {
+                let &Value::Integer(duration) = duration else {
+                    panic!("wrong argument");
+                };
+                self.move_forward(command_id, true, Duration::from_millis(duration as u64))?;
             }
-            "move forward" => {
-                self.move_forward(command_id, false)?;
+            ("move forward", [duration]) => {
+                let &Value::Integer(duration) = duration else {
+                    panic!("wrong argument");
+                };
+                self.move_forward(command_id, false, Duration::from_millis(duration as u64))?;
             }
-            "turn left" => {
-                self.turn_left(command_id);
+            ("turn left", [duration]) => {
+                let &Value::Integer(duration) = duration else {
+                    panic!("wrong argument");
+                };
+                self.turn_left(command_id, Duration::from_millis(duration as u64));
             }
-            "turn right" => {
-                self.turn_right(command_id);
+            ("turn right", [duration]) => {
+                let &Value::Integer(duration) = duration else {
+                    panic!("wrong argument");
+                };
+                self.turn_right(command_id, Duration::from_millis(duration as u64));
             }
-            "color black" => {
-                self.color(command_id, Vec3::new(0.2, 0.2, 0.2));
+            ("color rgb", [red, green, blue]) => {
+                let &Value::Float(red) = red else {
+                    panic!("wrong argument");
+                };
+                let &Value::Float(green) = green else {
+                    panic!("wrong argument");
+                };
+                let &Value::Float(blue) = blue else {
+                    panic!("wrong argument");
+                };
+                self.color(command_id, Vec3::new(red, green, blue));
             }
-            "color red" => {
-                self.color(command_id, Vec3::new(0.8, 0.2, 0.2));
-            }
-            "color green" => {
-                self.color(command_id, Vec3::new(0.2, 0.8, 0.2));
-            }
-            "color yellow" => {
-                self.color(command_id, Vec3::new(0.8, 0.8, 0.2));
-            }
-            "color blue" => {
-                self.color(command_id, Vec3::new(0.2, 0.2, 0.8));
-            }
-            "color magenta" => {
-                self.color(command_id, Vec3::new(0.8, 0.0, 0.8));
-            }
-            "color cyan" => {
-                self.color(command_id, Vec3::new(0.2, 0.8, 0.8));
-            }
-            "color white" => {
-                self.color(command_id, Vec3::new(0.8, 0.8, 0.8));
-            }
-            other => {
+            (other, _) => {
                 return Err(format!("Unknown Command: {other}"));
             }
         };
@@ -104,15 +104,15 @@ impl GameState {
         }
     }
 
-    fn turn_right(&mut self, command_id: MessageId) {
-        self.turn(command_id, -1);
+    fn turn_right(&mut self, command_id: MessageId, duration: Duration) {
+        self.turn(command_id, -1, duration);
     }
 
-    fn turn_left(&mut self, command_id: MessageId) {
-        self.turn(command_id, 1);
+    fn turn_left(&mut self, command_id: MessageId, duration: Duration) {
+        self.turn(command_id, 1, duration);
     }
 
-    fn turn(&mut self, command_id: MessageId, step: i8) {
+    fn turn(&mut self, command_id: MessageId, step: i8, duration: Duration) {
         self.robot.complete_animation();
         self.renew_command(command_id);
         #[expect(clippy::cast_sign_loss, reason = "TODO make this less cumbersome")]
@@ -125,7 +125,7 @@ impl GameState {
             start: self.robot.animation_angle,
             end: self.robot.orientation.angle(),
             start_time: Instant::now(),
-            duration: Duration::from_millis(200),
+            duration,
         });
     }
 
@@ -139,7 +139,12 @@ impl GameState {
         self.floor.tainted = self.tick;
     }
 
-    fn move_forward(&mut self, command_id: MessageId, draw: bool) -> Result<(), String> {
+    fn move_forward(
+        &mut self,
+        command_id: MessageId,
+        draw: bool,
+        duration: Duration,
+    ) -> Result<(), String> {
         self.robot.complete_animation();
         self.renew_command(command_id);
         let segment = LineSegment::from(self.robot.orientation);
@@ -174,7 +179,7 @@ impl GameState {
             start: self.robot.animation_position,
             end: self.robot.position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
             start_time: Instant::now(),
-            duration: Duration::from_millis(500),
+            duration,
         });
 
         Ok(())

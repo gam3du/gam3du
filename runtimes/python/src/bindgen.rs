@@ -11,7 +11,7 @@ pub fn generate(out: &mut impl Write, api: &ApiDescriptor) -> io::Result<()> {
     writeln!(out)?;
 
     api.functions
-        .iter()
+        .values()
         .try_for_each(|function| generate_function(out, function))?;
 
     Ok(())

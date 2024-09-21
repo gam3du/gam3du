@@ -2,8 +2,8 @@
   "name": "robot",
   "caption": "A simple robot that can be moved across a 2D-plane and draw lines",
   "description": "Once upon a time there was a lonely robot with the serial number `#C0D1E`. …",
-  "functions": [
-    {
+  "functions": {
+    "move forward": {
       "name": "move forward",
       "caption": "Makes the robot move to the next tile in its current orientation",
       "description": "Makes the robot move to the next tile in its current orientation",
@@ -19,13 +19,13 @@
             ]
           },
           "default": {
-            "Integer": 1000
+            "Integer": 500
           }
         }
       ],
       "returns": null
     },
-    {
+    "draw forward": {
       "name": "draw forward",
       "caption": "Makes the robot move to the next tile in its current orientation and draw a line onto the floor",
       "description": "Makes the robot move to the next tile in its current orientation and draw a line onto the floor",
@@ -41,13 +41,13 @@
             ]
           },
           "default": {
-            "Integer": 1000
+            "Integer": 500
           }
         }
       ],
       "returns": null
     },
-    {
+    "turn left": {
       "name": "turn left",
       "caption": "Turns the robot 45° in a counter-clockwise direction",
       "description": "Turns the robot 45° in a counter-clockwise direction",
@@ -63,13 +63,13 @@
             ]
           },
           "default": {
-            "Integer": 1000
+            "Integer": 300
           }
         }
       ],
       "returns": null
     },
-    {
+    "turn right": {
       "name": "turn right",
       "caption": "Turns the robot 45° in a clockwise direction",
       "description": "Turns the robot 45° in a clockwise direction",
@@ -85,67 +85,37 @@
             ]
           },
           "default": {
-            "Integer": 1000
+            "Integer": 300
           }
         }
       ],
       "returns": null
     },
-    {
-      "name": "color black",
-      "caption": "Colors the current tile black",
-      "description": "Colors the current tile black",
-      "parameters": [],
-      "returns": null
-    },
-    {
-      "name": "color red",
-      "caption": "Colors the current tile red",
-      "description": "Colors the current tile red",
-      "parameters": [],
-      "returns": null
-    },
-    {
-      "name": "color green",
-      "caption": "Colors the current tile green",
-      "description": "Colors the current tile green",
-      "parameters": [],
-      "returns": null
-    },
-    {
-      "name": "color yellow",
-      "caption": "Colors the current tile yellow",
-      "description": "Colors the current tile yellow",
-      "parameters": [],
-      "returns": null
-    },
-    {
-      "name": "color blue",
-      "caption": "Colors the current tile blue",
-      "description": "Colors the current tile blue",
-      "parameters": [],
-      "returns": null
-    },
-    {
-      "name": "color magenta",
-      "caption": "Colors the current tile magenta",
-      "description": "Colors the current tile magenta",
-      "parameters": [],
-      "returns": null
-    },
-    {
-      "name": "color cyan",
-      "caption": "Colors the current tile cyan",
-      "description": "Colors the current tile cyan",
-      "parameters": [],
-      "returns": null
-    },
-    {
-      "name": "color white",
-      "caption": "Colors the current tile white",
-      "description": "Colors the current tile white",
-      "parameters": [],
+    "color rgb": {
+      "name": "color rgb",
+      "caption": "Colors the current tile",
+      "description": "Colors the current tile",
+      "parameters": [
+        {
+          "name": "red",
+          "caption": "Amount of red",
+          "description": "Amount of red",
+          "type": "Float"
+        },
+        {
+          "name": "green",
+          "caption": "Amount of green",
+          "description": "Amount of green",
+          "type": "Float"
+        },
+        {
+          "name": "blue",
+          "caption": "Amount of blue",
+          "description": "Amount of blue",
+          "type": "Float"
+        }
+      ],
       "returns": null
     }
-  ]
+  }
 }

@@ -9,7 +9,7 @@ use std::{
 use gam3du_framework::module::Module;
 use log::{debug, error, info, trace};
 use runtimes::{
-    api::{ApiClient, Identifier, Value},
+    api::{ApiClient, Identifier, TypeDescriptor, Value},
     message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
 };
 use rustpython_vm::{
@@ -276,14 +276,43 @@ fn message(
     let api_name = Identifier("robot".into());
     let api = Api {};
     let command = name.convert(vm, &api)?;
-    let parameters = ParameterConverter::new(args, kwargs).convert(vm, &api, &command)?;
+    // let mut parameters = Vec::new(); // ParameterConverter::new(args, kwargs).convert(vm, &api, &command)?;
 
     let vm_id = vm.wasm_id.as_ref().unwrap();
+
+    // for arg in kwargs {
+    //     info!("##############Arg: {arg:?}");
+    // }
 
     API_CLIENTS.with_borrow_mut(|api_clients| {
         let api_clients = api_clients.get_mut(vm_id).unwrap();
         let api_client = api_clients.get_mut(&api_name).unwrap();
-        let message_id = api_client.send_command(command, parameters);
+        let api = api_client.api();
+
+        let function = api.functions.get(&command).expect("unknown command");
+        let arguments = function
+            .parameters
+            .iter()
+            .zip(args)
+            .map(|(param, arg)| match &param.typ {
+                TypeDescriptor::Integer(range) => {
+                    let int = arg.try_int(vm).unwrap();
+                    let primitive = int.try_to_primitive::<i64>(vm).unwrap();
+                    assert!(primitive >= range.start, "integer parameter out of range");
+                    assert!(primitive <= range.end, "integer parameter out of range");
+                    Value::Integer(primitive)
+                }
+                TypeDescriptor::Float => {
+                    let int = arg.try_float(vm).unwrap();
+                    let primitive = int.to_f64() as f32;
+                    Value::Float(primitive)
+                }
+                TypeDescriptor::Boolean => todo!(),
+                TypeDescriptor::String => todo!(),
+                TypeDescriptor::List(type_descriptor) => todo!(),
+            })
+            .collect();
+        let message_id = api_client.send_command(command, arguments);
 
         // TODO move this polling into the python bindgen layer to enable user scripts to perform async calls rather than blocking
         let response = loop {

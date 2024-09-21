@@ -147,7 +147,7 @@ print_stdout = "warn"
 
 # these two rule interfere. Fixing the former for tuples yields a warning for the latter
 # disable one of those warnings in your project
-pattern_type_mismatch = "warn"
+pattern_type_mismatch = "allow"
 needless_borrowed_reference = "warn"
 
 ######################################################################################################################

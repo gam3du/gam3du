@@ -7,6 +7,7 @@
 
 use std::{
     borrow::Cow,
+    collections::HashMap,
     fmt::Display,
     ops::Range,
     sync::mpsc::{self, Receiver, Sender, TryRecvError},
@@ -52,7 +53,7 @@ pub struct ApiDescriptor {
     /// a multi-line explanation what this api is for
     pub description: RichText,
     /// List of all functions this API provides
-    pub functions: Vec<FunctionDescriptor>,
+    pub functions: HashMap<Identifier, FunctionDescriptor>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -107,20 +108,18 @@ impl TypeDescriptor {
 
 /// creates a connected pair of endpoints
 #[must_use]
-pub fn channel(api_name: &Identifier) -> (ApiClientEndpoint, ApiServerEndpoint) {
+pub fn channel(api: ApiDescriptor) -> (ApiClientEndpoint, ApiServerEndpoint) {
     let (script_to_engine_sender, script_to_engine_receiver) = mpsc::channel();
     let (engine_to_script_sender, engine_to_script_receiver) = mpsc::channel();
 
-    let client_endpoint = ApiClientEndpoint::new(
-        api_name.clone(),
-        script_to_engine_sender,
-        engine_to_script_receiver,
-    );
     let server_endpoint = ApiServerEndpoint::new(
-        api_name.clone(),
+        api.name.clone(),
         script_to_engine_receiver,
         engine_to_script_sender,
     );
+
+    let client_endpoint =
+        ApiClientEndpoint::new(api, script_to_engine_sender, engine_to_script_receiver);
 
     (client_endpoint, server_endpoint)
 }
@@ -145,7 +144,10 @@ pub trait ApiServer: Send {
 }
 
 pub trait ApiClient: Send {
-    fn api_name(&self) -> &Identifier;
+    fn api(&self) -> &ApiDescriptor;
+    fn api_name(&self) -> &Identifier {
+        &self.api().name
+    }
 
     fn send_command(&mut self, command: Identifier, arguments: Vec<Value>) -> MessageId;
 
@@ -154,7 +156,7 @@ pub trait ApiClient: Send {
 
 /// Handles transmission of commands to [`ApiServerEndpoint`]s and provides methods for polling responses.
 pub struct ApiClientEndpoint {
-    api_name: Identifier,
+    api: ApiDescriptor,
     /// Used to send requests to the connected [`ApiServerEndpoint`]
     sender: Sender<ClientToServerMessage>,
     /// Used poll for responses from the the connected [`ApiServerEndpoint`]
@@ -164,12 +166,12 @@ pub struct ApiClientEndpoint {
 impl ApiClientEndpoint {
     #[must_use]
     pub fn new(
-        api_name: Identifier,
+        api: ApiDescriptor,
         sender: Sender<ClientToServerMessage>,
         receiver: Receiver<ServerToClientMessage>,
     ) -> Self {
         Self {
-            api_name,
+            api,
             sender,
             receiver,
         }
@@ -181,8 +183,8 @@ impl ApiClientEndpoint {
 }
 
 impl ApiClient for ApiClientEndpoint {
-    fn api_name(&self) -> &Identifier {
-        &self.api_name
+    fn api(&self) -> &ApiDescriptor {
+        &self.api
     }
 
     fn send_command(&mut self, command: Identifier, arguments: Vec<Value>) -> MessageId {
