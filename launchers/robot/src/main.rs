@@ -109,7 +109,11 @@ fn start_python_robot(
 
     let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);
 
-    let mut python_builder = ThreadBuilder::new(python_sys_path.into(), python_main_module.into());
+    let mut python_builder = ThreadBuilder::new(
+        python_sys_path.into(),
+        python_main_module.into(),
+        vec![("engine".to_owned(), Box::new(engine_robot::make_module))],
+    );
     python_builder.add_api_client(Box::new(robot_api_script_endpoint));
     let python_thread = python_builder.build_and_run();
     (python_thread, robot_api_engine_endpoint)

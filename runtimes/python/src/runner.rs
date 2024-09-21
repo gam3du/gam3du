@@ -17,6 +17,7 @@ use rustpython_vm::{
     function::{KwArgs, PosArgs},
     pymodule,
     signal::{UserSignal, UserSignalReceiver, UserSignalSender},
+    stdlib::StdlibInitFunc,
     Interpreter, PyObject, PyResult, Settings, TryFromBorrowedObject, VirtualMachine,
 };
 
@@ -39,6 +40,7 @@ impl PythonRunner {
         sys_path: String,
         main_module_name: String,
         user_signal_receiver: Option<UserSignalReceiver>,
+        more_native_modules: Vec<(String, StdlibInitFunc)>,
     ) -> Self {
         let id = VM_ID.fetch_add(1, Ordering::Relaxed).to_string();
 
@@ -57,10 +59,15 @@ impl PythonRunner {
                 if let Some(user_signal_receiver) = user_signal_receiver {
                     vm.set_user_signal_channel(user_signal_receiver);
                 }
+
                 vm.add_native_module(
                     "robot_api_internal".to_owned(),
                     Box::new(rust_py_module::make_module),
                 );
+
+                for (name, init) in more_native_modules {
+                    vm.add_native_module(name, init);
+                }
             }))
             .interpreter();
 
@@ -116,15 +123,21 @@ pub struct ThreadBuilder {
     sys_path: String,
     main_module_name: String,
     api_clients: Vec<Box<dyn ApiClient>>,
+    more_native_modules: Vec<(String, StdlibInitFunc)>,
 }
 
 impl ThreadBuilder {
     #[must_use]
-    pub fn new(sys_path: String, main_module_name: String) -> Self {
+    pub fn new(
+        sys_path: String,
+        main_module_name: String,
+        more_native_modules: Vec<(String, StdlibInitFunc)>,
+    ) -> Self {
         Self {
             sys_path,
             main_module_name,
             api_clients: Vec::new(),
+            more_native_modules,
         }
     }
 
@@ -147,6 +160,7 @@ impl ThreadBuilder {
                 self.sys_path,
                 self.main_module_name,
                 Some(user_signal_receiver),
+                self.more_native_modules,
             );
 
             for client in self.api_clients {
@@ -203,66 +217,6 @@ mod rust_py_module {
         // just forward to a location outside of this macro so that the IDE can assist us
         super::message(name, args, kwargs, vm)
     }
-
-    //     #[pyfunction]
-    //     fn rust_function(
-    //         num: i32,
-    //         str: String,
-    //         python_person: PythonPerson,
-    //         _vm: &VirtualMachine,
-    //     ) -> PyResult<RustStruct> {
-    //         println!(
-    //             "Calling standalone rust function from python passing args:
-    // num: {},
-    // string: {},
-    // python_person.name: {}",
-    //             num, str, python_person.name
-    //         );
-    //         Ok(RustStruct {
-    //             numbers: NumVec(vec![1, 2, 3, 4]),
-    //         })
-    //     }
-
-    // #[derive(Debug, Clone)]
-    // struct NumVec(Vec<i32>);
-
-    // impl ToPyObject for NumVec {
-    //     fn to_pyobject(self, vm: &VirtualMachine) -> PyObjectRef {
-    //         let list = self.0.into_iter().map(|item| vm.new_pyobj(item)).collect();
-    //         PyList::new_ref(list, vm.as_ref()).to_pyobject(vm)
-    //     }
-    // }
-
-    // #[pyattr]
-    // #[pyclass(module = "rust_py_module", name = "RustStruct")]
-    // #[derive(Debug, PyPayload)]
-    // struct RustStruct {
-    //     numbers: NumVec,
-    // }
-
-    // #[pyclass]
-    // impl RustStruct {
-    //     #[pygetset]
-    //     fn numbers(&self) -> NumVec {
-    //         self.numbers.clone()
-    //     }
-
-    //     #[pymethod]
-    //     fn print_in_rust_from_python(&self) {
-    //         println!("Calling a rust method from python");
-    //     }
-    // }
-
-    // struct PythonPerson {
-    //     name: String,
-    // }
-
-    // impl<'obj> TryFromBorrowedObject<'obj> for PythonPerson {
-    //     fn try_from_borrowed_object(vm: &VirtualMachine, obj: &'obj PyObject) -> PyResult<Self> {
-    //         let name = obj.get_attr("name", vm)?.try_into_value::<String>(vm)?;
-    //         Ok(PythonPerson { name })
-    //     }
-    // }
 }
 
 fn message(
@@ -312,6 +266,7 @@ fn message(
                 TypeDescriptor::List(type_descriptor) => todo!(),
             })
             .collect();
+
         let message_id = api_client.send_command(command, arguments);
 
         // TODO move this polling into the python bindgen layer to enable user scripts to perform async calls rather than blocking

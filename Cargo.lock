@@ -775,6 +775,8 @@ dependencies = [
  "log",
  "rand",
  "runtimes",
+ "rustpython",
+ "rustpython-vm",
  "serde_json",
  "wgpu",
 ]
