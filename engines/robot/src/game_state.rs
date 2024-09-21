@@ -104,11 +104,11 @@ impl GameState {
         }
     }
 
-    fn turn_right(&mut self, command_id: MessageId, duration: Duration) {
+    pub(crate) fn turn_right(&mut self, command_id: MessageId, duration: Duration) {
         self.turn(command_id, -1, duration);
     }
 
-    fn turn_left(&mut self, command_id: MessageId, duration: Duration) {
+    pub(crate) fn turn_left(&mut self, command_id: MessageId, duration: Duration) {
         self.turn(command_id, 1, duration);
     }
 
@@ -129,7 +129,7 @@ impl GameState {
         });
     }
 
-    fn color(&mut self, command_id: MessageId, color: Vec3) {
+    pub(crate) fn color(&mut self, command_id: MessageId, color: Vec3) {
         self.robot.complete_animation();
         self.completed_command_ids.push(command_id);
 
@@ -139,7 +139,7 @@ impl GameState {
         self.floor.tainted = self.tick;
     }
 
-    fn move_forward(
+    pub(crate) fn move_forward(
         &mut self,
         command_id: MessageId,
         draw: bool,

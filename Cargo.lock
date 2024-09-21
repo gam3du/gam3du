@@ -773,6 +773,7 @@ dependencies = [
  "gam3du-framework",
  "glam",
  "log",
+ "rand",
  "runtimes",
  "serde_json",
  "wgpu",
