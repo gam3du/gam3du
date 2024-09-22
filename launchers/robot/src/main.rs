@@ -13,7 +13,7 @@ use engine_robot::{GameLoop, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
 use log::{debug, error};
-use runtime_python::ThreadBuilder;
+use runtime_python::{PythonRunnerThread, PythonRuntimeBuilder};
 use runtimes::api::{self, ApiDescriptor};
 use runtimes::event::{ApplicationEvent, EngineEvent};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -103,20 +103,20 @@ fn start_python_robot(
     robot_api_descriptor_path: &str,
     python_sys_path: &str,
     python_main_module: &str,
-) -> (runtime_python::PythonThread, api::ApiServerEndpoint) {
+) -> (PythonRunnerThread, api::ApiServerEndpoint) {
     let api_json = std::fs::read_to_string(robot_api_descriptor_path).unwrap();
     let robot_api: ApiDescriptor = serde_json::from_str(&api_json).unwrap();
 
     let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);
 
-    let mut python_builder = ThreadBuilder::new(
-        python_sys_path.into(),
-        python_main_module.into(),
-        vec![("engine".to_owned(), Box::new(engine_robot::make_module))],
-    );
+    let mut python_builder =
+        PythonRuntimeBuilder::new(python_sys_path.into(), python_main_module.into());
+
+    let user_signal_sender = python_builder.enable_user_signals();
     python_builder.add_api_client(Box::new(robot_api_script_endpoint));
-    let python_thread = python_builder.build_and_run();
-    (python_thread, robot_api_engine_endpoint)
+    let python_runner_thread = python_builder.build_runner_thread(user_signal_sender);
+
+    (python_runner_thread, robot_api_engine_endpoint)
 }
 
 fn register_ctrlc(event_sender: &Sender<EngineEvent>) {

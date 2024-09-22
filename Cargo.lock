@@ -1312,6 +1312,7 @@ dependencies = [
  "pollster",
  "runtime-python",
  "runtimes",
+ "rustpython",
  "serde_json",
  "tiny_http",
  "winit",

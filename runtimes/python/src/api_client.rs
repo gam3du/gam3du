@@ -6,9 +6,8 @@ use runtimes::{
     message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
 };
 use rustpython_vm::{
-    builtins::PyStr,
-    function::{KwArgs, PosArgs},
-    pymodule, PyObject, PyResult, TryFromBorrowedObject, VirtualMachine,
+    builtins::PyStr, function::PosArgs, pymodule, PyObject, PyResult, TryFromBorrowedObject,
+    VirtualMachine,
 };
 
 type VmApiClients = HashMap<String, HashMap<Identifier, Box<dyn ApiClient>>>;
@@ -20,17 +19,17 @@ thread_local! {
 #[pymodule]
 pub(crate) mod py_api_client {
     use super::{FunctionNameConverter, PyResult, VirtualMachine};
-    use rustpython_vm::function::{KwArgs, PosArgs};
+    use rustpython_vm::function::PosArgs;
 
     #[pyfunction]
     fn message(
         name: FunctionNameConverter,
         args: PosArgs,
-        kwargs: KwArgs,
+        // kwargs: KwArgs,
         vm: &VirtualMachine,
     ) -> PyResult<()> {
         // just forward to a location outside of this macro so that the IDE can assist us
-        super::message(name, args, kwargs, vm)
+        super::message(name, args, vm)
     }
 }
 
@@ -38,7 +37,7 @@ fn message(
     // api_name: Identifier,
     name: FunctionNameConverter,
     args: PosArgs,
-    kwargs: KwArgs,
+    // kwargs: KwArgs,
     vm: &VirtualMachine,
 ) -> PyResult<()> {
     // TODO move the api selection into the caller

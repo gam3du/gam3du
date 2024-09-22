@@ -19,10 +19,10 @@ pub(crate) struct ScriptingModule {
 }
 
 impl Module for ScriptingModule {
-    fn add_api_client(&mut self, api_client: Box<dyn ApiClient>) {
-        self.api_clients
-            .insert(api_client.api_name().clone(), api_client);
-    }
+    // fn add_api_client(&mut self, api_client: Box<dyn ApiClient>) {
+    //     self.api_clients
+    //         .insert(api_client.api_name().clone(), api_client);
+    // }
 
     fn enter_main(&self) {
         //
