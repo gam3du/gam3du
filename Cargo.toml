@@ -50,6 +50,8 @@ serde = "1.0.210"
 tiny_http = "0.12.0"
 ctrlc = "3.4.5"
 
+indexmap = { version = "2.5.0", features = ["serde"] }
+
 [workspace.lints.rust]
 # more lints can be found in [lints.clippy]
 

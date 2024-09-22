@@ -7,7 +7,6 @@
 
 use std::{
     borrow::Cow,
-    collections::HashMap,
     fmt::Display,
     ops::Range,
     sync::mpsc::{self, Receiver, Sender, TryRecvError},
@@ -20,6 +19,8 @@ use crate::message::{
     ClientToServerMessage, ErrorResponseMessage, MessageId, RequestMessage, ResponseMessage,
     ServerToClientMessage,
 };
+
+use indexmap::IndexMap as HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RichText(pub String);
