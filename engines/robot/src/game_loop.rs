@@ -29,13 +29,21 @@ const TICK_DURATION: Duration = Duration::from_nanos(
 const ROBOT_API_NAME: Identifier = Identifier(Cow::Borrowed("robot"));
 
 /// The root object of a running engine
-#[derive(Default)]
 pub struct GameLoop {
     /// Contains the current state which will be updates by the game loop.
     /// This might be shared with renderers.
     /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
-    game_state: Arc<RwLock<GameState>>,
+    game_state: Arc<RwLock<Option<Box<GameState>>>>,
     robot_controllers: Vec<Box<dyn ApiServer>>,
+}
+
+impl Default for GameLoop {
+    fn default() -> Self {
+        Self {
+            game_state: Arc::new(RwLock::new(Some(Box::new(GameState::default())))),
+            robot_controllers: Vec::default(),
+        }
+    }
 }
 
 impl GameLoop {
@@ -43,7 +51,9 @@ impl GameLoop {
         let mut time = Instant::now();
         'game_loop: loop {
             {
-                let mut game_state = self.game_state.write().unwrap();
+                let mut public_game_state = self.game_state.write().unwrap();
+                let mut game_state = public_game_state.take().unwrap();
+
                 'next_event: loop {
                     match event_source.try_recv() {
                         Ok(engine_event) => match engine_event {
@@ -79,9 +89,9 @@ impl GameLoop {
                                     arguments,
                                 } = request;
 
-                                if let Err(error) =
-                                    game_state.process_command(id, &command, &arguments)
-                                {
+                                let command_result =
+                                    game_state.process_command(id, &command, &arguments);
+                                if let Err(error) = command_result {
                                     robot_api_endpoint.send_error(id, error);
                                 }
                             }
@@ -97,6 +107,11 @@ impl GameLoop {
                     // FIXME needs to somehow route the command_id back into the originating controller
                     self.robot_controllers[0].send_response(command_id, serde_json::Value::Null);
                 }
+
+                assert!(
+                    public_game_state.replace(game_state).is_none(),
+                    "someone stored another game state in the mutex; this is a programming error"
+                );
             }
 
             // compute the timestamp of the next game loop iteration
@@ -110,7 +125,7 @@ impl GameLoop {
     }
 
     #[must_use]
-    pub fn clone_state(&self) -> Arc<RwLock<GameState>> {
+    pub fn clone_state(&self) -> Arc<RwLock<Option<Box<GameState>>>> {
         Arc::clone(&self.game_state)
     }
 

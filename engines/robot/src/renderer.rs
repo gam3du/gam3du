@@ -13,12 +13,12 @@ use robot::RobotRenderer;
 use crate::projection::Projection;
 
 pub struct RendererBuilder {
-    game_state: Arc<RwLock<GameState>>,
+    game_state: Arc<RwLock<Option<Box<GameState>>>>,
 }
 
 impl RendererBuilder {
     #[must_use]
-    pub fn new(game_state: Arc<RwLock<GameState>>) -> Self {
+    pub fn new(game_state: Arc<RwLock<Option<Box<GameState>>>>) -> Self {
         Self { game_state }
     }
 }
@@ -35,7 +35,7 @@ impl engines::RendererBuilder for RendererBuilder {
         surface: &wgpu::SurfaceConfiguration,
     ) -> Renderer {
         let game_state = Arc::clone(&self.game_state);
-        let state = RenderState::new(&game_state.read().unwrap());
+        let state = RenderState::new(game_state.read().unwrap().as_ref().unwrap());
 
         let projection = Projection::new_perspective(
             (surface.width, surface.height),
@@ -60,7 +60,7 @@ impl engines::RendererBuilder for RendererBuilder {
 }
 
 pub struct Renderer {
-    game_state: Arc<RwLock<GameState>>,
+    game_state: Arc<RwLock<Option<Box<GameState>>>>,
     // TODO check whether `projection` should be moved into `RenderState`
     projection: Projection,
     depth_map: DepthTexture,
@@ -157,7 +157,8 @@ impl Renderer {
 
 impl engines::Renderer for Renderer {
     fn update(&mut self) {
-        self.state.update(&self.game_state.read().unwrap());
+        self.state
+            .update(self.game_state.read().unwrap().as_ref().unwrap());
     }
 
     fn resize(

@@ -11,6 +11,7 @@ use runtimes::{
     api::{ApiClient, Identifier},
     message::{MessageId, ServerToClientMessage},
 };
+use rustpython_vm::{pymodule, VirtualMachine};
 
 use crate::GameState;
 
@@ -50,6 +51,10 @@ impl EngineApiClient {
 }
 
 // impl ApiClient for EngineApiClient {
+//     fn api(&self) -> &runtimes::api::ApiDescriptor {
+//         todo!()
+//     }
+
 //     fn api_name(&self) -> &Identifier {
 //         &API_NAME
 //     }
@@ -111,3 +116,17 @@ impl EngineApiClient {
 //         self.response.take()
 //     }
 // }
+
+pub fn make_module(vm: &VirtualMachine) -> rustpython_vm::PyRef<rustpython_vm::builtins::PyModule> {
+    engine_api::make_module(vm)
+}
+
+#[pymodule]
+pub mod engine_api {
+
+    #[pyfunction]
+    fn get_current_fps() {
+        // just forward to a location outside of this macro so that the IDE can assist us
+        // super::message(name, args, kwargs, vm)
+    }
+}

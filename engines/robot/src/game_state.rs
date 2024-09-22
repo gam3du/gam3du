@@ -2,8 +2,10 @@ mod animation;
 mod floor;
 
 use std::{
+    cell::{Cell, LazyCell},
     f32::consts::TAU,
     ops::{AddAssign, SubAssign},
+    sync::{Arc, MutexGuard, RwLock},
     time::{Duration, Instant},
 };
 
@@ -13,8 +15,17 @@ use glam::{IVec3, Vec3};
 use log::debug;
 use runtimes::api::Value;
 use runtimes::{api::Identifier, message::MessageId};
+use rustpython_vm::common::lock::OnceCell;
 
 use crate::tile::LineSegment;
+
+thread_local! {
+    /// Contains the current state which will be updates by the game loop.
+    /// This might be shared with renderers.
+    /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
+    pub(crate) static LOCKED_GAME_STATE: Cell<Option<GameState>> = Cell::default();
+}
+// pub(crate) static GAME_STATE: Arc<Mutex<OptionCell<Option<MutexGuard<'static, GameState>>> = Cell::default();
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub(crate) struct Tick(pub(crate) u64);
