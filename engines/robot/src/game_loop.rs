@@ -1,4 +1,4 @@
-use crate::game_state::GameState;
+use crate::game_state::{GameState, LOCKED_GAME_STATE};
 use log::debug;
 use runtimes::{
     api::{ApiServer, Identifier},
@@ -7,6 +7,7 @@ use runtimes::{
 };
 use std::{
     borrow::Cow,
+    mem,
     sync::{
         mpsc::{Receiver, TryRecvError},
         Arc, RwLock,
@@ -33,14 +34,14 @@ pub struct GameLoop {
     /// Contains the current state which will be updates by the game loop.
     /// This might be shared with renderers.
     /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
-    game_state: Arc<RwLock<Option<Box<GameState>>>>,
+    game_state: Arc<RwLock<Box<GameState>>>,
     robot_controllers: Vec<Box<dyn ApiServer>>,
 }
 
 impl Default for GameLoop {
     fn default() -> Self {
         Self {
-            game_state: Arc::new(RwLock::new(Some(Box::new(GameState::default())))),
+            game_state: Arc::new(RwLock::new(Box::new(GameState::default()))),
             robot_controllers: Vec::default(),
         }
     }
@@ -51,8 +52,7 @@ impl GameLoop {
         let mut time = Instant::now();
         'game_loop: loop {
             {
-                let mut public_game_state = self.game_state.write().unwrap();
-                let mut game_state = public_game_state.take().unwrap();
+                let mut game_state = self.game_state.write().unwrap();
 
                 'next_event: loop {
                     match event_source.try_recv() {
@@ -77,6 +77,18 @@ impl GameLoop {
                         Err(TryRecvError::Empty) => break 'next_event,
                     }
                 }
+
+                LOCKED_GAME_STATE.with_borrow_mut(|locked_state| {
+                    mem::swap(locked_state, game_state.as_mut());
+                });
+                // CAUTION: `game_state` contains placeholder data until we swap it back
+
+                // run scripting runtimes here
+
+                // swap back the _real_ game state into `game_state`
+                LOCKED_GAME_STATE.with_borrow_mut(|locked_state| {
+                    mem::swap(locked_state, game_state.as_mut());
+                });
 
                 for robot_api_endpoint in &mut self.robot_controllers {
                     'next_robot_api_event: loop {
@@ -107,11 +119,6 @@ impl GameLoop {
                     // FIXME needs to somehow route the command_id back into the originating controller
                     self.robot_controllers[0].send_response(command_id, serde_json::Value::Null);
                 }
-
-                assert!(
-                    public_game_state.replace(game_state).is_none(),
-                    "someone stored another game state in the mutex; this is a programming error"
-                );
             }
 
             // compute the timestamp of the next game loop iteration
@@ -125,7 +132,7 @@ impl GameLoop {
     }
 
     #[must_use]
-    pub fn clone_state(&self) -> Arc<RwLock<Option<Box<GameState>>>> {
+    pub fn clone_state(&self) -> Arc<RwLock<Box<GameState>>> {
         Arc::clone(&self.game_state)
     }
 
