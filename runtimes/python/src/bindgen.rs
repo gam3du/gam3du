@@ -34,24 +34,7 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
         if index > 0 {
             write!(out, ", ")?;
         }
-        generate_parameter(out, parameter)?;
-        if let Some(ref default) = parameter.default {
-            match *default {
-                Value::Integer(default) => write!(out, "={default}")?,
-                Value::Float(default) => write!(out, "={default}")?,
-                Value::Boolean(true) => write!(out, "=True")?,
-                Value::Boolean(false) => write!(out, "=False")?,
-                Value::String(ref default) => write!(out, "={default:?}")?,
-                Value::List(ref default) => match **default {
-                    Value::Integer(default) => write!(out, "={default}")?,
-                    Value::Float(default) => write!(out, "={default}")?,
-                    Value::Boolean(true) => write!(out, "=True")?,
-                    Value::Boolean(false) => write!(out, "=False")?,
-                    Value::String(ref default) => write!(out, "={default:?}")?,
-                    Value::List(_) => unreachable!("3D lists are not supported"),
-                },
-            }
-        }
+        generate_parameter(out, parameter, false)?;
     }
 
     write!(out, ")")?;
@@ -64,7 +47,7 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
     write!(out, "\trobot_api_internal.message(\"{name}\"")?;
     for parameter in parameters {
         write!(out, ", ")?;
-        generate_parameter(out, parameter)?;
+        generate_parameter(out, parameter, true)?;
     }
     writeln!(out, ")",)?;
 
@@ -73,16 +56,46 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
     Ok(())
 }
 
-pub fn generate_parameter(out: &mut impl Write, parameter: &ParameterDescriptor) -> io::Result<()> {
+pub fn generate_parameter(
+    out: &mut impl Write,
+    parameter: &ParameterDescriptor,
+    name_only: bool,
+) -> io::Result<()> {
     let ParameterDescriptor {
         ref name,
         caption: _,
         description: _,
-        typ: _,
+        ref typ,
         default: _,
     } = *parameter;
 
     write!(out, "{name}", name = identifier(name))?;
+
+    // If the caller only needs the name of the parameter, we are done.
+    if name_only {
+        return Ok(());
+    }
+
+    let typ = self::typ(typ);
+    write!(out, ": {typ}")?;
+
+    if let Some(ref default) = parameter.default {
+        match *default {
+            Value::Integer(default) => write!(out, " = {default}")?,
+            Value::Float(default) => write!(out, " = {default}")?,
+            Value::Boolean(true) => write!(out, " = True")?,
+            Value::Boolean(false) => write!(out, " = False")?,
+            Value::String(ref default) => write!(out, " = {default:?}")?,
+            Value::List(ref default) => match **default {
+                Value::Integer(default) => write!(out, " = {default}")?,
+                Value::Float(default) => write!(out, " = {default}")?,
+                Value::Boolean(true) => write!(out, " = True")?,
+                Value::Boolean(false) => write!(out, " = False")?,
+                Value::String(ref default) => write!(out, " = {default:?}")?,
+                Value::List(_) => unreachable!("3D lists are not supported"),
+            },
+        }
+    }
 
     Ok(())
 }
