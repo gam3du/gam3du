@@ -9,7 +9,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::Sender;
 use std::{sync::mpsc::channel, thread};
 
-use engine_robot::{GameLoop, RendererBuilder};
+use engine_robot::{GameLoop, Plugin, RendererBuilder};
 use gam3du_framework::application::Application;
 use gam3du_framework::logging::init_logger;
 use log::{debug, error};
@@ -42,7 +42,9 @@ fn main() {
         start_python_robot("engines/robot/api.json", "python", "robot");
 
     let mut game_loop = GameLoop::default();
-    game_loop.add_robot_controller(Box::new(robot_api_engine_endpoint));
+    let mut plugin = Plugin::new();
+    plugin.add_robot_controller(Box::new(robot_api_engine_endpoint));
+    game_loop.add_plugin(plugin);
 
     let mut application = pollster::block_on(Application::new(
         "Robot".into(),

@@ -2,7 +2,6 @@ mod animation;
 mod floor;
 
 use std::{
-    cell::RefCell,
     f32::consts::TAU,
     ops::{AddAssign, SubAssign},
     time::{Duration, Instant},
@@ -12,18 +11,8 @@ use animation::RobotAnimation;
 use floor::Floor;
 use glam::{IVec3, Vec3};
 use log::debug;
-use runtimes::api::Value;
-use runtimes::{api::Identifier, message::MessageId};
 
-use crate::tile::LineSegment;
-
-thread_local! {
-    /// Contains the current state which will be updates by the game loop.
-    /// This might be shared with renderers.
-    /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
-    pub(crate) static LOCKED_GAME_STATE: RefCell<GameState> = RefCell::default();
-}
-// pub(crate) static GAME_STATE: Arc<Mutex<OptionCell<Option<MutexGuard<'static, GameState>>> = Cell::default();
+use crate::{api::EngineApi, tile::LineSegment};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub(crate) struct Tick(pub(crate) u64);
@@ -38,92 +27,16 @@ pub struct GameState {
     pub(crate) robot: Robot,
     /// current state of the floor
     pub(crate) floor: Floor,
-
-    current_command_id: Option<MessageId>,
-    completed_command_ids: Vec<MessageId>,
 }
 
 impl GameState {
     pub(crate) fn update(&mut self) {
         self.tick.0 += 1;
-        if self.robot.update() {
-            self.complete_command();
-        }
+        self.robot.update();
     }
 
-    pub(crate) fn process_command(
-        &mut self,
-        command_id: MessageId,
-        command: &Identifier,
-        arguments: &[Value],
-    ) -> Result<(), String> {
-        match (command.0.as_ref(), arguments) {
-            ("draw forward", [duration]) => {
-                let &Value::Integer(duration) = duration else {
-                    panic!("wrong argument");
-                };
-                self.move_forward(command_id, true, Duration::from_millis(duration as u64))?;
-            }
-            ("move forward", [duration]) => {
-                let &Value::Integer(duration) = duration else {
-                    panic!("wrong argument");
-                };
-                self.move_forward(command_id, false, Duration::from_millis(duration as u64))?;
-            }
-            ("turn left", [duration]) => {
-                let &Value::Integer(duration) = duration else {
-                    panic!("wrong argument");
-                };
-                self.turn_left(command_id, Duration::from_millis(duration as u64));
-            }
-            ("turn right", [duration]) => {
-                let &Value::Integer(duration) = duration else {
-                    panic!("wrong argument");
-                };
-                self.turn_right(command_id, Duration::from_millis(duration as u64));
-            }
-            ("color rgb", [red, green, blue]) => {
-                let &Value::Float(red) = red else {
-                    panic!("wrong argument");
-                };
-                let &Value::Float(green) = green else {
-                    panic!("wrong argument");
-                };
-                let &Value::Float(blue) = blue else {
-                    panic!("wrong argument");
-                };
-                self.color(command_id, Vec3::new(red, green, blue));
-            }
-            (other, _) => {
-                return Err(format!("Unknown Command: {other}"));
-            }
-        };
-        Ok(())
-    }
-
-    fn renew_command(&mut self, command_id: MessageId) {
-        if let Some(completed_id) = self.current_command_id.replace(command_id) {
-            self.completed_command_ids.push(completed_id);
-        }
-    }
-
-    fn complete_command(&mut self) {
-        if let Some(completed_id) = self.current_command_id.take() {
-            self.completed_command_ids.push(completed_id);
-        }
-    }
-
-    pub(crate) fn turn_right(&mut self, command_id: MessageId, duration: Duration) {
-        self.turn(command_id, -1, duration);
-    }
-
-    pub(crate) fn turn_left(&mut self, command_id: MessageId, duration: Duration) {
-        self.turn(command_id, 1, duration);
-    }
-
-    fn turn(&mut self, command_id: MessageId, step: i8, duration: Duration) {
+    fn turn(&mut self, step: i8, duration: Duration) {
         self.robot.complete_animation();
-        self.renew_command(command_id);
         #[expect(clippy::cast_sign_loss, reason = "TODO make this less cumbersome")]
         if step < 0 {
             self.robot.orientation -= -step as u8;
@@ -138,9 +51,8 @@ impl GameState {
         });
     }
 
-    pub(crate) fn color(&mut self, command_id: MessageId, color: Vec3) {
+    pub fn _color_rgb(&mut self, color: Vec3) {
         self.robot.complete_animation();
-        self.completed_command_ids.push(command_id);
 
         let start_pos = self.robot.position;
         let start_index = Floor::to_index(start_pos).unwrap();
@@ -148,14 +60,8 @@ impl GameState {
         self.floor.tainted = self.tick;
     }
 
-    pub(crate) fn move_forward(
-        &mut self,
-        command_id: MessageId,
-        draw: bool,
-        duration: Duration,
-    ) -> Result<(), String> {
+    fn _move_forward(&mut self, draw: bool, duration: Duration) -> Result<(), String> {
         self.robot.complete_animation();
-        self.renew_command(command_id);
         let segment = LineSegment::from(self.robot.orientation);
 
         let offset = self.robot.orientation.as_ivec3();
@@ -194,13 +100,31 @@ impl GameState {
         Ok(())
     }
 
-    pub(crate) fn drain_completed_commands(&mut self) -> impl Iterator<Item = MessageId> + '_ {
-        self.completed_command_ids.drain(..)
+    pub(crate) fn is_idle(&mut self) -> bool {
+        self.robot.is_idle()
+    }
+}
+
+impl EngineApi for GameState {
+    fn move_forward(&mut self, duration: u64) -> Result<(), String> {
+        self._move_forward(false, Duration::from_millis(duration))
     }
 
-    // pub(crate) fn is_idle(&mut self) -> bool {
-    //     self.robot.is_idle()
-    // }
+    fn draw_forward(&mut self, duration: u64) -> Result<(), String> {
+        self._move_forward(true, Duration::from_millis(duration))
+    }
+
+    fn turn_left(&mut self, duration: u64) {
+        self.turn(1, Duration::from_millis(duration));
+    }
+
+    fn turn_right(&mut self, duration: u64) {
+        self.turn(-1, Duration::from_millis(duration));
+    }
+
+    fn color_rgb(&mut self, red: f32, green: f32, blue: f32) {
+        self._color_rgb(Vec3::new(red, green, blue));
+    }
 }
 
 pub(crate) struct Robot {
@@ -212,10 +136,10 @@ pub(crate) struct Robot {
 }
 
 impl Robot {
-    // #[must_use]
-    // pub(crate) fn is_idle(&self) -> bool {
-    //     self.current_animation.is_none()
-    // }
+    #[must_use]
+    pub(crate) fn is_idle(&self) -> bool {
+        self.current_animation.is_none()
+    }
 
     fn complete_animation(&mut self) {
         if let Some(current_animation) = self.current_animation.take() {

@@ -10,6 +10,7 @@
     reason = "TODO remove and fix before release"
 )]
 
+pub mod api;
 mod camera;
 mod game_loop;
 mod game_state;
@@ -23,3 +24,4 @@ pub use game_loop::GameLoop;
 pub use game_state::GameState;
 pub use render_state::RenderState;
 pub use renderer::{Renderer, RendererBuilder};
+pub use scripting::Plugin;
