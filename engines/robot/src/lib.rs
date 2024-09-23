@@ -1,7 +1,7 @@
 #![allow(missing_docs, reason = "TODO remove before release")]
 #![expect(
     clippy::indexing_slicing,
-    // clippy::todo,
+    clippy::todo,
     clippy::panic,
     clippy::panic_in_result_fn,
     clippy::unwrap_used,
@@ -12,6 +12,7 @@
 
 pub mod api;
 mod camera;
+mod events;
 mod game_loop;
 mod game_state;
 mod projection;

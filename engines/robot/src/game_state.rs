@@ -12,7 +12,7 @@ use floor::Floor;
 use glam::{IVec3, Vec3};
 use log::debug;
 
-use crate::{api::EngineApi, tile::LineSegment};
+use crate::{api::EngineApi, events::EventRegistries, tile::LineSegment};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub(crate) struct Tick(pub(crate) u64);
@@ -27,12 +27,14 @@ pub struct GameState {
     pub(crate) robot: Robot,
     /// current state of the floor
     pub(crate) floor: Floor,
+
+    pub(crate) event_registries: EventRegistries,
 }
 
 impl GameState {
     pub(crate) fn update(&mut self) {
         self.tick.0 += 1;
-        self.robot.update();
+        self.robot.update(&mut self.event_registries);
     }
 
     fn turn(&mut self, step: i8, duration: Duration) {
@@ -100,9 +102,10 @@ impl GameState {
         Ok(())
     }
 
-    pub(crate) fn is_idle(&mut self) -> bool {
-        self.robot.is_idle()
-    }
+    // #[must_use]
+    // pub(crate) fn is_idle(&mut self) -> bool {
+    //     self.robot.is_idle()
+    // }
 }
 
 impl EngineApi for GameState {
@@ -136,10 +139,10 @@ pub(crate) struct Robot {
 }
 
 impl Robot {
-    #[must_use]
-    pub(crate) fn is_idle(&self) -> bool {
-        self.current_animation.is_none()
-    }
+    // #[must_use]
+    // pub(crate) fn is_idle(&self) -> bool {
+    //     self.current_animation.is_none()
+    // }
 
     fn complete_animation(&mut self) {
         if let Some(current_animation) = self.current_animation.take() {
@@ -150,10 +153,11 @@ impl Robot {
         }
     }
 
-    fn update(&mut self) -> bool {
+    fn update(&mut self, event_registries: &mut EventRegistries) -> bool {
         if let Some(animation) = self.current_animation.as_ref() {
             if animation.animate(&mut self.animation_position, &mut self.animation_angle) {
                 self.current_animation.take();
+                event_registries.robot_stopped.notify();
                 return true;
             }
         };

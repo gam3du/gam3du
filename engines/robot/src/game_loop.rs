@@ -23,7 +23,7 @@ const TICK_DURATION: Duration = Duration::from_nanos(
 
 /// The root object of a running engine
 pub struct GameLoop {
-    /// Contains the current state which will be updates by the game loop.
+    /// Contains the current state which will be updated by the game loop.
     /// This might be shared with renderers.
     /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
     game_state: Arc<RwLock<Box<GameState>>>,
@@ -44,7 +44,9 @@ impl GameLoop {
         let mut time = Instant::now();
 
         if let Some(plugin) = &mut self.plugin {
-            plugin.init();
+            let mut game_state = self.game_state.write().unwrap();
+
+            plugin.init(&mut game_state);
         }
 
         'game_loop: loop {
@@ -81,12 +83,6 @@ impl GameLoop {
                 }
 
                 game_state.update();
-
-                // // report back which commands could be completed in this update
-                // for command_id in game_state.drain_completed_commands() {
-                //     // FIXME needs to somehow route the command_id back into the originating controller
-                //     self.robot_controllers[0].send_response(command_id, serde_json::Value::Null);
-                // }
             }
 
             // compute the timestamp of the next game loop iteration
