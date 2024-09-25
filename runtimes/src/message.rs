@@ -55,7 +55,7 @@ pub struct ResponseMessage {
     pub id: MessageId,
     /// The result of the requested operation
     /// This might contain application errors if the request could not be fulfilled successfully
-    pub result: serde_json::Value,
+    pub result: Value,
 }
 
 /// Indicates that a request could not be made into a proper function call.

@@ -6,8 +6,8 @@ use runtimes::{
     message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
 };
 use rustpython_vm::{
-    builtins::PyStr, function::PosArgs, pyclass, pymodule, PyObject, PyObjectRef, PyPayload, PyRef,
-    PyResult, TryFromBorrowedObject, VirtualMachine,
+    builtins::PyStr, convert::ToPyObject, function::PosArgs, pyclass, pymodule, PyObject,
+    PyObjectRef, PyPayload, PyRef, PyResult, TryFromBorrowedObject, VirtualMachine,
 };
 
 pub(crate) fn insert_api_client(vm: &VirtualMachine, api_module: &str, api: ApiClientEndpoint) {
@@ -72,7 +72,7 @@ impl PyPayload for PrivateApi {
 #[pymodule]
 pub(crate) mod py_api_client {
     use super::{FunctionNameConverter, PyResult, VirtualMachine};
-    use rustpython_vm::function::PosArgs;
+    use rustpython_vm::{function::PosArgs, PyObjectRef};
 
     #[pyfunction]
     fn message(
@@ -80,7 +80,7 @@ pub(crate) mod py_api_client {
         args: PosArgs,
         // kwargs: KwArgs,
         vm: &VirtualMachine,
-    ) -> PyResult<()> {
+    ) -> PyResult<PyObjectRef> {
         // just forward to a location outside of this macro so that the IDE can assist us
         super::message(name, args, vm)
     }
@@ -92,7 +92,7 @@ fn message(
     args: PosArgs,
     // kwargs: KwArgs,
     vm: &VirtualMachine,
-) -> PyResult<()> {
+) -> PyResult<PyObjectRef> {
     // TODO move the api selection into the caller
     // let api_name = Identifier("robot".into());
     // let vm_id = vm.wasm_id.as_ref().unwrap();
@@ -141,17 +141,23 @@ fn message(
     match response {
         ServerToClientMessage::Response(ResponseMessage { id, result }) => {
             assert_eq!(message_id, id, "request-response id mismatch");
-            trace!("command successfully returned: {result}");
+            trace!("command successfully returned: {result:?}");
+            match result {
+                Value::Integer(_) => todo!(),
+                Value::Float(_) => todo!(),
+                Value::Boolean(value) => Ok(value.to_pyobject(vm)),
+                Value::String(_) => todo!(),
+                Value::List(_) => todo!(),
+            }
         }
         ServerToClientMessage::ErrorResponse(ErrorResponseMessage { id, message }) => {
             assert_eq!(message_id, id, "request-response id mismatch");
             error!("command returned an error: {message}");
             let error = vm.new_runtime_error(message);
-            return Err(error);
+            Err(error)
         }
         ServerToClientMessage::Event(_) => todo!(),
     }
-    Ok(())
 }
 
 struct FunctionNameConverter(Option<String>);

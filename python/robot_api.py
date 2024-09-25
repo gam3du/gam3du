@@ -1,6 +1,6 @@
 import robot_api_internal
 
-def move_forward(duration: int = 500):
+def move_forward(duration: int = 500) -> bool:
 	robot_api_internal.message("move forward", duration)
 
 def draw_forward(duration: int = 500):

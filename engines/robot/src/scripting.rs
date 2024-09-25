@@ -69,7 +69,7 @@ impl Plugin {
                 Ok(GameEvent::RobotStopped) => {
                     if let Some((command_id, controller_index)) = self.current_command.take() {
                         self.robot_controllers[controller_index]
-                            .send_response(command_id, serde_json::Value::Null);
+                            .send_response(command_id, Value::Boolean(true));
                     }
                 }
                 Err(TryRecvError::Empty) => {
@@ -102,7 +102,7 @@ impl Plugin {
 
                         match Self::process_command(game_state, &command, &arguments) {
                             Ok(Some(())) => {
-                                robot_api_endpoint.send_response(id, serde_json::Value::Null);
+                                robot_api_endpoint.send_response(id, Value::Null);
                             }
                             Ok(None) => {
                                 self.current_command = Some((id, endpoint_index));

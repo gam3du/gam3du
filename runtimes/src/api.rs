@@ -221,7 +221,7 @@ impl ApiServerEndpoint {
         self.send_to_client(response);
     }
 
-    pub fn send_response(&mut self, id: MessageId, result: serde_json::Value) {
+    pub fn send_response(&mut self, id: MessageId, result: Value) {
         let response = ResponseMessage { id, result };
         self.send_to_client(response);
     }

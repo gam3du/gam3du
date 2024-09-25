@@ -23,7 +23,12 @@
           }
         }
       ],
-      "returns": null
+      "returns": {
+        "name": "return",
+        "caption": "",
+        "description": "",
+        "type": "Boolean"
+      }
     },
     "draw forward": {
       "name": "draw forward",
