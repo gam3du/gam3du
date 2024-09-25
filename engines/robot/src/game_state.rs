@@ -70,6 +70,7 @@ impl GameState {
 
         let start_pos = self.robot.position;
         let end_pos = start_pos + offset;
+        let end_index = Floor::to_index(end_pos)?;
 
         if draw {
             let start_index = Floor::to_index(start_pos)?;
@@ -83,8 +84,6 @@ impl GameState {
                 let index1 = Floor::to_index(start_pos + IVec3::new(0, offset.y, 0))?;
                 self.floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
             }
-
-            let end_index = Floor::to_index(end_pos)?;
 
             self.floor.tiles[end_index].line_pattern |= -segment;
             self.floor.tainted = self.tick;

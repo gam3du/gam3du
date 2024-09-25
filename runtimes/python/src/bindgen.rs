@@ -44,7 +44,7 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
     }
     writeln!(out, ":")?;
 
-    write!(out, "\trobot_api_internal.message(\"{name}\"")?;
+    write!(out, "\treturn robot_api_internal.message(\"{name}\"")?;
     for parameter in parameters {
         write!(out, ", ")?;
         generate_parameter(out, parameter, true)?;
