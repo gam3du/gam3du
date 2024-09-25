@@ -5,6 +5,7 @@ use std::{
 };
 
 use rand::{thread_rng, Rng};
+
 use runtimes::{
     api::{ApiServer, Identifier, Value},
     message::{ClientToServerMessage, MessageId, RequestMessage},
@@ -181,25 +182,6 @@ impl Default for Plugin {
         Self::new()
     }
 }
-
-// pub(crate) struct ScriptingModule {
-//     api_clients: HashMap<Identifier, Box<dyn ApiClient>>,
-// }
-
-// impl Module for ScriptingModule {
-//     // fn add_api_client(&mut self, api_client: Box<dyn ApiClient>) {
-//     //     self.api_clients
-//     //         .insert(api_client.api_name().clone(), api_client);
-//     // }
-
-//     fn enter_main(&self) {
-//         //
-//     }
-
-//     fn wake(&self) {
-//         //
-//     }
-// }
 
 // const API_NAME: Identifier = Identifier(Cow::Borrowed("robot"));
 

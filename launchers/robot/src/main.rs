@@ -115,7 +115,7 @@ fn start_python_robot(
         PythonRuntimeBuilder::new(python_sys_path.into(), python_main_module.into());
 
     let user_signal_sender = python_builder.enable_user_signals();
-    python_builder.add_api_client(Box::new(robot_api_script_endpoint));
+    python_builder.add_api_client(robot_api_script_endpoint);
     let python_runner_thread = python_builder.build_runner_thread(user_signal_sender);
 
     (python_runner_thread, robot_api_engine_endpoint)

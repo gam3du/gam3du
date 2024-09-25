@@ -26,13 +26,13 @@ engine-robot = { path = "engines/robot" }
 gam3du-framework = { path = "framework" }
 
 # Python interpreter
-rustpython = "0.4.0"
-rustpython-vm = "0.4.0"
+rustpython-vm = { version = "0.4.0", default-features = false }
+rustpython = { version = "0.4.0", default-features = false }
 
 # simplifies bit/byte-level operations
 bytemuck = "1.18.0"
 
-# Abstraction layer for the paltform's graphics API
+# Abstraction layer for the platform's graphics API
 wgpu = "22.1.0"
 
 # Basic vector and matrix types and operations thereon

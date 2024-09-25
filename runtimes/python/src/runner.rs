@@ -6,15 +6,20 @@ use std::{
 
 use gam3du_framework::module::Module;
 use log::{debug, error, info};
-use runtimes::api::{ApiClient, Identifier};
+use runtimes::api::{ApiClientEndpoint, Identifier};
 use rustpython_vm::{
     builtins::PyStrInterned,
     signal::{user_signal_channel, UserSignal, UserSignalReceiver, UserSignalSender},
-    stdlib::StdlibInitFunc,
     Interpreter, Settings,
 };
 
-use crate::api_client::{py_api_client, API_CLIENTS};
+/// This indirection is necessary because we can't pass `rustpython_vm::stdlib::StdlibInitFunc`
+/// to a new thread (`std::thread::spawn` requires `Send`).
+/// Instead of passing it directly to the new python interpreter thread,
+/// we can pass a function pointer (which is always `Send`).
+type StdlibInitFunc = fn() -> rustpython_vm::stdlib::StdlibInitFunc;
+
+use crate::api_client::{insert_api_client, py_api_client};
 
 static VM_ID: AtomicU64 = AtomicU64::new(0);
 
@@ -23,7 +28,7 @@ pub struct PythonRuntimeBuilder {
     main_module_name: String,
     user_signal_receiver: Option<UserSignalReceiver>,
 
-    api_clients: HashMap<Identifier, Box<dyn ApiClient>>,
+    api_clients: HashMap<Identifier, ApiClientEndpoint>,
     native_modules: HashMap<String, StdlibInitFunc>,
 }
 
@@ -39,10 +44,10 @@ impl PythonRuntimeBuilder {
         }
     }
 
-    pub fn add_api_client(&mut self, api_client: Box<dyn ApiClient>) {
+    pub fn add_api_client(&mut self, api_client: ApiClientEndpoint) {
         assert!(
             self.api_clients
-                .insert(api_client.api_name().clone(), api_client)
+                .insert(api_client.api().name.clone(), api_client)
                 .is_none(),
             "duplicate api name"
         );
@@ -66,7 +71,7 @@ impl PythonRuntimeBuilder {
         user_signal_sender
     }
 
-    pub fn build(self) -> PythonRuntime {
+    pub fn build(mut self) -> PythonRuntime {
         let id = VM_ID.fetch_add(1, Ordering::Relaxed).to_string();
         let has_api_clients = !self.api_clients.is_empty();
 
@@ -94,7 +99,7 @@ impl PythonRuntimeBuilder {
                 }
 
                 for (name, init) in self.native_modules {
-                    vm.add_native_module(name, init);
+                    vm.add_native_module(name, init());
                 }
             }))
             .interpreter();
@@ -105,10 +110,13 @@ impl PythonRuntimeBuilder {
                 .expect("failed to add {sys_path} to python vm");
 
             interned_main_module_name = Some(vm.ctx.intern_str(self.main_module_name));
-        });
 
-        API_CLIENTS.with_borrow_mut(|clients| {
-            clients.insert(id.clone(), self.api_clients);
+            let api_module = "robot_api_internal";
+            let api = self
+                .api_clients
+                .remove(&Identifier("robot".into()))
+                .unwrap();
+            insert_api_client(vm, api_module, api);
         });
 
         PythonRuntime {
