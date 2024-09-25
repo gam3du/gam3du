@@ -81,12 +81,14 @@ pub fn generate_parameter(
 
     if let Some(ref default) = parameter.default {
         match *default {
+            Value::Unit => {}
             Value::Integer(default) => write!(out, " = {default}")?,
             Value::Float(default) => write!(out, " = {default}")?,
             Value::Boolean(true) => write!(out, " = True")?,
             Value::Boolean(false) => write!(out, " = False")?,
             Value::String(ref default) => write!(out, " = {default:?}")?,
             Value::List(ref default) => match **default {
+                Value::Unit => {}
                 Value::Integer(default) => write!(out, " = {default}")?,
                 Value::Float(default) => write!(out, " = {default}")?,
                 Value::Boolean(true) => write!(out, " = True")?,

@@ -143,6 +143,7 @@ fn message(
             assert_eq!(message_id, id, "request-response id mismatch");
             trace!("command successfully returned: {result:?}");
             match result {
+                Value::Unit => Ok(vm.ctx.none()),
                 Value::Integer(_) => todo!(),
                 Value::Float(_) => todo!(),
                 Value::Boolean(value) => Ok(value.to_pyobject(vm)),

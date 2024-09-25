@@ -3,7 +3,7 @@ import robot_api_internal
 def move_forward(duration: int = 500) -> bool:
 	robot_api_internal.message("move forward", duration)
 
-def draw_forward(duration: int = 500):
+def draw_forward(duration: int = 500) -> bool:
 	robot_api_internal.message("draw forward", duration)
 
 def turn_left(duration: int = 300):

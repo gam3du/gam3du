@@ -50,7 +50,12 @@
           }
         }
       ],
-      "returns": null
+      "returns": {
+        "name": "return",
+        "caption": "",
+        "description": "",
+        "type": "Boolean"
+      }
     },
     "turn left": {
       "name": "turn left",

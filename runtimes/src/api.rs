@@ -128,6 +128,7 @@ pub fn channel(api: ApiDescriptor) -> (ApiClientEndpoint, ApiServerEndpoint) {
 /// A value for a parameter.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Value {
+    Unit,
     Integer(i64),
     Float(f32),
     Boolean(bool),

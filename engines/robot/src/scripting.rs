@@ -100,18 +100,86 @@ impl Plugin {
                             arguments,
                         } = request;
 
-                        match Self::process_command(game_state, &command, &arguments) {
-                            Ok(Some(())) => {
-                                robot_api_endpoint.send_response(id, Value::Null);
+                        // let process_command = {
+                        // let command: &Identifier = &command;
+                        match (command.0.as_ref(), arguments.as_slice()) {
+                            ("draw forward", [duration]) => {
+                                let &Value::Integer(duration) = duration else {
+                                    panic!("wrong argument");
+                                };
+                                match game_state.draw_forward(duration as u64) {
+                                    Ok(()) => {
+                                        self.current_command = Some((id, endpoint_index));
+                                        break 'next_endpoint;
+                                    }
+                                    Err(error) => {
+                                        // robot_api_endpoint.send_error(id, error);
+                                        robot_api_endpoint.send_response(id, Value::Boolean(false));
+                                    }
+                                }
                             }
-                            Ok(None) => {
+                            ("move forward", [duration]) => {
+                                let &Value::Integer(duration) = duration else {
+                                    panic!("wrong argument");
+                                };
+                                match game_state.move_forward(duration as u64) {
+                                    Ok(()) => {
+                                        self.current_command = Some((id, endpoint_index));
+                                        break 'next_endpoint;
+                                    }
+                                    Err(error) => {
+                                        // robot_api_endpoint.send_error(id, error);
+                                        robot_api_endpoint.send_response(id, Value::Boolean(false));
+                                    }
+                                }
+                            }
+                            ("turn left", [duration]) => {
+                                let &Value::Integer(duration) = duration else {
+                                    panic!("wrong argument");
+                                };
+                                game_state.turn_left(duration as u64);
                                 self.current_command = Some((id, endpoint_index));
                                 break 'next_endpoint;
                             }
-                            Err(error) => {
-                                robot_api_endpoint.send_error(id, error);
+                            ("turn right", [duration]) => {
+                                let &Value::Integer(duration) = duration else {
+                                    panic!("wrong argument");
+                                };
+                                game_state.turn_right(duration as u64);
+                                self.current_command = Some((id, endpoint_index));
+                                break 'next_endpoint;
+                            }
+                            ("color rgb", [red, green, blue]) => {
+                                let &Value::Float(red) = red else {
+                                    panic!("wrong argument");
+                                };
+                                let &Value::Float(green) = green else {
+                                    panic!("wrong argument");
+                                };
+                                let &Value::Float(blue) = blue else {
+                                    panic!("wrong argument");
+                                };
+                                game_state.color_rgb(red, green, blue);
+                                robot_api_endpoint.send_response(id, Value::Unit);
+                            }
+                            (other, _) => {
+                                robot_api_endpoint
+                                    .send_error(id, format!("Unknown Command: {other}"));
                             }
                         }
+                        // };
+                        // match process_command {
+                        //     Ok(Some(())) => {
+                        //         robot_api_endpoint.send_response(id, Value::Null);
+                        //     }
+                        //     Ok(None) => {
+                        //         self.current_command = Some((id, endpoint_index));
+                        //         break 'next_endpoint;
+                        //     }
+                        //     Err(error) => {
+                        //         robot_api_endpoint.send_error(id, error);
+                        //     }
+                        // }
                     }
                     None => break 'next_robot_api_event,
                 }
@@ -125,56 +193,56 @@ impl Plugin {
         // });
     }
 
-    pub(crate) fn process_command(
-        game_state: &mut GameState,
-        command: &Identifier,
-        arguments: &[Value],
-    ) -> Result<Option<()>, String> {
-        match (command.0.as_ref(), arguments) {
-            ("draw forward", [duration]) => {
-                let &Value::Integer(duration) = duration else {
-                    panic!("wrong argument");
-                };
-                game_state.draw_forward(duration as u64)?;
-                Ok(None)
-            }
-            ("move forward", [duration]) => {
-                let &Value::Integer(duration) = duration else {
-                    panic!("wrong argument");
-                };
-                game_state.move_forward(duration as u64)?;
-                Ok(None)
-            }
-            ("turn left", [duration]) => {
-                let &Value::Integer(duration) = duration else {
-                    panic!("wrong argument");
-                };
-                game_state.turn_left(duration as u64);
-                Ok(None)
-            }
-            ("turn right", [duration]) => {
-                let &Value::Integer(duration) = duration else {
-                    panic!("wrong argument");
-                };
-                game_state.turn_right(duration as u64);
-                Ok(None)
-            }
-            ("color rgb", [red, green, blue]) => {
-                let &Value::Float(red) = red else {
-                    panic!("wrong argument");
-                };
-                let &Value::Float(green) = green else {
-                    panic!("wrong argument");
-                };
-                let &Value::Float(blue) = blue else {
-                    panic!("wrong argument");
-                };
-                game_state.color_rgb(red, green, blue);
-                Ok(Some(()))
-            }
-            (other, _) => Err(format!("Unknown Command: {other}")),
-        }
-    }
+    // pub(crate) fn process_command(
+    //     game_state: &mut GameState,
+    //     command: &Identifier,
+    //     arguments: &[Value],
+    // ) -> Result<Option<()>, String> {
+    //     match (command.0.as_ref(), arguments) {
+    //         ("draw forward", [duration]) => {
+    //             let &Value::Integer(duration) = duration else {
+    //                 panic!("wrong argument");
+    //             };
+    //             game_state.draw_forward(duration as u64)?;
+    //             Ok(None)
+    //         }
+    //         ("move forward", [duration]) => {
+    //             let &Value::Integer(duration) = duration else {
+    //                 panic!("wrong argument");
+    //             };
+    //             game_state.move_forward(duration as u64)?;
+    //             Ok(None)
+    //         }
+    //         ("turn left", [duration]) => {
+    //             let &Value::Integer(duration) = duration else {
+    //                 panic!("wrong argument");
+    //             };
+    //             game_state.turn_left(duration as u64);
+    //             Ok(None)
+    //         }
+    //         ("turn right", [duration]) => {
+    //             let &Value::Integer(duration) = duration else {
+    //                 panic!("wrong argument");
+    //             };
+    //             game_state.turn_right(duration as u64);
+    //             Ok(None)
+    //         }
+    //         ("color rgb", [red, green, blue]) => {
+    //             let &Value::Float(red) = red else {
+    //                 panic!("wrong argument");
+    //             };
+    //             let &Value::Float(green) = green else {
+    //                 panic!("wrong argument");
+    //             };
+    //             let &Value::Float(blue) = blue else {
+    //                 panic!("wrong argument");
+    //             };
+    //             game_state.color_rgb(red, green, blue);
+    //             Ok(Some(()))
+    //         }
+    //         (other, _) => Err(format!("Unknown Command: {other}")),
+    //     }
+    // }
 }
 
 impl Default for Plugin {

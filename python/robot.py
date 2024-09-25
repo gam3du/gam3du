@@ -6,6 +6,9 @@ from robot_api import (
     turn_right,
 )
 
+while move_forward():
+    pass
+
 turn_right(1000)
 turn_right()
 turn_right()
