@@ -43,7 +43,7 @@ fn main() {
 
     let mut game_loop = GameLoop::default();
     let mut plugin = Plugin::new();
-    plugin.add_robot_controller(Box::new(robot_api_engine_endpoint));
+    plugin.add_robot_controller(robot_api_engine_endpoint);
     game_loop.add_plugin(plugin);
 
     let mut application = pollster::block_on(Application::new(

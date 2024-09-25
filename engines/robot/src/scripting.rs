@@ -7,7 +7,7 @@ use std::{
 use rand::{thread_rng, Rng};
 
 use runtimes::{
-    api::{ApiServer, Identifier, Value},
+    api::{ApiServerEndpoint, Identifier, Value},
     message::{ClientToServerMessage, MessageId, RequestMessage},
 };
 
@@ -22,7 +22,7 @@ const ROBOT_API_NAME: Identifier = Identifier(Cow::Borrowed("robot"));
 
 pub struct Plugin {
     id: NonZeroU128,
-    robot_controllers: Vec<Box<dyn ApiServer>>,
+    robot_controllers: Vec<ApiServerEndpoint>,
     current_command: Option<(MessageId, usize)>,
     sender: Sender<GameEvent>,
     receiver: Receiver<GameEvent>,
@@ -41,7 +41,7 @@ impl Plugin {
         }
     }
 
-    pub fn add_robot_controller(&mut self, robot_controller: Box<dyn ApiServer>) {
+    pub fn add_robot_controller(&mut self, robot_controller: ApiServerEndpoint) {
         let api_name = robot_controller.api_name();
         assert_eq!(
             api_name, &ROBOT_API_NAME,

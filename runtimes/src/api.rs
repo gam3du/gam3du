@@ -135,15 +135,6 @@ pub enum Value {
     List(Box<Value>),
 }
 
-pub trait ApiServer: Send {
-    fn api_name(&self) -> &Identifier;
-
-    fn send_response(&mut self, id: MessageId, result: serde_json::Value);
-    fn send_error(&mut self, id: MessageId, message: String);
-
-    fn poll_request(&mut self) -> Option<ClientToServerMessage>;
-}
-
 /// Handles transmission of commands to [`ApiServerEndpoint`]s and provides methods for polling responses.
 pub struct ApiClientEndpoint {
     api: ApiDescriptor,
@@ -221,23 +212,21 @@ impl ApiServerEndpoint {
         }
     }
 
-    fn send_to_client(&mut self, message: impl Into<ServerToClientMessage>) {
+    pub fn send_to_client(&mut self, message: impl Into<ServerToClientMessage>) {
         self.sender.send(message.into()).unwrap();
     }
-}
 
-impl ApiServer for ApiServerEndpoint {
-    fn send_error(&mut self, id: MessageId, message: String) {
+    pub fn send_error(&mut self, id: MessageId, message: String) {
         let response = ErrorResponseMessage { id, message };
         self.send_to_client(response);
     }
 
-    fn send_response(&mut self, id: MessageId, result: serde_json::Value) {
+    pub fn send_response(&mut self, id: MessageId, result: serde_json::Value) {
         let response = ResponseMessage { id, result };
         self.send_to_client(response);
     }
 
-    fn poll_request(&mut self) -> Option<ClientToServerMessage> {
+    pub fn poll_request(&mut self) -> Option<ClientToServerMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
             Err(TryRecvError::Empty) => None,
@@ -245,7 +234,7 @@ impl ApiServer for ApiServerEndpoint {
         }
     }
 
-    fn api_name(&self) -> &Identifier {
+    pub fn api_name(&self) -> &Identifier {
         &self.api_name
     }
 }
