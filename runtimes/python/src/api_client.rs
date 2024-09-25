@@ -50,8 +50,8 @@ impl PrivateApi {
 }
 
 impl std::fmt::Debug for PrivateApi {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "PrivateApi {{ /* private */ }}")
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "PrivateApi {{ /* private */ }}")
     }
 }
 

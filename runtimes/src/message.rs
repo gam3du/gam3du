@@ -59,6 +59,7 @@ pub struct ResponseMessage {
 }
 
 /// Indicates that a request could not be made into a proper function call.
+///
 /// This is a programming error of the requester.
 /// Possible causes are: unknown recipient, unknown command, wrong argument configuration
 /// This message type exists to not overload framework-related errors with actual application errors.
