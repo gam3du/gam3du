@@ -24,9 +24,9 @@ pub use game_state::GameState;
 pub use render_state::RenderState;
 pub use renderer::{Renderer, RendererBuilder};
 
-use rustpython_vm::{pymodule, VirtualMachine};
+use rustpython_vm::{builtins::PyModule, pymodule, PyRef, VirtualMachine};
 
-pub fn make_module(vm: &VirtualMachine) -> rustpython_vm::PyRef<rustpython_vm::builtins::PyModule> {
+pub fn make_module(vm: &VirtualMachine) -> PyRef<PyModule> {
     engine_api::make_module(vm)
 }
 

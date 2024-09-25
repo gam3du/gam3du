@@ -775,7 +775,6 @@ dependencies = [
  "log",
  "rand",
  "runtimes",
- "rustpython",
  "rustpython-vm",
  "serde_json",
  "wgpu",
@@ -868,7 +867,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "324a1be68054ef05ad64b861cc9eaf1d623d2d8cb25b4bf2cb9cdd902b4bf253"
 dependencies = [
  "crc32fast",
- "libz-sys",
  "miniz_oxide",
 ]
 
@@ -1313,7 +1311,6 @@ dependencies = [
  "pollster",
  "runtime-python",
  "runtimes",
- "rustpython",
  "serde_json",
  "tiny_http",
  "winit",
@@ -1410,17 +1407,6 @@ name = "libsqlite3-sys"
 version = "0.28.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c10584274047cb335c23d3e61bcef8e323adae7c5c8c760540f73610177fc3f"
-dependencies = [
- "cc",
- "pkg-config",
- "vcpkg",
-]
-
-[[package]]
-name = "libz-sys"
-version = "1.1.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2d16453e800a8cf6dd2fc3eb4bc99b786a9b90c663b8559a5b1a041bf89e472"
 dependencies = [
  "cc",
  "pkg-config",
@@ -2517,7 +2503,6 @@ dependencies = [
  "num-complex",
  "num-traits",
  "once_cell",
- "parking_lot",
  "radium",
  "rand",
  "rustpython-format",
@@ -2710,7 +2695,6 @@ dependencies = [
  "junction",
  "libc",
  "libsqlite3-sys",
- "libz-sys",
  "mac_address",
  "malachite-bigint",
  "md-5",

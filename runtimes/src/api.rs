@@ -144,17 +144,6 @@ pub trait ApiServer: Send {
     fn poll_request(&mut self) -> Option<ClientToServerMessage>;
 }
 
-pub trait ApiClient: Send {
-    fn api(&self) -> &ApiDescriptor;
-    fn api_name(&self) -> &Identifier {
-        &self.api().name
-    }
-
-    fn send_command(&mut self, command: Identifier, arguments: Vec<Value>) -> MessageId;
-
-    fn poll_response(&mut self) -> Option<ServerToClientMessage>;
-}
-
 /// Handles transmission of commands to [`ApiServerEndpoint`]s and provides methods for polling responses.
 pub struct ApiClientEndpoint {
     api: ApiDescriptor,
@@ -178,17 +167,15 @@ impl ApiClientEndpoint {
         }
     }
 
-    fn send_to_server(&mut self, message: impl Into<ClientToServerMessage>) {
+    pub fn send_to_server(&self, message: impl Into<ClientToServerMessage>) {
         self.sender.send(message.into()).unwrap();
     }
-}
 
-impl ApiClient for ApiClientEndpoint {
-    fn api(&self) -> &ApiDescriptor {
+    pub fn api(&self) -> &ApiDescriptor {
         &self.api
     }
 
-    fn send_command(&mut self, command: Identifier, arguments: Vec<Value>) -> MessageId {
+    pub fn send_command(&self, command: Identifier, arguments: Vec<Value>) -> MessageId {
         let id = thread_rng().r#gen();
 
         let request = RequestMessage {
@@ -202,7 +189,7 @@ impl ApiClient for ApiClientEndpoint {
         id
     }
 
-    fn poll_response(&mut self) -> Option<ServerToClientMessage> {
+    pub fn poll_response(&self) -> Option<ServerToClientMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
             Err(TryRecvError::Empty) => None,
