@@ -5,14 +5,16 @@ pub fn init_logger() {
     env_logger::builder()
         .filter_level(log::LevelFilter::Trace)
         // We keep wgpu at Error level, as it's very noisy.
-        .filter_module("wgpu_core", log::LevelFilter::Info)
+        .filter_module("wgpu_core", log::LevelFilter::Warn)
         // Workaround for https://github.com/gfx-rs/wgpu/issues/6043
         .filter_module("wgpu_core::device::resource", log::LevelFilter::Warn)
-        .filter_module("wgpu_hal", log::LevelFilter::Info)
+        .filter_module("wgpu_hal", log::LevelFilter::Warn)
         .filter_module("naga", log::LevelFilter::Info)
         .filter_module("calloop", log::LevelFilter::Info)
         .filter_module("rustpython_codegen", log::LevelFilter::Debug)
         .filter_module("rustpython_parser", log::LevelFilter::Debug)
+        .filter_module("runtime_python", log::LevelFilter::Debug)
+        .filter_module("rustpython_vm", log::LevelFilter::Debug)
         .parse_default_env()
         .init();
 }
