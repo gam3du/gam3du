@@ -43,7 +43,7 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let phase = (vertex.tex_coord.x * 2 - subseconds * 2.0 + y) * 1 * 3.1416;
     // let r = fract((vertex.tex_coord.x - subseconds * 2.0 + y) * 1);
 
-    let is_border = abs(vertex.tex_coord.y) > 0.9 || abs(vertex.tex_coord.x) > 0.8;
+    let is_border = abs(vertex.tex_coord.y) > 0.8 || abs(vertex.tex_coord.x) > 0.9;
 
     let darken = select(0.1, 0.8, is_border);
     let dark = mix(robot_color, vec4(0.0, 0.0, 0.0, 1.0), darken);

@@ -181,7 +181,7 @@ impl Default for Robot {
         let position = IVec3::new(0, 0, 0);
 
         Self {
-            color: Vec3::new(1.0, 1.0, 0.0),
+            color: Vec3::new(0.3, 0.3, 0.3),
             animation_position: position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
             current_animation: None,
             animation_angle: orientation.angle(),

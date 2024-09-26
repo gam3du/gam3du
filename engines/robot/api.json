@@ -128,7 +128,7 @@
       "returns": null
     },
     "paint tile": {
-      "name": "robot color rgb",
+      "name": "paint tile",
       "caption": "Fill the current tile with the robots current color",
       "description": "Fill the current tile with the robots current color",
       "parameters": [],

@@ -12,6 +12,9 @@ def turn_left(duration: int = 300):
 def turn_right(duration: int = 300):
 	return robot_api_internal.message("turn right", duration)
 
-def color_rgb(red: float, green: float, blue: float):
-	return robot_api_internal.message("color rgb", red, green, blue)
+def robot_color_rgb(red: float, green: float, blue: float):
+	return robot_api_internal.message("robot color rgb", red, green, blue)
+
+def paint_tile():
+	return robot_api_internal.message("paint tile")
 
