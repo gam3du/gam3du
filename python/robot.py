@@ -1,5 +1,7 @@
+import random
 from robot_api import (
-    color_rgb,
+    robot_color_rgb,
+    paint_tile,
     draw_forward,
     move_forward,
     turn_left,
@@ -19,14 +21,14 @@ turn_left()
 turn_left()
 
 for x in range(100):
-    color_rgb(0.8, 0.2, 0.2)
+    robot_color_rgb(random.random(), random.random(), random.random())
     draw_forward()
-    color_rgb(0.2, 0.8, 0.2)
+    paint_tile(paint_tile)
     draw_forward()
-    color_rgb(0.2, 0.2, 0.8)
+    paint_tile(paint_tile)
     turn_left()
     draw_forward()
-    color_rgb(0.8, 0.8, 0.2)
+    paint_tile(paint_tile)
     turn_left()
     turn_left()
     draw_forward()

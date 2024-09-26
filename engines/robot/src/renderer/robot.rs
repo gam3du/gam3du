@@ -24,6 +24,7 @@ pub(super) struct RobotRenderer {
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
+    robot_color_buf: wgpu::Buffer,
 }
 
 impl RobotRenderer {
@@ -85,6 +86,16 @@ impl RobotRenderer {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(4 * 4),
+                    },
+                    count: None,
+                },
             ],
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -109,6 +120,13 @@ impl RobotRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
+        let robot_color_bytes = [0_f32; 4];
+        let robot_color_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Robot Color Uniform Buffer"),
+            contents: bytemuck::cast_slice(&robot_color_bytes),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
             entries: &[
@@ -123,6 +141,10 @@ impl RobotRenderer {
                 wgpu::BindGroupEntry {
                     binding: 2,
                     resource: time_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: robot_color_buf.as_entire_binding(),
                 },
             ],
             label: None,
@@ -178,6 +200,7 @@ impl RobotRenderer {
             index_buf,
             index_count: u32::try_from(index_data.len()).unwrap(),
             time_buf,
+            robot_color_buf,
             bind_group,
             matrix_buf,
             pipeline,
@@ -198,6 +221,7 @@ impl RobotRenderer {
         );
 
         self.update_time(state.start_time, queue);
+        self.update_robot_color(state.robot_color, queue);
         self.update_matrix(projection, &state.camera, queue, position);
 
         render_pass.push_debug_group("Prepare data for draw.");
@@ -230,6 +254,14 @@ impl RobotRenderer {
     fn update_time(&self, start_time: Instant, queue: &wgpu::Queue) {
         let bytes = elapsed_as_vec(start_time);
         queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&bytes));
+    }
+
+    fn update_robot_color(&self, color: Vec4, queue: &wgpu::Queue) {
+        queue.write_buffer(
+            &self.robot_color_buf,
+            0,
+            bytemuck::cast_slice(color.as_ref()),
+        );
     }
 
     fn create_pipeline(

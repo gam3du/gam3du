@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use glam::Vec3;
+use glam::{Vec3, Vec4};
 
 use crate::{
     camera::Camera,
@@ -33,6 +33,7 @@ pub struct RenderState {
     pub(crate) tiles_tick: Tick,
     /// Our local copy of the game loop's `floor.tiles` field
     pub(crate) tiles: Vec<Tile>,
+    pub(crate) robot_color: Vec4,
     // pub robot_renderer: RobotRenderer,
     // pub floor_renderer: FloorRenderer,
 }
@@ -49,6 +50,7 @@ impl RenderState {
             animation_angle: game_state.robot.animation_angle,
             tiles_tick: game_state.tick,
             tiles: game_state.floor.tiles.clone(),
+            robot_color: (game_state.robot.color, 1.0).into(),
         }
     }
 
@@ -60,6 +62,8 @@ impl RenderState {
 
         self.animation_position = game_state.robot.animation_position;
         self.animation_angle = game_state.robot.animation_angle;
+        self.robot_color = (game_state.robot.color, 1.0).into();
+
         if game_state.floor.tainted > self.tiles_tick {
             self.tiles_tick = game_state.floor.tainted;
             self.tiles.clone_from(&game_state.floor.tiles);

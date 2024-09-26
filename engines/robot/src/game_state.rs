@@ -9,7 +9,7 @@ use std::{
 
 use animation::RobotAnimation;
 use floor::Floor;
-use glam::{IVec3, Vec3};
+use glam::{IVec3, Vec3, Vec4};
 use log::debug;
 
 use crate::{api::EngineApi, events::EventRegistries, tile::LineSegment};
@@ -53,12 +53,16 @@ impl GameState {
         });
     }
 
-    pub fn _color_rgb(&mut self, color: Vec3) {
+    pub fn _robot_color_rgb(&mut self, color: Vec3) {
+        self.robot.color = color;
+    }
+
+    pub fn _paint_tile(&mut self) {
         self.robot.complete_animation();
 
         let start_pos = self.robot.position;
         let start_index = Floor::to_index(start_pos).unwrap();
-        self.floor.tiles[start_index].set_color(color);
+        self.floor.tiles[start_index].set_color(self.robot.color);
         self.floor.tainted = self.tick;
     }
 
@@ -108,12 +112,14 @@ impl GameState {
 }
 
 impl EngineApi for GameState {
-    fn move_forward(&mut self, duration: u64) -> Result<(), String> {
+    fn move_forward(&mut self, duration: u64) -> bool {
         self._move_forward(false, Duration::from_millis(duration))
+            .is_ok()
     }
 
-    fn draw_forward(&mut self, duration: u64) -> Result<(), String> {
+    fn draw_forward(&mut self, duration: u64) -> bool {
         self._move_forward(true, Duration::from_millis(duration))
+            .is_ok()
     }
 
     fn turn_left(&mut self, duration: u64) {
@@ -124,8 +130,12 @@ impl EngineApi for GameState {
         self.turn(-1, Duration::from_millis(duration));
     }
 
-    fn color_rgb(&mut self, red: f32, green: f32, blue: f32) {
-        self._color_rgb(Vec3::new(red, green, blue));
+    fn robot_color_rgb(&mut self, red: f32, green: f32, blue: f32) {
+        self._robot_color_rgb(Vec3::new(red, green, blue));
+    }
+
+    fn paint_tile(&mut self) {
+        self._paint_tile();
     }
 }
 
@@ -133,6 +143,7 @@ pub(crate) struct Robot {
     pub(crate) animation_position: Vec3,
     pub(crate) animation_angle: f32,
     position: IVec3,
+    pub(crate) color: Vec3,
     orientation: Orientation,
     current_animation: Option<RobotAnimation>,
 }
@@ -170,6 +181,7 @@ impl Default for Robot {
         let position = IVec3::new(0, 0, 0);
 
         Self {
+            color: Vec3::new(1.0, 1.0, 0.0),
             animation_position: position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
             current_animation: None,
             animation_angle: orientation.angle(),

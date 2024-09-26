@@ -15,6 +15,10 @@ var r_color: texture_2d<u32>;
 @binding(2)
 var<uniform> time_vec: vec2<u32>;
 
+@group(0)
+@binding(3)
+var<uniform> robot_color: vec4<f32>;
+
 @vertex
 fn vs_main(
     @location(0) position: vec4<f32>,
@@ -36,11 +40,19 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let time = f32(time_vec.x) + subseconds;
 
     let y = abs(vertex.tex_coord.y);
-    let r = fract((vertex.tex_coord.x - subseconds * 2.0 + y) * 1);
-    return vec4(r * r, r * r * r, r, 1.0);
+    let phase = (vertex.tex_coord.x * 2 - subseconds * 2.0 + y) * 1 * 3.1416;
+    // let r = fract((vertex.tex_coord.x - subseconds * 2.0 + y) * 1);
+
+    let is_border = abs(vertex.tex_coord.y) > 0.9 || abs(vertex.tex_coord.x) > 0.8;
+
+    let darken = select(0.1, 0.8, is_border);
+    let dark = mix(robot_color, vec4(0.0, 0.0, 0.0, 1.0), darken);
+    let bright = mix(robot_color, vec4(1.0, 1.0, 1.0, 1.0), 0.1);
+
+    return mix(dark, bright, 0.5 + 0.5 * sin(phase)); // vec4(r * r, r * r * r, r, 1.0);
 }
 
 @fragment
 fn fs_wire(vertex: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.0, 0.5, 0.0, 0.5);
+    return robot_color;
 }

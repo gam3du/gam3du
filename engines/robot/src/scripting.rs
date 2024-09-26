@@ -4,6 +4,7 @@ use std::{
     sync::mpsc::{channel, Receiver, Sender, TryRecvError},
 };
 
+use glam::Vec3;
 use rand::{thread_rng, Rng};
 
 use runtimes::{
@@ -107,31 +108,23 @@ impl Plugin {
                                 let &Value::Integer(duration) = duration else {
                                     panic!("wrong argument");
                                 };
-                                match game_state.draw_forward(duration as u64) {
-                                    Ok(()) => {
-                                        self.current_command = Some((id, endpoint_index));
-                                        break 'next_endpoint;
-                                    }
-                                    Err(error) => {
-                                        // robot_api_endpoint.send_error(id, error);
-                                        robot_api_endpoint.send_response(id, Value::Boolean(false));
-                                    }
+                                if game_state.draw_forward(duration as u64) {
+                                    self.current_command = Some((id, endpoint_index));
+                                    break 'next_endpoint;
                                 }
+                                // robot_api_endpoint.send_error(id, error);
+                                robot_api_endpoint.send_response(id, Value::Boolean(false));
                             }
                             ("move forward", [duration]) => {
                                 let &Value::Integer(duration) = duration else {
                                     panic!("wrong argument");
                                 };
-                                match game_state.move_forward(duration as u64) {
-                                    Ok(()) => {
-                                        self.current_command = Some((id, endpoint_index));
-                                        break 'next_endpoint;
-                                    }
-                                    Err(error) => {
-                                        // robot_api_endpoint.send_error(id, error);
-                                        robot_api_endpoint.send_response(id, Value::Boolean(false));
-                                    }
+                                if game_state.move_forward(duration as u64) {
+                                    self.current_command = Some((id, endpoint_index));
+                                    break 'next_endpoint;
                                 }
+                                // robot_api_endpoint.send_error(id, error);
+                                robot_api_endpoint.send_response(id, Value::Boolean(false));
                             }
                             ("turn left", [duration]) => {
                                 let &Value::Integer(duration) = duration else {
@@ -149,7 +142,7 @@ impl Plugin {
                                 self.current_command = Some((id, endpoint_index));
                                 break 'next_endpoint;
                             }
-                            ("color rgb", [red, green, blue]) => {
+                            ("robot color rgb", [red, green, blue]) => {
                                 let &Value::Float(red) = red else {
                                     panic!("wrong argument");
                                 };
@@ -159,7 +152,11 @@ impl Plugin {
                                 let &Value::Float(blue) = blue else {
                                     panic!("wrong argument");
                                 };
-                                game_state.color_rgb(red, green, blue);
+                                game_state.robot.color = Vec3::new(red, green, blue);
+                                robot_api_endpoint.send_response(id, Value::Unit);
+                            }
+                            ("paint tile", []) => {
+                                game_state.paint_tile();
                                 robot_api_endpoint.send_response(id, Value::Unit);
                             }
                             (other, _) => {

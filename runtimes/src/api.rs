@@ -163,10 +163,12 @@ impl ApiClientEndpoint {
         self.sender.send(message.into()).unwrap();
     }
 
+    #[must_use]
     pub fn api(&self) -> &ApiDescriptor {
         &self.api
     }
 
+    #[must_use]
     pub fn send_command(&self, command: Identifier, arguments: Vec<Value>) -> MessageId {
         let id = thread_rng().r#gen();
 
@@ -181,6 +183,7 @@ impl ApiClientEndpoint {
         id
     }
 
+    #[must_use]
     pub fn poll_response(&self) -> Option<ServerToClientMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
@@ -235,6 +238,7 @@ impl ApiServerEndpoint {
         }
     }
 
+    #[must_use]
     pub fn api_name(&self) -> &Identifier {
         &self.api_name
     }

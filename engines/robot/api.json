@@ -101,30 +101,37 @@
       ],
       "returns": null
     },
-    "color rgb": {
-      "name": "color rgb",
-      "caption": "Colors the current tile",
-      "description": "Colors the current tile",
+    "robot color rgb": {
+      "name": "robot color rgb",
+      "caption": "Set the color of the robot",
+      "description": "Set the color of the robot",
       "parameters": [
         {
           "name": "red",
-          "caption": "Amount of red",
-          "description": "Amount of red",
+          "caption": "Amount of red (0.0 to 1.0)",
+          "description": "Amount of red (0.0 to 1.0)",
           "type": "Float"
         },
         {
           "name": "green",
-          "caption": "Amount of green",
-          "description": "Amount of green",
+          "caption": "Amount of green (0.0 to 1.0)",
+          "description": "Amount of green (0.0 to 1.0)",
           "type": "Float"
         },
         {
           "name": "blue",
-          "caption": "Amount of blue",
-          "description": "Amount of blue",
+          "caption": "Amount of blue (0.0 to 1.0)",
+          "description": "Amount of blue (0.0 to 1.0)",
           "type": "Float"
         }
       ],
+      "returns": null
+    },
+    "paint tile": {
+      "name": "robot color rgb",
+      "caption": "Fill the current tile with the robots current color",
+      "description": "Fill the current tile with the robots current color",
+      "parameters": [],
       "returns": null
     }
   }
