@@ -5,7 +5,7 @@
     reason = "TODO remove before release"
 )]
 
-use engine_robot::{GameLoop, Plugin, RendererBuilder};
+use engine_robot::{plugin::NativePlugin, GameLoop, RendererBuilder};
 use gam3du_framework::{
     api::{self, ApiDescriptor},
     application::Application,
@@ -47,7 +47,7 @@ fn main() {
         start_python_robot("engines/robot/api.json", "python", "robot");
 
     let mut game_loop = GameLoop::default();
-    let mut plugin = Plugin::new();
+    let mut plugin = NativePlugin::new();
     plugin.add_robot_controller(robot_api_engine_endpoint);
     game_loop.add_plugin(plugin);
 

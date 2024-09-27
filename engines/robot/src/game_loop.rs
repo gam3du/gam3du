@@ -1,4 +1,4 @@
-use crate::{game_state::GameState, scripting::Plugin};
+use crate::{game_state::GameState, plugin};
 use gam3du_framework::event::{ApplicationEvent, EngineEvent};
 use log::debug;
 use std::{
@@ -22,7 +22,7 @@ const TICK_DURATION: Duration = Duration::from_nanos(
 );
 
 /// The root object of a running engine
-pub struct GameLoop {
+pub struct GameLoop<Plugin: plugin::Plugin> {
     /// Contains the current state which will be updated by the game loop.
     /// This might be shared with renderers.
     /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
@@ -30,7 +30,7 @@ pub struct GameLoop {
     plugin: Option<Plugin>,
 }
 
-impl Default for GameLoop {
+impl<Plugin: plugin::Plugin> Default for GameLoop<Plugin> {
     fn default() -> Self {
         Self {
             game_state: Arc::new(RwLock::new(Box::new(GameState::default()))),
@@ -39,7 +39,7 @@ impl Default for GameLoop {
     }
 }
 
-impl GameLoop {
+impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
     pub fn run(mut self, event_source: &Receiver<EngineEvent>) {
         let mut time = Instant::now();
 

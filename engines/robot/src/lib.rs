@@ -2,7 +2,7 @@
 #![expect(
     clippy::indexing_slicing,
     clippy::todo,
-    clippy::panic,
+    // clippy::panic,
     // clippy::panic_in_result_fn,
     clippy::unwrap_used,
     clippy::unwrap_in_result,
@@ -15,14 +15,13 @@ mod camera;
 mod events;
 mod game_loop;
 mod game_state;
+pub mod plugin;
 mod projection;
 mod render_state;
 mod renderer;
-mod scripting;
 mod tile;
 
 pub use game_loop::GameLoop;
 pub use game_state::GameState;
 pub use render_state::RenderState;
 pub use renderer::{Renderer, RendererBuilder};
-pub use scripting::Plugin;

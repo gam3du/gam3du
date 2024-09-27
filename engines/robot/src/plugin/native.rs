@@ -12,10 +12,7 @@ use std::{
     sync::mpsc::{channel, Receiver, Sender, TryRecvError},
 };
 
-// this will be needed when running a python VM
-// thread_local! {
-//     pub(crate) static LOCKED_GAME_STATE: RefCell<GameState> = RefCell::default();
-// }
+use super::Plugin;
 
 const ROBOT_API_NAME: Identifier = Identifier(Cow::Borrowed("robot"));
 const CMD_MOVE_FORWARD: &str = "move forward";
@@ -59,7 +56,7 @@ impl<T> From<CommandError> for PendingResult<T, CommandError> {
     }
 }
 
-pub struct Plugin {
+pub struct NativePlugin {
     id: NonZeroU128,
     robot_controllers: Vec<ApiServerEndpoint>,
     current_command: Option<(RequestId, usize)>,
@@ -67,7 +64,7 @@ pub struct Plugin {
     receiver: Receiver<GameEvent>,
 }
 
-impl Plugin {
+impl NativePlugin {
     #[must_use]
     pub fn new() -> Self {
         let (sender, receiver) = channel();
@@ -79,7 +76,6 @@ impl Plugin {
             receiver,
         }
     }
-
     pub fn add_robot_controller(&mut self, robot_controller: ApiServerEndpoint) {
         let api_name = robot_controller.api_name();
         assert_eq!(
@@ -88,21 +84,17 @@ impl Plugin {
         );
         self.robot_controllers.push(robot_controller);
     }
+}
 
-    pub(crate) fn init(
-        &mut self,
-        game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>,
-    ) {
+impl Plugin for NativePlugin {
+    fn init(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
         game_state
             .event_registries
             .robot_stopped
             .subscribe(self.id, self.sender.clone());
     }
 
-    pub(crate) fn update(
-        &mut self,
-        game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>,
-    ) {
+    fn update(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
         'next_event: loop {
             match self.receiver.try_recv() {
                 Ok(GameEvent::RobotStopped) => {
@@ -138,7 +130,7 @@ impl Plugin {
                             arguments,
                         } = request;
 
-                        match Self::run_command(game_state, command, arguments) {
+                        match run_command(game_state, command, arguments) {
                             PendingResult::Ok(value) => {
                                 robot_api_endpoint.send_response(id, value);
                             }
@@ -162,122 +154,108 @@ impl Plugin {
         //     mem::swap(locked_state, game_state.as_mut());
         // });
     }
-
-    fn run_command(
-        game_state: &mut GameState,
-        command: Identifier,
-        mut arguments: Vec<Value>,
-    ) -> PendingResult<Value, CommandError> {
-        let mut arguments = arguments.drain(..);
-
-        match command.0.as_ref() {
-            CMD_DRAW_FORWARD => {
-                let Some(duration) = arguments.next() else {
-                    return CommandError::MissingArgument(command, "duration").into();
-                };
-
-                let Value::Integer(duration) = duration else {
-                    return CommandError::WrongArgumentType(command, "duration").into();
-                };
-
-                if game_state.draw_forward(duration as u64) {
-                    PendingResult::Pending
-                } else {
-                    PendingResult::Ok(Value::Boolean(false))
-                }
-            }
-            CMD_MOVE_FORWARD => {
-                let Some(duration) = arguments.next() else {
-                    return CommandError::MissingArgument(command, "duration").into();
-                };
-
-                let Value::Integer(duration) = duration else {
-                    return CommandError::WrongArgumentType(command, "duration").into();
-                };
-
-                if game_state.move_forward(duration as u64) {
-                    PendingResult::Pending
-                } else {
-                    PendingResult::Ok(Value::Boolean(false))
-                }
-            }
-            CMD_TURN_LEFT => {
-                let Some(duration) = arguments.next() else {
-                    return CommandError::MissingArgument(command, "duration").into();
-                };
-
-                let Value::Integer(duration) = duration else {
-                    return CommandError::WrongArgumentType(command, "duration").into();
-                };
-
-                game_state.turn_left(duration as u64);
-                PendingResult::Pending
-            }
-            CMD_TURN_RIGHT => {
-                let Some(duration) = arguments.next() else {
-                    return CommandError::MissingArgument(command, "duration").into();
-                };
-
-                let Value::Integer(duration) = duration else {
-                    return CommandError::WrongArgumentType(command, "duration").into();
-                };
-
-                game_state.turn_right(duration as u64);
-                PendingResult::Pending
-            }
-            CMD_ROBOT_COLOR_RGB => {
-                let Some(red) = arguments.next() else {
-                    return CommandError::MissingArgument(command, "red").into();
-                };
-
-                let Value::Float(red) = red else {
-                    return CommandError::WrongArgumentType(command, "red").into();
-                };
-
-                let Some(green) = arguments.next() else {
-                    return CommandError::MissingArgument(command, "green").into();
-                };
-
-                let Value::Float(green) = green else {
-                    return CommandError::WrongArgumentType(command, "green").into();
-                };
-
-                let Some(blue) = arguments.next() else {
-                    return CommandError::MissingArgument(command, "blue").into();
-                };
-
-                let Value::Float(blue) = blue else {
-                    return CommandError::WrongArgumentType(command, "blue").into();
-                };
-
-                game_state.robot.color = Vec3::new(red, green, blue);
-                PendingResult::Ok(Value::Unit)
-            }
-            CMD_PAINT_TILE => {
-                game_state.paint_tile();
-                PendingResult::Ok(Value::Unit)
-            }
-            _ => CommandError::UnknownCommand(command).into(),
-        }
-    }
 }
 
-impl Default for Plugin {
+impl Default for NativePlugin {
     fn default() -> Self {
         Self::new()
     }
 }
 
-// pub fn make_module(vm: &VirtualMachine) -> rustpython_vm::PyRef<rustpython_vm::builtins::PyModule> {
-//     engine_api::make_module(vm)
-// }
+fn run_command(
+    game_state: &mut GameState,
+    command: Identifier,
+    mut arguments: Vec<Value>,
+) -> PendingResult<Value, CommandError> {
+    let mut arguments = arguments.drain(..);
 
-// #[pymodule]
-// pub mod engine_api {
+    match command.0.as_ref() {
+        CMD_DRAW_FORWARD => {
+            let Some(duration) = arguments.next() else {
+                return CommandError::MissingArgument(command, "duration").into();
+            };
 
-//     #[pyfunction]
-//     fn get_current_fps() {
-//         // just forward to a location outside of this macro so that the IDE can assist us
-//         // super::message(name, args, kwargs, vm)
-//     }
-// }
+            let Value::Integer(duration) = duration else {
+                return CommandError::WrongArgumentType(command, "duration").into();
+            };
+
+            if game_state.draw_forward(duration as u64) {
+                PendingResult::Pending
+            } else {
+                PendingResult::Ok(Value::Boolean(false))
+            }
+        }
+        CMD_MOVE_FORWARD => {
+            let Some(duration) = arguments.next() else {
+                return CommandError::MissingArgument(command, "duration").into();
+            };
+
+            let Value::Integer(duration) = duration else {
+                return CommandError::WrongArgumentType(command, "duration").into();
+            };
+
+            if game_state.move_forward(duration as u64) {
+                PendingResult::Pending
+            } else {
+                PendingResult::Ok(Value::Boolean(false))
+            }
+        }
+        CMD_TURN_LEFT => {
+            let Some(duration) = arguments.next() else {
+                return CommandError::MissingArgument(command, "duration").into();
+            };
+
+            let Value::Integer(duration) = duration else {
+                return CommandError::WrongArgumentType(command, "duration").into();
+            };
+
+            game_state.turn_left(duration as u64);
+            PendingResult::Pending
+        }
+        CMD_TURN_RIGHT => {
+            let Some(duration) = arguments.next() else {
+                return CommandError::MissingArgument(command, "duration").into();
+            };
+
+            let Value::Integer(duration) = duration else {
+                return CommandError::WrongArgumentType(command, "duration").into();
+            };
+
+            game_state.turn_right(duration as u64);
+            PendingResult::Pending
+        }
+        CMD_ROBOT_COLOR_RGB => {
+            let Some(red) = arguments.next() else {
+                return CommandError::MissingArgument(command, "red").into();
+            };
+
+            let Value::Float(red) = red else {
+                return CommandError::WrongArgumentType(command, "red").into();
+            };
+
+            let Some(green) = arguments.next() else {
+                return CommandError::MissingArgument(command, "green").into();
+            };
+
+            let Value::Float(green) = green else {
+                return CommandError::WrongArgumentType(command, "green").into();
+            };
+
+            let Some(blue) = arguments.next() else {
+                return CommandError::MissingArgument(command, "blue").into();
+            };
+
+            let Value::Float(blue) = blue else {
+                return CommandError::WrongArgumentType(command, "blue").into();
+            };
+
+            game_state.robot.color = Vec3::new(red, green, blue);
+            PendingResult::Ok(Value::Unit)
+        }
+        CMD_PAINT_TILE => {
+            game_state.paint_tile();
+            PendingResult::Ok(Value::Unit)
+        }
+        _ => CommandError::UnknownCommand(command).into(),
+    }
+}
