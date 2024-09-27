@@ -19,4 +19,5 @@ mod graphics_context;
 pub mod logging;
 pub mod message;
 pub mod module;
+pub mod renderer;
 mod surface_wrapper;

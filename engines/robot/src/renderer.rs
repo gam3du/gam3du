@@ -3,6 +3,7 @@ mod robot;
 
 use crate::{projection::Projection, GameState, RenderState};
 use floor::FloorRenderer;
+use gam3du_framework::renderer;
 use robot::RobotRenderer;
 use std::{
     sync::{Arc, RwLock},
@@ -20,7 +21,7 @@ impl RendererBuilder {
     }
 }
 
-impl engines::RendererBuilder for RendererBuilder {
+impl renderer::RendererBuilder for RendererBuilder {
     type Renderer = Renderer;
 
     #[must_use]
@@ -152,7 +153,7 @@ impl Renderer {
     }
 }
 
-impl engines::Renderer for Renderer {
+impl renderer::Renderer for Renderer {
     fn update(&mut self) {
         self.state.update(&self.game_state.read().unwrap());
     }

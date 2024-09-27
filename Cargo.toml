@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
 members = [
-    "engines",
     "engines/robot",
     "framework",
     "launchers/robot",
@@ -19,7 +18,6 @@ readme = "README.md"
 
 [workspace.dependencies]
 runtime-python = { path = "runtimes/python" }
-engines = { path = "engines" }
 engine-robot = { path = "engines/robot" }
 gam3du-framework = { path = "framework" }
 

@@ -7,7 +7,6 @@ rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]
-engines.workspace = true
 serde = { workspace = true, features = ["derive"] }
 winit.workspace = true
 serde_json.workspace = true

@@ -9,7 +9,6 @@ license-file.workspace = true
 [dependencies]
 rand.workspace = true
 gam3du-framework.workspace = true
-engines.workspace = true
 bytemuck = { workspace = true, features = ["derive"] }
 wgpu.workspace = true
 log.workspace = true

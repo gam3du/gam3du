@@ -769,20 +769,12 @@ name = "engine-robot"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
- "engines",
  "gam3du-framework",
  "glam",
  "log",
  "rand",
  "rustpython-vm",
  "serde_json",
- "wgpu",
-]
-
-[[package]]
-name = "engines"
-version = "0.1.0"
-dependencies = [
  "wgpu",
 ]
 
@@ -900,7 +892,6 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 name = "gam3du-framework"
 version = "0.1.0"
 dependencies = [
- "engines",
  "env_logger 0.11.5",
  "indexmap",
  "log",

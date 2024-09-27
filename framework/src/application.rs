@@ -1,9 +1,9 @@
 use crate::{
     event::{ApplicationEvent, EngineEvent},
     graphics_context::GraphicsContext,
+    renderer::{self, Renderer},
     surface_wrapper::SurfaceWrapper,
 };
-use engines::Renderer;
 use log::{debug, info, trace};
 use std::{
     sync::{mpsc::Sender, Arc},
@@ -18,7 +18,7 @@ use winit::{
     window::{Window, WindowAttributes, WindowId},
 };
 
-pub struct Application<RendererBuilder: engines::RendererBuilder> {
+pub struct Application<RendererBuilder: renderer::RendererBuilder> {
     renderer_builder: RendererBuilder,
     renderer: Option<RendererBuilder::Renderer>,
     pub(super) surface: SurfaceWrapper,
@@ -30,7 +30,7 @@ pub struct Application<RendererBuilder: engines::RendererBuilder> {
     event_sink: Sender<EngineEvent>,
 }
 
-impl<RendererBuilder: engines::RendererBuilder> Application<RendererBuilder> {
+impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
     pub async fn new(
         title: String,
         event_sender: Sender<EngineEvent>,
@@ -66,7 +66,7 @@ impl<RendererBuilder: engines::RendererBuilder> Application<RendererBuilder> {
     }
 }
 
-impl<RendererBuilder: engines::RendererBuilder> ApplicationHandler<EngineEvent>
+impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<EngineEvent>
     for Application<RendererBuilder>
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
