@@ -1,12 +1,13 @@
 use crate::{api::EngineApi, events::GameEvent, GameState};
 use gam3du_framework::{
     api::{ApiServerEndpoint, Identifier, Value},
-    message::{ClientToServerMessage, RequestId, RequestMessage},
+    message::{ClientToServerMessage, PendingResult, RequestId, RequestMessage},
 };
 use glam::Vec3;
 use rand::{thread_rng, Rng};
 use std::{
     borrow::Cow,
+    fmt::{self, Display},
     num::NonZeroU128,
     sync::mpsc::{channel, Receiver, Sender, TryRecvError},
 };
@@ -17,6 +18,46 @@ use std::{
 // }
 
 const ROBOT_API_NAME: Identifier = Identifier(Cow::Borrowed("robot"));
+const CMD_MOVE_FORWARD: &str = "move forward";
+const CMD_DRAW_FORWARD: &str = "draw forward";
+const CMD_TURN_LEFT: &str = "turn left";
+const CMD_TURN_RIGHT: &str = "turn right";
+const CMD_PAINT_TILE: &str = "paint tile";
+const CMD_ROBOT_COLOR_RGB: &str = "robot color rgb";
+
+enum CommandError {
+    UnknownCommand(Identifier),
+    MissingArgument(Identifier, &'static str),
+    WrongArgumentType(Identifier, &'static str),
+}
+
+impl Display for CommandError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnknownCommand(command) => {
+                write!(formatter, "Unknown Command: {command}")
+            }
+            Self::MissingArgument(command, parameter) => {
+                write!(
+                    formatter,
+                    "Missing `{parameter}` argument for command `{command}`"
+                )
+            }
+            Self::WrongArgumentType(command, parameter) => {
+                write!(
+                    formatter,
+                    "Argument `{parameter}` for command `{command}` has wrong type"
+                )
+            }
+        }
+    }
+}
+
+impl<T> From<CommandError> for PendingResult<T, CommandError> {
+    fn from(value: CommandError) -> Self {
+        Self::Error(value)
+    }
+}
 
 pub struct Plugin {
     id: NonZeroU128,
@@ -92,88 +133,23 @@ impl Plugin {
                 match robot_api_endpoint.poll_request() {
                     Some(ClientToServerMessage::Request(request)) => {
                         let RequestMessage {
-                            // TODO remember id to send a matching response once the command completed
                             id,
                             command,
                             arguments,
                         } = request;
 
-                        // let process_command = {
-                        // let command: &Identifier = &command;
-                        match (command.0.as_ref(), arguments.as_slice()) {
-                            ("draw forward", [duration]) => {
-                                let &Value::Integer(duration) = duration else {
-                                    panic!("wrong argument");
-                                };
-                                if game_state.draw_forward(duration as u64) {
-                                    self.current_command = Some((id, endpoint_index));
-                                    break 'next_endpoint;
-                                }
-                                // robot_api_endpoint.send_error(id, error);
-                                robot_api_endpoint.send_response(id, Value::Boolean(false));
+                        match Self::run_command(game_state, command, arguments) {
+                            PendingResult::Ok(value) => {
+                                robot_api_endpoint.send_response(id, value);
                             }
-                            ("move forward", [duration]) => {
-                                let &Value::Integer(duration) = duration else {
-                                    panic!("wrong argument");
-                                };
-                                if game_state.move_forward(duration as u64) {
-                                    self.current_command = Some((id, endpoint_index));
-                                    break 'next_endpoint;
-                                }
-                                // robot_api_endpoint.send_error(id, error);
-                                robot_api_endpoint.send_response(id, Value::Boolean(false));
-                            }
-                            ("turn left", [duration]) => {
-                                let &Value::Integer(duration) = duration else {
-                                    panic!("wrong argument");
-                                };
-                                game_state.turn_left(duration as u64);
+                            PendingResult::Pending => {
                                 self.current_command = Some((id, endpoint_index));
                                 break 'next_endpoint;
                             }
-                            ("turn right", [duration]) => {
-                                let &Value::Integer(duration) = duration else {
-                                    panic!("wrong argument");
-                                };
-                                game_state.turn_right(duration as u64);
-                                self.current_command = Some((id, endpoint_index));
-                                break 'next_endpoint;
-                            }
-                            ("robot color rgb", [red, green, blue]) => {
-                                let &Value::Float(red) = red else {
-                                    panic!("wrong argument");
-                                };
-                                let &Value::Float(green) = green else {
-                                    panic!("wrong argument");
-                                };
-                                let &Value::Float(blue) = blue else {
-                                    panic!("wrong argument");
-                                };
-                                game_state.robot.color = Vec3::new(red, green, blue);
-                                robot_api_endpoint.send_response(id, Value::Unit);
-                            }
-                            ("paint tile", []) => {
-                                game_state.paint_tile();
-                                robot_api_endpoint.send_response(id, Value::Unit);
-                            }
-                            (other, _) => {
-                                robot_api_endpoint
-                                    .send_error(id, format!("Unknown Command: {other}"));
+                            PendingResult::Error(error) => {
+                                robot_api_endpoint.send_error(id, error);
                             }
                         }
-                        // };
-                        // match process_command {
-                        //     Ok(Some(())) => {
-                        //         robot_api_endpoint.send_response(id, Value::Null);
-                        //     }
-                        //     Ok(None) => {
-                        //         self.current_command = Some((id, endpoint_index));
-                        //         break 'next_endpoint;
-                        //     }
-                        //     Err(error) => {
-                        //         robot_api_endpoint.send_error(id, error);
-                        //     }
-                        // }
                     }
                     None => break 'next_robot_api_event,
                 }
@@ -187,56 +163,103 @@ impl Plugin {
         // });
     }
 
-    // pub(crate) fn process_command(
-    //     game_state: &mut GameState,
-    //     command: &Identifier,
-    //     arguments: &[Value],
-    // ) -> Result<Option<()>, String> {
-    //     match (command.0.as_ref(), arguments) {
-    //         ("draw forward", [duration]) => {
-    //             let &Value::Integer(duration) = duration else {
-    //                 panic!("wrong argument");
-    //             };
-    //             game_state.draw_forward(duration as u64)?;
-    //             Ok(None)
-    //         }
-    //         ("move forward", [duration]) => {
-    //             let &Value::Integer(duration) = duration else {
-    //                 panic!("wrong argument");
-    //             };
-    //             game_state.move_forward(duration as u64)?;
-    //             Ok(None)
-    //         }
-    //         ("turn left", [duration]) => {
-    //             let &Value::Integer(duration) = duration else {
-    //                 panic!("wrong argument");
-    //             };
-    //             game_state.turn_left(duration as u64);
-    //             Ok(None)
-    //         }
-    //         ("turn right", [duration]) => {
-    //             let &Value::Integer(duration) = duration else {
-    //                 panic!("wrong argument");
-    //             };
-    //             game_state.turn_right(duration as u64);
-    //             Ok(None)
-    //         }
-    //         ("color rgb", [red, green, blue]) => {
-    //             let &Value::Float(red) = red else {
-    //                 panic!("wrong argument");
-    //             };
-    //             let &Value::Float(green) = green else {
-    //                 panic!("wrong argument");
-    //             };
-    //             let &Value::Float(blue) = blue else {
-    //                 panic!("wrong argument");
-    //             };
-    //             game_state.color_rgb(red, green, blue);
-    //             Ok(Some(()))
-    //         }
-    //         (other, _) => Err(format!("Unknown Command: {other}")),
-    //     }
-    // }
+    fn run_command(
+        game_state: &mut GameState,
+        command: Identifier,
+        mut arguments: Vec<Value>,
+    ) -> PendingResult<Value, CommandError> {
+        let mut arguments = arguments.drain(..);
+
+        match command.0.as_ref() {
+            CMD_DRAW_FORWARD => {
+                let Some(duration) = arguments.next() else {
+                    return CommandError::MissingArgument(command, "duration").into();
+                };
+
+                let Value::Integer(duration) = duration else {
+                    return CommandError::WrongArgumentType(command, "duration").into();
+                };
+
+                if game_state.draw_forward(duration as u64) {
+                    PendingResult::Pending
+                } else {
+                    PendingResult::Ok(Value::Boolean(false))
+                }
+            }
+            CMD_MOVE_FORWARD => {
+                let Some(duration) = arguments.next() else {
+                    return CommandError::MissingArgument(command, "duration").into();
+                };
+
+                let Value::Integer(duration) = duration else {
+                    return CommandError::WrongArgumentType(command, "duration").into();
+                };
+
+                if game_state.move_forward(duration as u64) {
+                    PendingResult::Pending
+                } else {
+                    PendingResult::Ok(Value::Boolean(false))
+                }
+            }
+            CMD_TURN_LEFT => {
+                let Some(duration) = arguments.next() else {
+                    return CommandError::MissingArgument(command, "duration").into();
+                };
+
+                let Value::Integer(duration) = duration else {
+                    return CommandError::WrongArgumentType(command, "duration").into();
+                };
+
+                game_state.turn_left(duration as u64);
+                PendingResult::Pending
+            }
+            CMD_TURN_RIGHT => {
+                let Some(duration) = arguments.next() else {
+                    return CommandError::MissingArgument(command, "duration").into();
+                };
+
+                let Value::Integer(duration) = duration else {
+                    return CommandError::WrongArgumentType(command, "duration").into();
+                };
+
+                game_state.turn_right(duration as u64);
+                PendingResult::Pending
+            }
+            CMD_ROBOT_COLOR_RGB => {
+                let Some(red) = arguments.next() else {
+                    return CommandError::MissingArgument(command, "red").into();
+                };
+
+                let Value::Float(red) = red else {
+                    return CommandError::WrongArgumentType(command, "red").into();
+                };
+
+                let Some(green) = arguments.next() else {
+                    return CommandError::MissingArgument(command, "green").into();
+                };
+
+                let Value::Float(green) = green else {
+                    return CommandError::WrongArgumentType(command, "green").into();
+                };
+
+                let Some(blue) = arguments.next() else {
+                    return CommandError::MissingArgument(command, "blue").into();
+                };
+
+                let Value::Float(blue) = blue else {
+                    return CommandError::WrongArgumentType(command, "blue").into();
+                };
+
+                game_state.robot.color = Vec3::new(red, green, blue);
+                PendingResult::Ok(Value::Unit)
+            }
+            CMD_PAINT_TILE => {
+                game_state.paint_tile();
+                PendingResult::Ok(Value::Unit)
+            }
+            _ => CommandError::UnknownCommand(command).into(),
+        }
+    }
 }
 
 impl Default for Plugin {
@@ -244,89 +267,6 @@ impl Default for Plugin {
         Self::new()
     }
 }
-
-// const API_NAME: Identifier = Identifier(Cow::Borrowed("robot"));
-
-// pub(crate) struct EngineApiClient {
-//     response: Option<ServerToClientMessage>,
-//     game_state: Arc<RwLock<GameState>>,
-// }
-
-// impl EngineApiClient {
-//     pub(crate) fn new(game_state: &Arc<RwLock<GameState>>) -> Self {
-//         Self {
-//             response: None,
-//             game_state: Arc::clone(game_state),
-//         }
-//     }
-// }
-
-// impl ApiClient for EngineApiClient {
-//     fn api(&self) -> &runtimes::api::ApiDescriptor {
-//         todo!()
-//     }
-
-//     fn api_name(&self) -> &Identifier {
-//         &API_NAME
-//     }
-
-//     fn send_command(
-//         &mut self,
-//         command: Identifier,
-//         _arguments: Vec<runtimes::api::Value>,
-//     ) -> MessageId {
-//         let command_id = rand::thread_rng().r#gen();
-//         let mut game_state = self.game_state.write().unwrap();
-
-//         match command.0.as_ref() {
-//             "draw forward" => {
-//                 game_state.move_forward(command_id, true).unwrap();
-//             }
-//             "move forward" => {
-//                 game_state.move_forward(command_id, false).unwrap();
-//             }
-//             "turn left" => {
-//                 game_state.turn_left(command_id);
-//             }
-//             "turn right" => {
-//                 game_state.turn_right(command_id);
-//             }
-//             "color black" => {
-//                 game_state.color(command_id, Vec3::new(0.2, 0.2, 0.2));
-//             }
-//             "color red" => {
-//                 game_state.color(command_id, Vec3::new(0.8, 0.2, 0.2));
-//             }
-//             "color green" => {
-//                 game_state.color(command_id, Vec3::new(0.2, 0.8, 0.2));
-//             }
-//             "color yellow" => {
-//                 game_state.color(command_id, Vec3::new(0.8, 0.8, 0.2));
-//             }
-//             "color blue" => {
-//                 game_state.color(command_id, Vec3::new(0.2, 0.2, 0.8));
-//             }
-//             "color magenta" => {
-//                 game_state.color(command_id, Vec3::new(0.8, 0.0, 0.8));
-//             }
-//             "color cyan" => {
-//                 game_state.color(command_id, Vec3::new(0.2, 0.8, 0.8));
-//             }
-//             "color white" => {
-//                 game_state.color(command_id, Vec3::new(0.8, 0.8, 0.8));
-//             }
-//             other => {
-//                 panic!("Unknown Command: {other}");
-//             }
-//         };
-
-//         command_id
-//     }
-
-//     fn poll_response(&mut self) -> Option<ServerToClientMessage> {
-//         self.response.take()
-//     }
-// }
 
 // pub fn make_module(vm: &VirtualMachine) -> rustpython_vm::PyRef<rustpython_vm::builtins::PyModule> {
 //     engine_api::make_module(vm)

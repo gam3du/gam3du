@@ -98,3 +98,15 @@ impl From<RequestMessage> for ClientToServerMessage {
         Self::Request(value)
     }
 }
+
+/// A little helper for the common case that a command's result might have a third `Future` state,
+/// indicating the command has been accepted but the actual result will arrive later.
+///
+/// This allows execution of asynchronous commands without the communication overhead for trivial cases.
+#[derive(Debug, Clone)]
+#[must_use]
+pub enum PendingResult<T, Error> {
+    Ok(T),
+    Pending,
+    Error(Error),
+}

@@ -209,8 +209,15 @@ impl ApiServerEndpoint {
         self.sender.send(message.into()).unwrap();
     }
 
-    pub fn send_error(&mut self, id: RequestId, message: String) {
-        let response = ErrorResponseMessage { id, message };
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "passing a reference would make it impossible to pass a `String` without cloning"
+    )]
+    pub fn send_error(&mut self, id: RequestId, message: impl ToString) {
+        let response = ErrorResponseMessage {
+            id,
+            message: message.to_string(),
+        };
         self.send_to_client(response);
     }
 
