@@ -6,11 +6,10 @@
 )]
 
 use crate::message::{
-    ClientToServerMessage, ErrorResponseMessage, MessageId, RequestMessage, ResponseMessage,
+    ClientToServerMessage, ErrorResponseMessage, RequestId, RequestMessage, ResponseMessage,
     ServerToClientMessage,
 };
 use indexmap::IndexMap as HashMap;
-use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
@@ -166,17 +165,10 @@ impl ApiClientEndpoint {
     }
 
     #[must_use]
-    pub fn send_command(&self, command: Identifier, arguments: Vec<Value>) -> MessageId {
-        let id = thread_rng().r#gen();
-
-        let request = RequestMessage {
-            id,
-            command,
-            arguments,
-        };
-
+    pub fn send_command(&self, command: Identifier, arguments: Vec<Value>) -> RequestId {
+        let request = RequestMessage::new(command, arguments);
+        let id = request.id;
         self.send_to_server(request);
-
         id
     }
 
@@ -217,12 +209,12 @@ impl ApiServerEndpoint {
         self.sender.send(message.into()).unwrap();
     }
 
-    pub fn send_error(&mut self, id: MessageId, message: String) {
+    pub fn send_error(&mut self, id: RequestId, message: String) {
         let response = ErrorResponseMessage { id, message };
         self.send_to_client(response);
     }
 
-    pub fn send_response(&mut self, id: MessageId, result: Value) {
+    pub fn send_response(&mut self, id: RequestId, result: Value) {
         let response = ResponseMessage { id, result };
         self.send_to_client(response);
     }

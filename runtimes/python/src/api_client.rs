@@ -156,7 +156,6 @@ fn message(
             let error = vm.new_runtime_error(message);
             Err(error)
         }
-        ServerToClientMessage::Event(_) => todo!(),
     }
 }
 

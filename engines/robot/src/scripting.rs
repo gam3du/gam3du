@@ -1,7 +1,7 @@
 use crate::{api::EngineApi, events::GameEvent, GameState};
 use gam3du_framework::{
     api::{ApiServerEndpoint, Identifier, Value},
-    message::{ClientToServerMessage, MessageId, RequestMessage},
+    message::{ClientToServerMessage, RequestId, RequestMessage},
 };
 use glam::Vec3;
 use rand::{thread_rng, Rng};
@@ -21,7 +21,7 @@ const ROBOT_API_NAME: Identifier = Identifier(Cow::Borrowed("robot"));
 pub struct Plugin {
     id: NonZeroU128,
     robot_controllers: Vec<ApiServerEndpoint>,
-    current_command: Option<(MessageId, usize)>,
+    current_command: Option<(RequestId, usize)>,
     sender: Sender<GameEvent>,
     receiver: Receiver<GameEvent>,
 }
