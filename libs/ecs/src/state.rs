@@ -1,6 +1,5 @@
-use std::{collections::HashMap, mem};
-
 use super::{entity::Entity, event_subscriber::EventSubscriber};
+use std::{collections::HashMap, mem};
 
 pub struct State {
     pub(crate) stop: bool,

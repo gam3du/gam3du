@@ -1,6 +1,6 @@
 use crate::{game_state::GameState, scripting::Plugin};
+use gam3du_framework::event::{ApplicationEvent, EngineEvent};
 use log::debug;
-use runtimes::event::{ApplicationEvent, EngineEvent};
 use std::{
     sync::{
         mpsc::{Receiver, TryRecvError},

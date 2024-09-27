@@ -1,8 +1,7 @@
-use std::io::{self, Write};
-
-use runtimes::api::{
+use gam3du_framework::api::{
     ApiDescriptor, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
 };
+use std::io::{self, Write};
 
 pub fn generate(out: &mut impl Write, api: &ApiDescriptor) -> io::Result<()> {
     // TODO add documentation comments for api

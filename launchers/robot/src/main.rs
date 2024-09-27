@@ -5,17 +5,22 @@
     reason = "TODO remove before release"
 )]
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::Sender;
-use std::{sync::mpsc::channel, thread};
-
 use engine_robot::{GameLoop, Plugin, RendererBuilder};
-use gam3du_framework::application::Application;
-use gam3du_framework::logging::init_logger;
+use gam3du_framework::{
+    api::{self, ApiDescriptor},
+    application::Application,
+    event::{ApplicationEvent, EngineEvent},
+    logging::init_logger,
+};
 use log::{debug, error};
 use runtime_python::{PythonRunnerThread, PythonRuntimeBuilder};
-use runtimes::api::{self, ApiDescriptor};
-use runtimes::event::{ApplicationEvent, EngineEvent};
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        mpsc::{channel, Sender},
+    },
+    thread,
+};
 use winit::event_loop::{ControlFlow, EventLoop};
 
 static EXIT_FLAG: AtomicBool = AtomicBool::new(false);

@@ -1,6 +1,5 @@
-use std::{any::TypeId, collections::HashMap, mem};
-
 use super::{component::Component, state::State};
+use std::{any::TypeId, collections::HashMap, mem};
 
 pub struct Entity {
     #[expect(

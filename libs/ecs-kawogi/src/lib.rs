@@ -6,14 +6,13 @@
     reason = "TODO remove and fix, once this design makes it into production"
 )]
 
+use glam::Vec3;
 use std::{
     collections::{hash_map, HashMap},
     num::NonZeroU64,
     sync::atomic::{AtomicU64, Ordering},
     time::Duration,
 };
-
-use glam::Vec3;
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 struct EntityId(NonZeroU64);

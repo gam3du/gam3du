@@ -1,7 +1,5 @@
+use crate::{component::Component, state::State};
 use glam::Vec3;
-
-use crate::component::Component;
-use crate::state::State;
 
 pub struct TransformComponent {
     pub position: Vec3,

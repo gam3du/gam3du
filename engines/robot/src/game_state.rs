@@ -1,18 +1,16 @@
 mod animation;
 mod floor;
 
+use crate::{api::EngineApi, events::EventRegistries, tile::LineSegment};
+use animation::RobotAnimation;
+use floor::Floor;
+use glam::{IVec3, Vec3};
+use log::debug;
 use std::{
     f32::consts::TAU,
     ops::{AddAssign, SubAssign},
     time::{Duration, Instant},
 };
-
-use animation::RobotAnimation;
-use floor::Floor;
-use glam::{IVec3, Vec3, Vec4};
-use log::debug;
-
-use crate::{api::EngineApi, events::EventRegistries, tile::LineSegment};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub(crate) struct Tick(pub(crate) u64);

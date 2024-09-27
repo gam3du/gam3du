@@ -1,6 +1,10 @@
+use crate::{
+    event::{ApplicationEvent, EngineEvent},
+    graphics_context::GraphicsContext,
+    surface_wrapper::SurfaceWrapper,
+};
 use engines::Renderer;
 use log::{debug, info, trace};
-use runtimes::event::{ApplicationEvent, EngineEvent};
 use std::{
     sync::{mpsc::Sender, Arc},
     time::{Duration, Instant},
@@ -13,8 +17,6 @@ use winit::{
     keyboard::{Key, NamedKey},
     window::{Window, WindowAttributes, WindowId},
 };
-
-use crate::{graphics_context::GraphicsContext, surface_wrapper::SurfaceWrapper};
 
 pub struct Application<RendererBuilder: engines::RendererBuilder> {
     renderer_builder: RendererBuilder,

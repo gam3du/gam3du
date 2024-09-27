@@ -1,8 +1,6 @@
-use glam::IVec3;
-
-use crate::tile::{tile, LinePattern, Tile};
-
 use super::Tick;
+use crate::tile::{tile, LinePattern, Tile};
+use glam::IVec3;
 
 pub(crate) struct Floor {
     pub(crate) tiles: Vec<Tile>,

@@ -1,11 +1,10 @@
+use super::state::State;
 use std::{
     mem,
     sync::{Arc, RwLock, RwLockWriteGuard},
     thread,
     time::Instant,
 };
-
-use super::state::State;
 
 #[derive(Default)]
 pub(crate) struct ApplicationRuntime;

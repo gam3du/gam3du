@@ -2,18 +2,17 @@
     clippy::allow_attributes_without_reason,
     reason = "false positives for Pod/Zeroable macros"
 )]
-use std::mem::size_of;
 
+use crate::{
+    camera::Camera,
+    projection::Projection,
+    renderer::{elapsed_as_vec, DepthTexture},
+    RenderState,
+};
 use bytemuck::{offset_of, Pod, Zeroable};
 use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
-use std::{borrow::Cow, time::Instant};
+use std::{borrow::Cow, mem::size_of, time::Instant};
 use wgpu::{self, util::DeviceExt};
-
-use crate::renderer::{elapsed_as_vec, DepthTexture};
-
-use crate::{camera::Camera, projection::Projection};
-
-use crate::RenderState;
 
 pub(super) struct RobotRenderer {
     pipeline: wgpu::RenderPipeline,

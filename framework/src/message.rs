@@ -3,9 +3,8 @@
 //! Each endpoint creates a single mpsc channel in order to receive commands or events from multiple other endpoints.
 //! The underlying framework will send the cloned channels' senders to the endpoints according to dependency graph.
 
-use std::num::NonZeroU128;
-
 use crate::api::{Identifier, Value};
+use std::num::NonZeroU128;
 
 pub enum ClientToServerMessage {
     Request(RequestMessage),

@@ -4,7 +4,7 @@
     clippy::expect_used,
     clippy::indexing_slicing,
     // clippy::missing_errors_doc,
-    // clippy::missing_panics_doc,
+    clippy::missing_panics_doc,
     // clippy::panic,
     // clippy::print_stdout,
     clippy::todo,
@@ -12,9 +12,11 @@
     reason = "TODO remove before release"
 )]
 
+pub mod api;
 pub mod application;
-pub mod logging;
-
+pub mod event;
 mod graphics_context;
+pub mod logging;
+pub mod message;
 pub mod module;
 mod surface_wrapper;

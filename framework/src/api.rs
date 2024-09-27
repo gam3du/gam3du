@@ -5,22 +5,19 @@
     reason = "TODO fix after experimentation phase"
 )]
 
+use crate::message::{
+    ClientToServerMessage, ErrorResponseMessage, MessageId, RequestMessage, ResponseMessage,
+    ServerToClientMessage,
+};
+use indexmap::IndexMap as HashMap;
+use rand::{thread_rng, Rng};
+use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
     fmt::Display,
     ops::Range,
     sync::mpsc::{self, Receiver, Sender, TryRecvError},
 };
-
-use rand::{thread_rng, Rng};
-use serde::{Deserialize, Serialize};
-
-use crate::message::{
-    ClientToServerMessage, ErrorResponseMessage, MessageId, RequestMessage, ResponseMessage,
-    ServerToClientMessage,
-};
-
-use indexmap::IndexMap as HashMap;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RichText(pub String);

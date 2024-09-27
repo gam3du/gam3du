@@ -1,16 +1,13 @@
+mod floor;
+mod robot;
+
+use crate::{projection::Projection, GameState, RenderState};
+use floor::FloorRenderer;
+use robot::RobotRenderer;
 use std::{
     sync::{Arc, RwLock},
     time::Instant,
 };
-
-mod floor;
-mod robot;
-
-use crate::{GameState, RenderState};
-use floor::FloorRenderer;
-use robot::RobotRenderer;
-
-use crate::projection::Projection;
 
 pub struct RendererBuilder {
     game_state: Arc<RwLock<Box<GameState>>>,

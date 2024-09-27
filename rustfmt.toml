@@ -1,2 +1,16 @@
 # ensures the edition will be respected even in cases where cargo isn't used
 edition = "2021"
+
+# Enable 
+
+# enable as soon as https://github.com/rust-lang/rustfmt/issues/4991 becomes stable
+# or remove if this setting becomes the default
+# imports_granularity = "Crate"
+
+# enable as soon as https://github.com/rust-lang/rustfmt/issues/5083 becomes stable
+# or remove if this setting becomes the default
+# group_imports = "StdExternalCrate"
+
+# enable as soon as https://github.com/rust-lang/rustfmt/issues/3361 becomes stable
+# or remove if this setting becomes the default
+# imports_layout = "HorizontalVertical"

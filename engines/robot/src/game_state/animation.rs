@@ -1,9 +1,8 @@
+use glam::{FloatExt, Vec3};
 use std::{
     f32::consts::{PI, TAU},
     time::{Duration, Instant},
 };
-
-use glam::{FloatExt, Vec3};
 
 pub(crate) enum RobotAnimation {
     Move {

@@ -7,7 +7,6 @@ members = [
     "launchers/robot",
     # "libs/ecs",
     "libs/ecs-kawogi",
-    "runtimes",
     "runtimes/python",
 ]
 
@@ -19,7 +18,6 @@ license-file = "LICENSE-MIT"
 readme = "README.md"
 
 [workspace.dependencies]
-runtimes = { path = "runtimes" }
 runtime-python = { path = "runtimes/python" }
 engines = { path = "engines" }
 engine-robot = { path = "engines/robot" }

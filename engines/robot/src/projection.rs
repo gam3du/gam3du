@@ -1,6 +1,5 @@
-use std::ops::Range;
-
 use glam::Mat4;
+use std::ops::Range;
 
 pub(super) enum Projection {
     Perspective {

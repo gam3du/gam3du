@@ -1,14 +1,14 @@
-use std::mem::size_of;
-
+use crate::{
+    camera::Camera,
+    game_state::Tick,
+    projection::Projection,
+    renderer::{elapsed_as_vec, DepthTexture},
+    tile::Tile,
+    RenderState,
+};
 use bytemuck::offset_of;
-use std::{borrow::Cow, time::Instant};
+use std::{borrow::Cow, mem::size_of, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
-
-use crate::{game_state::Tick, renderer::DepthTexture};
-
-use crate::{camera::Camera, projection::Projection, renderer::elapsed_as_vec, tile::Tile};
-
-use crate::RenderState;
 
 pub(super) struct FloorRenderer {
     pipeline: wgpu::RenderPipeline,

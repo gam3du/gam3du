@@ -1,8 +1,6 @@
-use std::sync::Arc;
-
-use winit::{dpi::PhysicalSize, window::Window};
-
 use crate::graphics_context::GraphicsContext;
+use std::sync::Arc;
+use winit::{dpi::PhysicalSize, window::Window};
 
 /// Wrapper type which manages the surface and surface configuration.
 ///

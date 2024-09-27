@@ -10,9 +10,7 @@
 )]
 
 use glam::Vec3;
-use lib_ecs::event_subscriber::EventSubscriber;
-use lib_ecs::transform::TransformComponent;
-use lib_ecs::Application;
+use lib_ecs::{event_subscriber::EventSubscriber, transform::TransformComponent, Application};
 
 fn main() {
     println!("Hello, world!");

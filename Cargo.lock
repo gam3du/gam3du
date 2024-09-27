@@ -774,7 +774,6 @@ dependencies = [
  "glam",
  "log",
  "rand",
- "runtimes",
  "rustpython-vm",
  "serde_json",
  "wgpu",
@@ -903,8 +902,11 @@ version = "0.1.0"
 dependencies = [
  "engines",
  "env_logger 0.11.5",
+ "indexmap",
  "log",
- "runtimes",
+ "rand",
+ "serde",
+ "serde_json",
  "wgpu",
  "winit",
 ]
@@ -1310,7 +1312,6 @@ dependencies = [
  "log",
  "pollster",
  "runtime-python",
- "runtimes",
  "serde_json",
  "tiny_http",
  "winit",
@@ -2387,21 +2388,9 @@ version = "0.1.0"
 dependencies = [
  "gam3du-framework",
  "log",
- "runtimes",
  "rustpython",
  "rustpython-vm",
  "serde_json",
-]
-
-[[package]]
-name = "runtimes"
-version = "0.1.0"
-dependencies = [
- "indexmap",
- "rand",
- "serde",
- "serde_json",
- "winit",
 ]
 
 [[package]]
