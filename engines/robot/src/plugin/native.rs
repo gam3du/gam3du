@@ -66,6 +66,10 @@ pub struct NativePlugin {
 
 impl NativePlugin {
     #[must_use]
+    #[expect(
+        clippy::new_without_default,
+        reason = "the parameters are unlikely to remain empty"
+    )]
     pub fn new() -> Self {
         let (sender, receiver) = channel();
         Self {
@@ -112,12 +116,6 @@ impl Plugin for NativePlugin {
             }
         }
 
-        // this will be needed when running a python VM
-        // LOCKED_GAME_STATE.with_borrow_mut(|locked_state| {
-        //     mem::swap(locked_state, game_state.as_mut());
-        // });
-        // CAUTION: `game_state` contains placeholder data until we swap it back
-
         'next_endpoint: for (endpoint_index, robot_api_endpoint) in
             self.robot_controllers.iter_mut().enumerate()
         {
@@ -147,18 +145,6 @@ impl Plugin for NativePlugin {
                 }
             }
         }
-
-        // this will be needed when running a python VM
-        // // swap back the _real_ game state into `game_state`
-        // LOCKED_GAME_STATE.with_borrow_mut(|locked_state| {
-        //     mem::swap(locked_state, game_state.as_mut());
-        // });
-    }
-}
-
-impl Default for NativePlugin {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

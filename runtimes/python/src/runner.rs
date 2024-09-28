@@ -1,3 +1,4 @@
+use crate::api_client::{insert_api_client, py_api_client};
 use gam3du_framework::{
     api::{ApiClientEndpoint, Identifier},
     module::Module,
@@ -19,8 +20,6 @@ use std::{
 /// Instead of passing it directly to the new python interpreter thread,
 /// we can pass a function pointer (which is always `Send`).
 type StdlibInitFunc = fn() -> rustpython_vm::stdlib::StdlibInitFunc;
-
-use crate::api_client::{insert_api_client, py_api_client};
 
 static VM_ID: AtomicU64 = AtomicU64::new(0);
 
@@ -54,9 +53,15 @@ impl PythonRuntimeBuilder {
         );
     }
 
-    pub fn add_native_module(&mut self, name: String, init_fn: StdlibInitFunc) {
+    #[expect(
+        clippy::needless_pass_by_value,
+        reason = "passing a reference would make it impossible to pass a `String` without cloning"
+    )]
+    pub fn add_native_module(&mut self, name: impl ToString, init_fn: StdlibInitFunc) {
         assert!(
-            self.native_modules.insert(name, init_fn).is_none(),
+            self.native_modules
+                .insert(name.to_string(), init_fn)
+                .is_none(),
             "duplicate module name"
         );
     }
@@ -164,7 +169,9 @@ impl Module for PythonRuntime {
         });
     }
 
-    fn wake(&self) {}
+    fn wake(&self) {
+        todo!("query all API endpoints for updates and notify the VM");
+    }
 }
 
 pub struct PythonRunnerThread {
