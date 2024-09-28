@@ -48,6 +48,11 @@ ctrlc = "3.4.5"
 
 indexmap = { version = "2.5.0", features = ["serde"] }
 
+# Compile all (non-workspace) dependencies with optimizations.
+# https://doc.rust-lang.org/cargo/reference/profiles.html#overrides
+[profile.dev.package."*"]
+opt-level = 2
+
 [workspace.lints.rust]
 # more lints can be found in [lints.clippy]
 
