@@ -1,13 +1,16 @@
 use crate::api_client::{insert_api_client, py_api_client};
 use gam3du_framework::{
-    api::{ApiClientEndpoint, Identifier},
+    api::{ApiClientEndpoint, ApiServerEndpoint, Identifier, Value},
+    message::{ClientToServerMessage, RequestMessage},
     module::Module,
 };
 use log::{debug, error, info};
 use rustpython_vm::{
     builtins::PyStrInterned,
+    convert::IntoObject,
+    function::FuncArgs,
     signal::{user_signal_channel, UserSignal, UserSignalReceiver, UserSignalSender},
-    Interpreter, Settings,
+    Interpreter, PyObjectRef, Settings,
 };
 use std::{
     collections::HashMap,
@@ -29,6 +32,7 @@ pub struct PythonRuntimeBuilder {
     user_signal_receiver: Option<UserSignalReceiver>,
 
     api_clients: HashMap<Identifier, ApiClientEndpoint>,
+    api_servers: HashMap<Identifier, ApiServerEndpoint>,
     native_modules: HashMap<String, StdlibInitFunc>,
 }
 
@@ -40,6 +44,7 @@ impl PythonRuntimeBuilder {
             main_module_name,
             user_signal_receiver: None,
             api_clients: HashMap::new(),
+            api_servers: HashMap::new(),
             native_modules: HashMap::new(),
         }
     }
@@ -48,6 +53,15 @@ impl PythonRuntimeBuilder {
         assert!(
             self.api_clients
                 .insert(api_client.api().name.clone(), api_client)
+                .is_none(),
+            "duplicate api name"
+        );
+    }
+
+    pub fn add_api_server(&mut self, api_server: ApiServerEndpoint) {
+        assert!(
+            self.api_servers
+                .insert(api_server.api().name.clone(), api_server)
                 .is_none(),
             "duplicate api name"
         );
@@ -128,6 +142,8 @@ impl PythonRuntimeBuilder {
         PythonRuntime {
             main_module_name: interned_main_module_name.unwrap(),
             interpreter,
+            api_server_endpoints: Vec::new(),
+            module: None,
         }
     }
 
@@ -137,7 +153,7 @@ impl PythonRuntimeBuilder {
             .stack_size(10 * 1024 * 1024)
             .spawn(|| {
                 debug!("thread[python]: start interpreter");
-                let runtime = self.build();
+                let mut runtime = self.build();
                 runtime.enter_main();
             })
             .unwrap();
@@ -149,10 +165,12 @@ impl PythonRuntimeBuilder {
 pub struct PythonRuntime {
     main_module_name: &'static PyStrInterned,
     interpreter: Interpreter,
+    api_server_endpoints: Vec<ApiServerEndpoint>,
+    module: Option<PyObjectRef>,
 }
 
 impl Module for PythonRuntime {
-    fn enter_main(&self) {
+    fn enter_main(&mut self) {
         self.interpreter.enter(|vm| {
             match vm.import(self.main_module_name, 0) {
                 Ok(_module) => {
@@ -169,7 +187,40 @@ impl Module for PythonRuntime {
         });
     }
 
-    fn wake(&self) {
+    fn wake(&mut self) {
+        for api_server_endpoint in &mut self.api_server_endpoints {
+            while let Some(incoming_message) = api_server_endpoint.poll_request() {
+                let ClientToServerMessage::Request(request) = incoming_message;
+
+                let RequestMessage {
+                    id,
+                    command,
+                    arguments,
+                } = request;
+
+                let module = self.module.as_mut().expect("cannot wake() before init()");
+                self.interpreter.enter(|vm| {
+                    let py_id = vm.ctx.new_int(id.0.get()).into_object();
+                    let py_command = vm.ctx.intern_str(command.0.as_ref()).to_object();
+                    let mut args = vec![py_id, py_command];
+                    args.extend(arguments.into_iter().map(|argument| match argument {
+                        Value::Unit => todo!(),
+                        Value::Integer(value) => vm.ctx.new_int(value).into_object(),
+                        Value::Float(value) => vm.ctx.new_float(value as f64).into_object(),
+                        Value::Boolean(value) => vm.ctx.new_bool(value).into_object(),
+                        Value::String(value) => vm.ctx.intern_str(value).to_object(),
+                        Value::List(_value) => todo!(),
+                    }));
+
+                    let args = FuncArgs::from(args);
+                    let handler_function_name = vm.ctx.intern_str(format!("on_{command}"));
+                    let callback = module
+                        .get_attr(handler_function_name.as_str(), vm)
+                        .expect("missing callback function");
+                    callback.call(args, vm).unwrap();
+                });
+            }
+        }
         todo!("query all API endpoints for updates and notify the VM");
     }
 }

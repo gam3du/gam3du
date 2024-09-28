@@ -6,7 +6,6 @@ use gam3du_framework::{
 use glam::Vec3;
 use rand::{thread_rng, Rng};
 use std::{
-    borrow::Cow,
     fmt::{self, Display},
     num::NonZeroU128,
     sync::mpsc::{channel, Receiver, Sender, TryRecvError},
@@ -14,7 +13,7 @@ use std::{
 
 use super::Plugin;
 
-const ROBOT_API_NAME: Identifier = Identifier(Cow::Borrowed("robot"));
+const ROBOT_API_NAME: &str = "robot";
 const CMD_MOVE_FORWARD: &str = "move forward";
 const CMD_DRAW_FORWARD: &str = "draw forward";
 const CMD_TURN_LEFT: &str = "turn left";
@@ -81,9 +80,9 @@ impl NativePlugin {
         }
     }
     pub fn add_robot_controller(&mut self, robot_controller: ApiServerEndpoint) {
-        let api_name = robot_controller.api_name();
+        let api_name = robot_controller.api().name.0.as_ref();
         assert_eq!(
-            api_name, &ROBOT_API_NAME,
+            api_name, ROBOT_API_NAME,
             "expected api server for the 'robot' api, but '{api_name}' was given"
         );
         self.robot_controllers.push(robot_controller);

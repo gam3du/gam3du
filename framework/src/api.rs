@@ -110,7 +110,7 @@ pub fn channel(api: ApiDescriptor) -> (ApiClientEndpoint, ApiServerEndpoint) {
     let (engine_to_script_sender, engine_to_script_receiver) = mpsc::channel();
 
     let server_endpoint = ApiServerEndpoint::new(
-        api.name.clone(),
+        api.clone(),
         script_to_engine_receiver,
         engine_to_script_sender,
     );
@@ -184,7 +184,7 @@ impl ApiClientEndpoint {
 
 /// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
 pub struct ApiServerEndpoint {
-    api_name: Identifier,
+    api: ApiDescriptor,
     /// Used poll for requests from the the connected [`ApiClientEndpoint`]
     receiver: Receiver<ClientToServerMessage>,
     /// Used to send responses to the connected [`ApiClientEndpoint`]
@@ -194,12 +194,12 @@ pub struct ApiServerEndpoint {
 impl ApiServerEndpoint {
     #[must_use]
     pub fn new(
-        api_name: Identifier,
+        api: ApiDescriptor,
         receiver: Receiver<ClientToServerMessage>,
         sender: Sender<ServerToClientMessage>,
     ) -> Self {
         Self {
-            api_name,
+            api,
             receiver,
             sender,
         }
@@ -235,7 +235,7 @@ impl ApiServerEndpoint {
     }
 
     #[must_use]
-    pub fn api_name(&self) -> &Identifier {
-        &self.api_name
+    pub fn api(&self) -> &ApiDescriptor {
+        &self.api
     }
 }

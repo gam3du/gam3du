@@ -21,7 +21,7 @@ pub enum ServerToClientMessage {
 
 /// UUID to associate all messages with the initial request
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct RequestId(NonZeroU128);
+pub struct RequestId(pub NonZeroU128);
 
 impl RequestId {
     #[must_use]
