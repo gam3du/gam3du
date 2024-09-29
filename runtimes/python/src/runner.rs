@@ -18,7 +18,6 @@ use rustpython_vm::{
 };
 use std::{
     collections::HashMap,
-    rc::Rc,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc, Mutex,
@@ -136,7 +135,7 @@ impl PythonRuntimeBuilder {
 
                     for api_name in api_clients_clone {
                         let api_module = format!("{}_api_internal", api_name.module());
-                        error!("adding native module {api_module}");
+                        debug!("adding native module {api_module}");
                         vm.add_native_module(api_module, Box::new(py_api_client::make_module));
                     }
                 }
@@ -149,7 +148,7 @@ impl PythonRuntimeBuilder {
 
                     for api_name in api_servers_clone {
                         let api_module = format!("{}_api_internal", api_name.module());
-                        error!("adding native module {api_module}");
+                        debug!("adding native module {api_module}");
                         vm.add_native_module(api_module, Box::new(py_api_server::make_module));
                     }
                 }
@@ -213,9 +212,9 @@ impl PythonRuntimeBuilder {
 
 pub struct PythonRuntime {
     main_module_name: &'static PyStrInterned,
-    interpreter: Interpreter,
+    pub interpreter: Interpreter,
     api_server_endpoints: Vec<Arc<Mutex<ApiServerEndpoint>>>,
-    module: Option<PyObjectRef>,
+    pub module: Option<PyObjectRef>,
 }
 
 impl Module for PythonRuntime {
@@ -264,7 +263,7 @@ impl Module for PythonRuntime {
                     args.extend(arguments.into_iter().map(|argument| match argument {
                         Value::Unit => todo!(),
                         Value::Integer(value) => vm.ctx.new_int(value).into_object(),
-                        Value::Float(value) => vm.ctx.new_float(value as f64).into_object(),
+                        Value::Float(value) => vm.ctx.new_float(f64::from(value)).into_object(),
                         Value::Boolean(value) => vm.ctx.new_bool(value).into_object(),
                         Value::String(value) => vm.ctx.intern_str(value).to_object(),
                         Value::List(_value) => todo!(),
@@ -281,7 +280,7 @@ impl Module for PythonRuntime {
                         }
                     };
                     match callback.call(args, vm) {
-                        Ok(result) => {}
+                        Ok(_result) => {}
                         Err(exception) => {
                             vm.print_exception(exception);
                             panic!("missing callback function");

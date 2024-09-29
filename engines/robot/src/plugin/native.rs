@@ -79,6 +79,7 @@ impl NativePlugin {
             receiver,
         }
     }
+
     pub fn add_robot_controller(&mut self, robot_controller: ApiServerEndpoint) {
         let api_name = robot_controller.api().name.0.as_ref();
         assert_eq!(
@@ -164,7 +165,7 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            if game_state.draw_forward(duration as u64) {
+            if game_state.draw_forward(duration.try_into().unwrap()) {
                 PendingResult::Pending
             } else {
                 PendingResult::Ok(Value::Boolean(false))
@@ -179,7 +180,7 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            if game_state.move_forward(duration as u64) {
+            if game_state.move_forward(duration.try_into().unwrap()) {
                 PendingResult::Pending
             } else {
                 PendingResult::Ok(Value::Boolean(false))
@@ -194,7 +195,7 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            game_state.turn_left(duration as u64);
+            game_state.turn_left(duration.try_into().unwrap());
             PendingResult::Pending
         }
         CMD_TURN_RIGHT => {
@@ -206,7 +207,7 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            game_state.turn_right(duration as u64);
+            game_state.turn_right(duration.try_into().unwrap());
             PendingResult::Pending
         }
         CMD_ROBOT_COLOR_RGB => {

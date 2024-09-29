@@ -165,6 +165,7 @@ impl Robot {
         if let Some(animation) = self.current_animation.as_ref() {
             if animation.animate(&mut self.animation_position, &mut self.animation_angle) {
                 self.current_animation.take();
+                debug!("notifying `robot_stopped` listeners");
                 event_registries.robot_stopped.notify();
                 return true;
             }

@@ -5,7 +5,6 @@ use gam3du_framework::{
 use rustpython_vm::{pyclass, pymodule, PyObjectRef, PyPayload, PyRef, VirtualMachine};
 use std::{
     borrow::BorrowMut,
-    rc::Rc,
     sync::{Arc, Mutex},
 };
 

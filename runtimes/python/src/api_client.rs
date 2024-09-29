@@ -128,12 +128,16 @@ fn message(
             }
             TypeDescriptor::Float => {
                 let int = arg.try_float(vm).unwrap();
+                #[allow(
+                    clippy::cast_possible_truncation,
+                    reason = "the api only supports f32 at the moment"
+                )]
                 let primitive = int.to_f64() as f32;
                 Value::Float(primitive)
             }
             TypeDescriptor::Boolean => todo!(),
             TypeDescriptor::String => todo!(),
-            TypeDescriptor::List(type_descriptor) => todo!(),
+            TypeDescriptor::List(_type_descriptor) => todo!(),
         })
         .collect();
 

@@ -16,3 +16,18 @@ def robot_color_rgb(red: float, green: float, blue: float):
 
 def paint_tile():
 	pass
+
+def log_error(message: str):
+	pass
+
+def log_warn(message: str):
+	pass
+
+def log_info(message: str):
+	pass
+
+def log_debug(message: str):
+	pass
+
+def log_trace(message: str):
+	pass
