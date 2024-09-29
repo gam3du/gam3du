@@ -33,13 +33,15 @@ impl EventRegistry {
     pub(crate) fn subscribe(&mut self, id: NonZeroU128, sender: Sender<GameEvent>) {
         self.subscribers.insert(id, sender);
     }
-    pub(crate) fn unsubscribe(&mut self, id: NonZeroU128) {
+
+    pub(crate) fn _unsubscribe(&mut self, id: NonZeroU128) {
         self.subscribers.remove(&id);
     }
+
     pub(crate) fn notify(&mut self) {
         let event = GameEvent::RobotStopped;
         for subscriber in self.subscribers.values_mut() {
-            subscriber.send(event.clone());
+            subscriber.send(event.clone()).unwrap();
         }
     }
 }

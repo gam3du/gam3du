@@ -3,8 +3,6 @@ use gam3du_framework::api::{
 };
 use std::io::{self, Write};
 
-use crate::PyIdentifier;
-
 pub fn generate(out: &mut impl Write, api: &ApiDescriptor) -> io::Result<()> {
     // TODO add documentation comments for api
 
