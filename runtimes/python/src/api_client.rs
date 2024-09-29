@@ -21,10 +21,20 @@ pub(crate) fn insert_api_client(vm: &VirtualMachine, api_module: &str, api: ApiC
 }
 
 fn get_api_client(vm: &VirtualMachine, api_module: &str) -> PyRef<PrivateApi> {
-    let api_module = vm.ctx.intern_str(api_module);
-    let module = vm
-        .import(api_module, 0)
-        .expect("Expect robot api must be imported");
+    // let api_module = vm.ctx.intern_str(api_module);
+
+    let sys_modules = vm.sys_module.get_attr("modules", vm).unwrap();
+    let module = match sys_modules.get_item(api_module, vm) {
+        Ok(module) => module,
+        Err(exception) => {
+            vm.print_exception(exception);
+            panic!("could not find module {api_module}");
+        }
+    };
+
+    // let module = vm
+    //     .import(api_module, 0)
+    //     .expect("Expect robot api must be imported");
 
     let object = module
         .get_attr("_private_api", vm)
@@ -96,7 +106,7 @@ fn message(
     // let api_name = Identifier("robot".into());
     // let vm_id = vm.wasm_id.as_ref().unwrap();
 
-    let api_module = "robot_api_internal";
+    let api_module = "robot_control_api_internal";
     let private_api = get_api_client(vm, api_module);
     let api = private_api.api.api();
 

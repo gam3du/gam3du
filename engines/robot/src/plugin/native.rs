@@ -136,7 +136,7 @@ impl Plugin for NativePlugin {
                                 break 'next_endpoint;
                             }
                             PendingResult::Error(error) => {
-                                robot_api_endpoint.send_error(id, error);
+                                robot_api_endpoint.send_error(id, error.to_string());
                             }
                         }
                     }

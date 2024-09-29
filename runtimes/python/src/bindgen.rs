@@ -3,20 +3,28 @@ use gam3du_framework::api::{
 };
 use std::io::{self, Write};
 
+use crate::PyIdentifier;
+
 pub fn generate(out: &mut impl Write, api: &ApiDescriptor) -> io::Result<()> {
     // TODO add documentation comments for api
 
-    writeln!(out, "import robot_api_internal")?;
+    let internal_module_name = "api_client";
+
+    writeln!(out, "import {internal_module_name}")?;
     writeln!(out)?;
 
     api.functions
         .values()
-        .try_for_each(|function| generate_function(out, function))?;
+        .try_for_each(|function| generate_function(out, function, internal_module_name))?;
 
     Ok(())
 }
 
-pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) -> io::Result<()> {
+pub fn generate_function(
+    out: &mut impl Write,
+    function: &FunctionDescriptor,
+    internal_module_name: &str,
+) -> io::Result<()> {
     let FunctionDescriptor {
         ref name,
         caption: _,
@@ -43,7 +51,7 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
     }
     writeln!(out, ":")?;
 
-    write!(out, "\treturn robot_api_internal.message(\"{name}\"")?;
+    write!(out, "\treturn {internal_module_name}.message(\"{name}\"")?;
     for parameter in parameters {
         write!(out, ", ")?;
         generate_parameter(out, parameter, true)?;

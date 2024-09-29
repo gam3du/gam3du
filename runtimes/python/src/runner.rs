@@ -1,4 +1,8 @@
-use crate::api_client::{insert_api_client, py_api_client};
+use crate::{
+    api_client::{insert_api_client, py_api_client},
+    api_server::{insert_api_server, py_api_server},
+    identifier::PyIdentifier,
+};
 use gam3du_framework::{
     api::{ApiClientEndpoint, ApiServerEndpoint, Identifier, Value},
     message::{ClientToServerMessage, RequestMessage},
@@ -14,7 +18,11 @@ use rustpython_vm::{
 };
 use std::{
     collections::HashMap,
-    sync::atomic::{AtomicU64, Ordering},
+    rc::Rc,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc, Mutex,
+    },
     thread::{self, JoinHandle},
 };
 
@@ -32,16 +40,16 @@ pub struct PythonRuntimeBuilder {
     user_signal_receiver: Option<UserSignalReceiver>,
 
     api_clients: HashMap<Identifier, ApiClientEndpoint>,
-    api_servers: HashMap<Identifier, ApiServerEndpoint>,
+    api_servers: HashMap<Identifier, Arc<Mutex<ApiServerEndpoint>>>,
     native_modules: HashMap<String, StdlibInitFunc>,
 }
 
 impl PythonRuntimeBuilder {
     #[must_use]
-    pub fn new(sys_path: String, main_module_name: String) -> Self {
+    pub fn new(sys_path: impl Into<String>, main_module_name: impl Into<String>) -> Self {
         Self {
-            sys_path,
-            main_module_name,
+            sys_path: sys_path.into(),
+            main_module_name: main_module_name.into(),
             user_signal_receiver: None,
             api_clients: HashMap::new(),
             api_servers: HashMap::new(),
@@ -61,21 +69,18 @@ impl PythonRuntimeBuilder {
     pub fn add_api_server(&mut self, api_server: ApiServerEndpoint) {
         assert!(
             self.api_servers
-                .insert(api_server.api().name.clone(), api_server)
+                .insert(
+                    api_server.api().name.clone(),
+                    Arc::new(Mutex::new(api_server))
+                )
                 .is_none(),
             "duplicate api name"
         );
     }
 
-    #[expect(
-        clippy::needless_pass_by_value,
-        reason = "passing a reference would make it impossible to pass a `String` without cloning"
-    )]
-    pub fn add_native_module(&mut self, name: impl ToString, init_fn: StdlibInitFunc) {
+    pub fn add_native_module(&mut self, name: impl Into<String>, init_fn: StdlibInitFunc) {
         assert!(
-            self.native_modules
-                .insert(name.to_string(), init_fn)
-                .is_none(),
+            self.native_modules.insert(name.into(), init_fn).is_none(),
             "duplicate module name"
         );
     }
@@ -91,11 +96,23 @@ impl PythonRuntimeBuilder {
         user_signal_sender
     }
 
-    pub fn build(mut self) -> PythonRuntime {
+    pub fn build(self) -> PythonRuntime {
+        let Self {
+            sys_path,
+            main_module_name,
+            user_signal_receiver,
+            api_clients,
+            api_servers,
+            native_modules,
+        } = self;
+
         let id = VM_ID.fetch_add(1, Ordering::Relaxed).to_string();
-        let has_api_clients = !self.api_clients.is_empty();
+        let has_api_clients = !api_clients.is_empty();
+        let has_api_servers = !api_servers.is_empty();
 
         let id_clone = id.clone();
+        let api_clients_clone = api_clients.keys().cloned().collect::<Vec<_>>();
+        let api_servers_clone = api_servers.keys().cloned().collect::<Vec<_>>();
         let interpreter = rustpython::InterpreterConfig::new()
             .settings({
                 let mut settings = Settings::default();
@@ -107,18 +124,37 @@ impl PythonRuntimeBuilder {
                 // TODO find a better way to identify this VM than abusing this field
                 vm.wasm_id = Some(id_clone);
 
-                if let Some(user_signal_receiver) = self.user_signal_receiver {
+                if let Some(user_signal_receiver) = user_signal_receiver {
                     vm.set_user_signal_channel(user_signal_receiver);
                 }
 
                 if has_api_clients {
                     vm.add_native_module(
-                        "robot_api_internal".to_owned(),
+                        "api_client".to_owned(),
                         Box::new(py_api_client::make_module),
                     );
+
+                    for api_name in api_clients_clone {
+                        let api_module = format!("{}_api_internal", api_name.module());
+                        error!("adding native module {api_module}");
+                        vm.add_native_module(api_module, Box::new(py_api_client::make_module));
+                    }
                 }
 
-                for (name, init) in self.native_modules {
+                if has_api_servers {
+                    vm.add_native_module(
+                        "api_server".to_owned(),
+                        Box::new(py_api_server::make_module),
+                    );
+
+                    for api_name in api_servers_clone {
+                        let api_module = format!("{}_api_internal", api_name.module());
+                        error!("adding native module {api_module}");
+                        vm.add_native_module(api_module, Box::new(py_api_server::make_module));
+                    }
+                }
+
+                for (name, init) in native_modules {
                     vm.add_native_module(name, init());
                 }
             }))
@@ -126,23 +162,36 @@ impl PythonRuntimeBuilder {
 
         let mut interned_main_module_name = None;
         interpreter.enter(|vm| {
-            vm.insert_sys_path(vm.new_pyobj(self.sys_path))
+            vm.insert_sys_path(vm.new_pyobj(sys_path))
                 .expect("failed to add {sys_path} to python vm");
 
-            interned_main_module_name = Some(vm.ctx.intern_str(self.main_module_name));
+            interned_main_module_name = Some(vm.ctx.intern_str(main_module_name));
 
-            let api_module = "robot_api_internal";
-            let api = self
-                .api_clients
-                .remove(&Identifier("robot".into()))
-                .unwrap();
-            insert_api_client(vm, api_module, api);
+            for (api_name, api_client) in api_clients {
+                // let api_module = "robot_api_internal";
+                let api_module = format!("{}_api_internal", api_name.module());
+                // let api = self
+                //     .api_clients
+                //     .remove(&Identifier("robot".into()))
+                //     .unwrap();
+                insert_api_client(vm, &api_module, api_client);
+            }
+
+            for (api_name, api_server) in &api_servers {
+                // let api_module = "robot_api_internal";
+                let api_module = format!("{}_api_internal", api_name.module());
+                // let api = self
+                //     .api_clients
+                //     .remove(&Identifier("robot".into()))
+                //     .unwrap();
+                insert_api_server(vm, &api_module, Arc::clone(api_server));
+            }
         });
 
         PythonRuntime {
             main_module_name: interned_main_module_name.unwrap(),
             interpreter,
-            api_server_endpoints: Vec::new(),
+            api_server_endpoints: api_servers.into_values().collect(),
             module: None,
         }
     }
@@ -150,7 +199,7 @@ impl PythonRuntimeBuilder {
     #[must_use]
     pub fn build_runner_thread(self, user_signal_sender: UserSignalSender) -> PythonRunnerThread {
         let handle = thread::Builder::new()
-            .stack_size(10 * 1024 * 1024)
+            // .stack_size(10 * 1024 * 1024)
             .spawn(|| {
                 debug!("thread[python]: start interpreter");
                 let mut runtime = self.build();
@@ -165,7 +214,7 @@ impl PythonRuntimeBuilder {
 pub struct PythonRuntime {
     main_module_name: &'static PyStrInterned,
     interpreter: Interpreter,
-    api_server_endpoints: Vec<ApiServerEndpoint>,
+    api_server_endpoints: Vec<Arc<Mutex<ApiServerEndpoint>>>,
     module: Option<PyObjectRef>,
 }
 
@@ -173,7 +222,8 @@ impl Module for PythonRuntime {
     fn enter_main(&mut self) {
         self.interpreter.enter(|vm| {
             match vm.import(self.main_module_name, 0) {
-                Ok(_module) => {
+                Ok(module) => {
+                    self.module = Some(module);
                     info!("Python thread completed successfully");
                 }
                 Err(exc) => {
@@ -189,7 +239,16 @@ impl Module for PythonRuntime {
 
     fn wake(&mut self) {
         for api_server_endpoint in &mut self.api_server_endpoints {
-            while let Some(incoming_message) = api_server_endpoint.poll_request() {
+            'next_message: loop {
+                let incoming_message = {
+                    let Some(message) = api_server_endpoint.lock().unwrap().poll_request() else {
+                        break 'next_message;
+                    };
+                    message
+                };
+                // }
+
+                // while let Some(incoming_message) = api_server_endpoint.lock().unwrap().poll_request() {
                 let ClientToServerMessage::Request(request) = incoming_message;
 
                 let RequestMessage {
@@ -201,8 +260,7 @@ impl Module for PythonRuntime {
                 let module = self.module.as_mut().expect("cannot wake() before init()");
                 self.interpreter.enter(|vm| {
                     let py_id = vm.ctx.new_int(id.0.get()).into_object();
-                    let py_command = vm.ctx.intern_str(command.0.as_ref()).to_object();
-                    let mut args = vec![py_id, py_command];
+                    let mut args = vec![py_id];
                     args.extend(arguments.into_iter().map(|argument| match argument {
                         Value::Unit => todo!(),
                         Value::Integer(value) => vm.ctx.new_int(value).into_object(),
@@ -213,15 +271,25 @@ impl Module for PythonRuntime {
                     }));
 
                     let args = FuncArgs::from(args);
-                    let handler_function_name = vm.ctx.intern_str(format!("on_{command}"));
-                    let callback = module
-                        .get_attr(handler_function_name.as_str(), vm)
-                        .expect("missing callback function");
-                    callback.call(args, vm).unwrap();
+                    let handler_function_name =
+                        vm.ctx.intern_str(format!("on_{}", command.function()));
+                    let callback = match module.get_attr(handler_function_name.as_str(), vm) {
+                        Ok(callback) => callback,
+                        Err(exception) => {
+                            vm.print_exception(exception);
+                            panic!("missing callback function");
+                        }
+                    };
+                    match callback.call(args, vm) {
+                        Ok(result) => {}
+                        Err(exception) => {
+                            vm.print_exception(exception);
+                            panic!("missing callback function");
+                        }
+                    }
                 });
             }
         }
-        todo!("query all API endpoints for updates and notify the VM");
     }
 }
 

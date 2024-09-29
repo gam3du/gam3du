@@ -20,7 +20,8 @@ pub struct PythonPlugin {
 impl PythonPlugin {
     #[must_use]
     pub fn new(mut runtime_builder: PythonRuntimeBuilder) -> Self {
-        runtime_builder.add_native_module("robot_engine", || Box::new(engine_api::make_module));
+        runtime_builder
+            .add_native_module("robot_control_api", || Box::new(plugin_api::make_module));
         let user_signal = runtime_builder.enable_user_signals();
 
         Self {
@@ -59,7 +60,7 @@ impl Plugin for PythonPlugin {
 }
 
 #[pymodule]
-mod engine_api {
+mod plugin_api {
     use super::VM_GAME_STATE;
     use crate::api::EngineApi;
     use rustpython_vm::{builtins::PyBool, PyResult, VirtualMachine};

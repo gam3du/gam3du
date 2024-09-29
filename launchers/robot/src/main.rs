@@ -5,7 +5,7 @@
     reason = "TODO remove before release"
 )]
 
-use engine_robot::{plugin::NativePlugin, GameLoop, RendererBuilder};
+use engine_robot::{plugin::PythonPlugin, GameLoop, RendererBuilder};
 use gam3du_framework::{
     api::{self, ApiDescriptor},
     application::Application,
@@ -43,26 +43,34 @@ fn main() {
     //     })
     // };
 
-    let (python_thread, robot_api_engine_endpoint) =
-        start_python_robot("engines/robot/api.json", "python", "robot");
-
-    let mut game_loop = GameLoop::default();
-    let mut plugin = NativePlugin::new();
-    plugin.add_robot_controller(robot_api_engine_endpoint);
-    game_loop.add_plugin(plugin);
-
-    let mut application = pollster::block_on(Application::new(
-        "Robot".into(),
-        event_sender.clone(),
-        RendererBuilder::new(game_loop.clone_state()),
-    ));
+    let (python_thread, robot_api_engine_endpoint) = start_python_robot(
+        "launchers/robot/control.api.json",
+        "launchers/robot/python/control",
+        "robot",
+    );
 
     let window_event_loop = EventLoop::with_user_event().build().unwrap();
     window_event_loop.set_control_flow(ControlFlow::Poll);
     let window_proxy = window_event_loop.create_proxy();
 
+    let (game_state_sender, game_state_receiver) = channel();
+
     let game_loop_thread = {
         thread::spawn(move || {
+            // the game loop might not be `Send`, so we need to create it from withon the thread
+            let mut game_loop = GameLoop::default();
+            let mut python_runtime_builder =
+                PythonRuntimeBuilder::new("launchers/robot/python/plugin", "robot_plugin");
+            python_runtime_builder.add_api_server(robot_api_engine_endpoint);
+            let plugin = PythonPlugin::new(python_runtime_builder);
+
+            // let mut plugin = NativePlugin::new();
+            // plugin.add_robot_controller(robot_api_engine_endpoint);
+            game_loop.add_plugin(plugin);
+
+            // the game state is needed in the main window's loop so we send a reference thereof out of this thread
+            game_state_sender.send(game_loop.clone_state()).unwrap();
+
             debug!("thread[game loop]: starting game loop");
             game_loop.run(&event_receiver);
             debug!("thread[game loop]: game loop returned");
@@ -81,6 +89,15 @@ fn main() {
             python_thread
         })
     };
+
+    // wait for the game loop to send us a copy of its state, so that we can pass it to the renderer
+    let game_state = game_state_receiver.recv().unwrap();
+
+    let mut application = pollster::block_on(Application::new(
+        "Robot".into(),
+        event_sender.clone(),
+        RendererBuilder::new(game_state),
+    ));
 
     log::info!("main: Entering event loop...");
     window_event_loop.run_app(&mut application).unwrap();
@@ -116,8 +133,7 @@ fn start_python_robot(
 
     let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);
 
-    let mut python_builder =
-        PythonRuntimeBuilder::new(python_sys_path.into(), python_main_module.into());
+    let mut python_builder = PythonRuntimeBuilder::new(python_sys_path, python_main_module);
 
     let user_signal_sender = python_builder.enable_user_signals();
     python_builder.add_api_client(robot_api_script_endpoint);
