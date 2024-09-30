@@ -7,7 +7,7 @@ rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]
-gam3du-framework.workspace = true
+gam3du-framework-common.workspace = true
 log.workspace = true
 rustpython-vm.workspace = true
 rustpython = { workspace = true, features = ["stdlib"] }

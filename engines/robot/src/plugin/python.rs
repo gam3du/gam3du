@@ -7,7 +7,7 @@ use std::{
 
 use super::Plugin;
 use crate::{events::GameEvent, GameState};
-use gam3du_framework::module::Module;
+use gam3du_framework_common::module::Module;
 use log::debug;
 use rand::{thread_rng, Rng};
 use runtime_python::{PythonRuntime, PythonRuntimeBuilder};

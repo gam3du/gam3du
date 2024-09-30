@@ -1,4 +1,4 @@
-use gam3du_framework::{
+use gam3du_framework_common::{
     api::{ApiServerEndpoint, Identifier, Value},
     message::RequestId,
 };

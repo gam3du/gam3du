@@ -5,7 +5,7 @@
     reason = "TODO remove before release"
 )]
 
-use gam3du_framework::api::ApiDescriptor;
+use gam3du_framework_common::api::ApiDescriptor;
 use runtime_python_bindgen::PyIdentifier;
 use std::io::{BufWriter, Write};
 

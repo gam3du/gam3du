@@ -1,6 +1,6 @@
 use std::fmt::{Display, Write};
 
-use gam3du_framework::api;
+use gam3du_framework_common::api;
 
 pub trait PyIdentifier {
     fn parameter(&self) -> impl Display;

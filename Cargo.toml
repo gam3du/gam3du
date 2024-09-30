@@ -3,9 +3,10 @@ resolver = "2"
 members = [
     "engines/robot",
     "framework",
+    "framework/common",
     "launchers/robot",
-    # "libs/ecs",
-    "libs/ecs-kawogi",
+    # "libraries/ecs",
+    "libraries/ecs-kawogi",
     "runtimes/python",
     "runtimes/python/bindgen",
 ]
@@ -23,6 +24,7 @@ runtime-python = { path = "runtimes/python" }
 runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 engine-robot = { path = "engines/robot" }
 gam3du-framework = { path = "framework" }
+gam3du-framework-common = { path = "framework/common" }
 
 # from crates.io
 bytemuck = "1.18.0"

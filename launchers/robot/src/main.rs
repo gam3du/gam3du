@@ -6,11 +6,10 @@
 )]
 
 use engine_robot::{plugin::PythonPlugin, GameLoop, RendererBuilder};
-use gam3du_framework::{
+use gam3du_framework::{application::Application, logging::init_logger};
+use gam3du_framework_common::{
     api::{self, ApiDescriptor},
-    application::Application,
     event::{ApplicationEvent, EngineEvent},
-    logging::init_logger,
 };
 use log::{debug, error};
 use runtime_python::{PythonRunnerThread, PythonRuntimeBuilder};

@@ -1,0 +1,16 @@
+[package]
+name = "gam3du-framework-common"
+description = "Common types and traits"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+winit.workspace = true
+rand.workspace = true
+indexmap = { workspace = true, features = ["serde"] }
+
+[lints]
+workspace = true

@@ -7,16 +7,12 @@ rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]
-serde = { workspace = true, features = ["derive"] }
-winit.workspace = true
-rand.workspace = true
-indexmap = { workspace = true, features = ["serde"] }
+gam3du-framework-common.workspace = true
 
-# Abstraction layer for the platform's graphics API
-wgpu.workspace = true
-
-log.workspace = true
 env_logger.workspace = true
+log.workspace = true
+wgpu.workspace = true
+winit.workspace = true
 
 [lints]
 workspace = true

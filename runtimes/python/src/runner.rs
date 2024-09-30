@@ -2,7 +2,7 @@ use crate::{
     api_client::{insert_api_client, py_api_client},
     api_server::{insert_api_server, py_api_server},
 };
-use gam3du_framework::{
+use gam3du_framework_common::{
     api::{ApiClientEndpoint, ApiServerEndpoint, Identifier, Value},
     message::{ClientToServerMessage, RequestMessage},
     module::Module,

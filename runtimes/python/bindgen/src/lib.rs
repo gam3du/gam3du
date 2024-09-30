@@ -12,7 +12,7 @@
 
 mod identifier;
 
-use gam3du_framework::api::{
+use gam3du_framework_common::api::{
     ApiDescriptor, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
 };
 pub use identifier::PyIdentifier;

@@ -1,9 +1,9 @@
 use crate::{
-    event::{ApplicationEvent, EngineEvent},
     graphics_context::GraphicsContext,
     renderer::{self, Renderer},
     surface_wrapper::SurfaceWrapper,
 };
+use gam3du_framework_common::event::{ApplicationEvent, EngineEvent};
 use log::{debug, info, trace};
 use std::{
     sync::{mpsc::Sender, Arc},

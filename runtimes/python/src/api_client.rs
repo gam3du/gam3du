@@ -1,4 +1,4 @@
-use gam3du_framework::{
+use gam3du_framework_common::{
     api::{ApiClientEndpoint, ApiDescriptor, Identifier, TypeDescriptor, Value},
     message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
 };

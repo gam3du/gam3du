@@ -388,9 +388,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.22"
+version = "1.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9540e661f81799159abee814118cc139a2004b3a3aa3ea37724a1b66530b90e0"
+checksum = "3bbb537bb4a30b90362caddba8f360c0a56bc13d3a5570028e7197204cb54a17"
 dependencies = [
  "jobserver",
  "libc",
@@ -764,6 +764,7 @@ version = "0.1.0"
 dependencies = [
  "bytemuck",
  "gam3du-framework",
+ "gam3du-framework-common",
  "glam",
  "log",
  "rand",
@@ -887,11 +888,19 @@ name = "gam3du-framework"
 version = "0.1.0"
 dependencies = [
  "env_logger 0.11.5",
- "indexmap",
+ "gam3du-framework-common",
  "log",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
+name = "gam3du-framework-common"
+version = "0.1.0"
+dependencies = [
+ "indexmap",
  "rand",
  "serde",
- "wgpu",
  "winit",
 ]
 
@@ -1287,6 +1296,7 @@ dependencies = [
  "ctrlc",
  "engine-robot",
  "gam3du-framework",
+ "gam3du-framework-common",
  "log",
  "pollster",
  "runtime-python",
@@ -2031,7 +2041,7 @@ checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.5.6",
+ "redox_syscall 0.5.7",
  "smallvec",
  "windows-targets 0.52.6",
 ]
@@ -2288,9 +2298,9 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.5.6"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "355ae415ccd3a04315d3f8246e86d67689ea74d88d915576e1589a351062a13b"
+checksum = "9b6dfecf2c74bce2466cabf93f6664d6998a69eb21e39f4207930065b27b771f"
 dependencies = [
  "bitflags 2.6.0",
 ]
@@ -2373,7 +2383,7 @@ dependencies = [
 name = "runtime-python"
 version = "0.1.0"
 dependencies = [
- "gam3du-framework",
+ "gam3du-framework-common",
  "log",
  "runtime-python-bindgen",
  "rustpython",
@@ -2384,7 +2394,7 @@ dependencies = [
 name = "runtime-python-bindgen"
 version = "0.1.0"
 dependencies = [
- "gam3du-framework",
+ "gam3du-framework-common",
 ]
 
 [[package]]

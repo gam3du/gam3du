@@ -1,5 +1,5 @@
 use crate::{api::EngineApi, events::GameEvent, GameState};
-use gam3du_framework::{
+use gam3du_framework_common::{
     api::{ApiServerEndpoint, Identifier, Value},
     message::{ClientToServerMessage, PendingResult, RequestId, RequestMessage},
 };
