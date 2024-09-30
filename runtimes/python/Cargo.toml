@@ -8,10 +8,10 @@ license-file.workspace = true
 
 [dependencies]
 gam3du-framework.workspace = true
-serde_json.workspace = true
 log.workspace = true
 rustpython-vm.workspace = true
 rustpython = { workspace = true, features = ["stdlib"] }
+runtime-python-bindgen.workspace = true
 
 [lints]
 workspace = true

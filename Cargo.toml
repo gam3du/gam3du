@@ -7,6 +7,7 @@ members = [
     # "libs/ecs",
     "libs/ecs-kawogi",
     "runtimes/python",
+    "runtimes/python/bindgen",
 ]
 
 [workspace.package]
@@ -18,6 +19,7 @@ readme = "README.md"
 
 [workspace.dependencies]
 runtime-python = { path = "runtimes/python" }
+runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 engine-robot = { path = "engines/robot" }
 gam3du-framework = { path = "framework" }
 

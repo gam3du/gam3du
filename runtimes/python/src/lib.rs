@@ -12,9 +12,6 @@
 
 mod api_client;
 mod api_server;
-pub mod bindgen;
-mod identifier;
 mod runner;
 
-pub use identifier::PyIdentifier;
 pub use runner::{PythonRunnerThread, PythonRuntime, PythonRuntimeBuilder};

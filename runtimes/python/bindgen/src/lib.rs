@@ -1,6 +1,21 @@
+#![allow(missing_docs, reason = "TODO remove before release")]
+#![expect(
+    clippy::missing_errors_doc,
+    // clippy::missing_panics_doc,
+    // clippy::unwrap_used,
+    // clippy::expect_used,
+    // clippy::todo,
+    // clippy::panic,
+    // clippy::panic_in_result_fn,
+    reason = "TODO remove and fix before release"
+)]
+
+mod identifier;
+
 use gam3du_framework::api::{
     ApiDescriptor, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
 };
+pub use identifier::PyIdentifier;
 use std::io::{self, Write};
 
 pub fn generate(out: &mut impl Write, api: &ApiDescriptor) -> io::Result<()> {

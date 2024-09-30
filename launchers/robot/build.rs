@@ -5,10 +5,9 @@
     reason = "TODO remove before release"
 )]
 
-use std::io::{BufWriter, Write};
-
 use gam3du_framework::api::ApiDescriptor;
-use runtime_python::{bindgen, PyIdentifier};
+use runtime_python_bindgen::PyIdentifier;
+use std::io::{BufWriter, Write};
 
 const API_DESCRIPTOR: &str = "control.api.json";
 
@@ -31,5 +30,5 @@ fn main() {
     writeln!(out, "# generator: {}", file!()).unwrap();
     writeln!(out, "# api descriptor: {API_DESCRIPTOR}").unwrap();
     writeln!(out).unwrap();
-    bindgen::generate(&mut out, &api).unwrap();
+    runtime_python_bindgen::generate(&mut out, &api).unwrap();
 }

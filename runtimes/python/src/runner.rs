@@ -1,7 +1,6 @@
 use crate::{
     api_client::{insert_api_client, py_api_client},
     api_server::{insert_api_server, py_api_server},
-    identifier::PyIdentifier,
 };
 use gam3du_framework::{
     api::{ApiClientEndpoint, ApiServerEndpoint, Identifier, Value},
@@ -9,6 +8,7 @@ use gam3du_framework::{
     module::Module,
 };
 use log::{debug, error, info};
+use runtime_python_bindgen::PyIdentifier;
 use rustpython_vm::{
     builtins::PyStrInterned,
     convert::IntoObject,

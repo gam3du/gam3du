@@ -2,13 +2,12 @@ use gam3du_framework::{
     api::{ApiServerEndpoint, Identifier, Value},
     message::RequestId,
 };
+use runtime_python_bindgen::PyIdentifier;
 use rustpython_vm::{pyclass, pymodule, PyObjectRef, PyPayload, PyRef, VirtualMachine};
 use std::{
     borrow::BorrowMut,
     sync::{Arc, Mutex},
 };
-
-use crate::PyIdentifier;
 
 pub(crate) fn insert_api_server(
     vm: &VirtualMachine,

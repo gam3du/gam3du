@@ -1304,6 +1304,7 @@ dependencies = [
  "log",
  "pollster",
  "runtime-python",
+ "runtime-python-bindgen",
  "serde_json",
  "tiny_http",
  "winit",
@@ -2380,8 +2381,16 @@ version = "0.1.0"
 dependencies = [
  "gam3du-framework",
  "log",
+ "runtime-python-bindgen",
  "rustpython",
  "rustpython-vm",
+]
+
+[[package]]
+name = "runtime-python-bindgen"
+version = "0.1.0"
+dependencies = [
+ "gam3du-framework",
  "serde_json",
 ]
 
