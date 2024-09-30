@@ -8,8 +8,8 @@ from robot_control_api import (
     turn_right,
 )
 
-# while move_forward():
-#     pass
+while move_forward():
+    pass
 
 turn_right(1000)
 turn_right()
