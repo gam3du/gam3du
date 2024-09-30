@@ -12,7 +12,6 @@ gam3du-framework.workspace = true
 bytemuck = { workspace = true, features = ["derive"] }
 wgpu.workspace = true
 log.workspace = true
-serde_json.workspace = true
 glam = { workspace = true, features = ["bytemuck"] }
 rustpython-vm.workspace = true
 runtime-python.workspace = true

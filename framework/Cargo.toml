@@ -9,9 +9,8 @@ license-file.workspace = true
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 winit.workspace = true
-serde_json.workspace = true
 rand.workspace = true
-indexmap.workspace = true
+indexmap = { workspace = true, features = ["serde"] }
 
 # Abstraction layer for the platform's graphics API
 wgpu.workspace = true

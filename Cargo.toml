@@ -18,37 +18,28 @@ license-file = "LICENSE-MIT"
 readme = "README.md"
 
 [workspace.dependencies]
+# workspace-internal crates
 runtime-python = { path = "runtimes/python" }
 runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 engine-robot = { path = "engines/robot" }
 gam3du-framework = { path = "framework" }
 
-# Python interpreter
-rustpython-vm = { version = "0.4.0" }
-rustpython = { version = "0.4.0", default-features = false }
-
-# simplifies bit/byte-level operations
+# from crates.io
 bytemuck = "1.18.0"
-
-# Abstraction layer for the platform's graphics API
-wgpu = "22.1.0"
-
-# Basic vector and matrix types and operations thereon
-glam = "0.29.0"
-
-serde_json = "1.0.128"
-rand = "0.8.5"
-
-pollster = "0.3.0"
-log = "0.4.22"
-env_logger = "0.11.5"
-winit = "0.30.5"
-
-serde = "1.0.210"
-tiny_http = "0.12.0"
 ctrlc = "3.4.5"
-
-indexmap = { version = "2.5.0", features = ["serde"] }
+env_logger = "0.11.5"
+glam = "0.29.0"
+indexmap = { version = "2.5.0" }
+log = "0.4.22"
+pollster = "0.3.0"
+rand = "0.8.5"
+rustpython = { version = "0.4.0", default-features = false }
+rustpython-vm = "0.4.0"
+serde = "1.0.210"
+serde_json = "1.0.128"
+tiny_http = "0.12.0"
+wgpu = "22.1.0"
+winit = "0.30.5"
 
 # Compile all (non-workspace) dependencies with optimizations.
 # https://doc.rust-lang.org/cargo/reference/profiles.html#overrides
@@ -68,7 +59,7 @@ missing_docs = "warn"
 dead_code = "warn"
 
 # disable in your project if these report false positives for build-dependencies
-# unused_crate_dependencies = "warn"
+unused_crate_dependencies = "warn"
 
 ######################################################################################################################
 # Maintenance lints that are generally overridden, but can be used temporarily for clean-up and maintenance
