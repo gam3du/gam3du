@@ -13,7 +13,7 @@ This project is currently in its proof-of-concept phase, where we try to evaluat
 
 ## Motivation
 
-If you asked Joe Average how many computers he possesses, he likely answer something between "none" to maybe "two". Reminding Joe that everything with a display is a computer as well, he might come up with some additional smartphones, smartwatches, tablets and TVs.
+If you asked Joe Average how many computers he possesses, he likely answers something between "none" to maybe "two". Reminding Joe that everything with a display is a computer as well, he might come up with some additional smartphones, smartwatches, tablets and TVs.
 
 The reality is: Joe very likely owns way more computers than lamps (not even counting the computers within the lamps). Computers are everywhere: TV-remote, coffee maker, car stereo, calculator, Bluetooth headset, door bell, camera, electrical toothbrush, printer, washing machine, … as a rule of thumb: when it runs on electrical energy it likely contains a computer nowadays. Someone has to tell all those little helpers what to do when a button is pressed, the battery runs low or the wireless connections drops out.
 
