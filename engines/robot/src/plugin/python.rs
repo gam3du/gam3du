@@ -44,7 +44,7 @@ impl PythonPlugin {
         }
     }
 
-    fn pre_init_vm(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
+    fn pre_init_vm(&mut self, game_state: &mut GameState) {
         debug!("registering `robot_stopped` event");
         game_state
             .event_registries
@@ -82,22 +82,22 @@ impl PythonPlugin {
         self.runtime.wake();
     }
 
-    fn swap_vm_game_state(game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
+    fn swap_vm_game_state(game_state: &mut GameState) {
         VM_GAME_STATE.with_borrow_mut(|locked_state| {
-            mem::swap(locked_state, game_state.as_mut());
+            mem::swap(locked_state, game_state);
         });
     }
 }
 
 impl Plugin for PythonPlugin {
-    fn init(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
+    fn init(&mut self, game_state: &mut GameState) {
         self.pre_init_vm(game_state);
         Self::swap_vm_game_state(game_state);
         self.init_vm();
         Self::swap_vm_game_state(game_state);
     }
 
-    fn update(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
+    fn update(&mut self, game_state: &mut GameState) {
         Self::swap_vm_game_state(game_state);
         self.update_vm();
         Self::swap_vm_game_state(game_state);

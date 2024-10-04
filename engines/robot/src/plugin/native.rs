@@ -90,14 +90,14 @@ impl NativePlugin {
 }
 
 impl Plugin for NativePlugin {
-    fn init(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
+    fn init(&mut self, game_state: &mut GameState) {
         game_state
             .event_registries
             .robot_stopped
             .subscribe(self.id, self.sender.clone());
     }
 
-    fn update(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
+    fn update(&mut self, game_state: &mut GameState) {
         'next_event: loop {
             match self.receiver.try_recv() {
                 Ok(GameEvent::RobotStopped) => {
