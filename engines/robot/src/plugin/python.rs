@@ -117,27 +117,15 @@ mod plugin_api {
     use rustpython_vm::VirtualMachine;
 
     #[pyfunction]
-    fn move_forward(duration: u64, _vm: &VirtualMachine) -> bool {
+    fn move_forward(draw: bool, duration: u64, _vm: &VirtualMachine) -> bool {
         trace!("pyfunction: move_forward({duration})");
-        VM_GAME_STATE.with_borrow_mut(|game_state| game_state.move_forward(duration))
+        VM_GAME_STATE.with_borrow_mut(|game_state| game_state.move_forward(draw, duration))
     }
 
     #[pyfunction]
-    fn draw_forward(duration: u64, _vm: &VirtualMachine) -> bool {
-        trace!("pyfunction: draw_forward({duration})");
-        VM_GAME_STATE.with_borrow_mut(|game_state| game_state.draw_forward(duration))
-    }
-
-    #[pyfunction]
-    fn turn_left(duration: u64, _vm: &VirtualMachine) {
+    fn turn(steps_ccw: i8, duration: u64, _vm: &VirtualMachine) {
         trace!("pyfunction: turn_left({duration})");
-        VM_GAME_STATE.with_borrow_mut(|game_state| game_state.turn_left(duration));
-    }
-
-    #[pyfunction]
-    fn turn_right(duration: u64, _vm: &VirtualMachine) {
-        trace!("pyfunction: turn_right({duration})");
-        VM_GAME_STATE.with_borrow_mut(|game_state| game_state.turn_right(duration));
+        VM_GAME_STATE.with_borrow_mut(|game_state| game_state.turn(steps_ccw, duration));
     }
 
     #[pyfunction]

@@ -16,8 +16,7 @@ use super::Plugin;
 const ROBOT_API_NAME: &str = "robot";
 const CMD_MOVE_FORWARD: &str = "move forward";
 const CMD_DRAW_FORWARD: &str = "draw forward";
-const CMD_TURN_LEFT: &str = "turn left";
-const CMD_TURN_RIGHT: &str = "turn right";
+const CMD_TURN: &str = "turn";
 const CMD_PAINT_TILE: &str = "paint tile";
 const CMD_ROBOT_COLOR_RGB: &str = "robot color rgb";
 
@@ -165,7 +164,7 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            if game_state.draw_forward(duration.try_into().unwrap()) {
+            if game_state.move_forward(true, duration.try_into().unwrap()) {
                 PendingResult::Pending
             } else {
                 PendingResult::Ok(Value::Boolean(false))
@@ -180,13 +179,25 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            if game_state.move_forward(duration.try_into().unwrap()) {
+            if game_state.move_forward(false, duration.try_into().unwrap()) {
                 PendingResult::Pending
             } else {
                 PendingResult::Ok(Value::Boolean(false))
             }
         }
-        CMD_TURN_LEFT => {
+        CMD_TURN => {
+            let Some(steps_ccw) = arguments.next() else {
+                return CommandError::MissingArgument(command, "steps_ccw").into();
+            };
+
+            let Value::Integer(steps_ccw) = steps_ccw else {
+                return CommandError::WrongArgumentType(command, "steps_ccw").into();
+            };
+
+            let Ok(steps_ccw) = steps_ccw.try_into() else {
+                return CommandError::WrongArgumentType(command, "steps_ccw").into();
+            };
+
             let Some(duration) = arguments.next() else {
                 return CommandError::MissingArgument(command, "duration").into();
             };
@@ -195,19 +206,7 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            game_state.turn_left(duration.try_into().unwrap());
-            PendingResult::Pending
-        }
-        CMD_TURN_RIGHT => {
-            let Some(duration) = arguments.next() else {
-                return CommandError::MissingArgument(command, "duration").into();
-            };
-
-            let Value::Integer(duration) = duration else {
-                return CommandError::WrongArgumentType(command, "duration").into();
-            };
-
-            game_state.turn_right(duration.try_into().unwrap());
+            game_state.turn(steps_ccw, duration.try_into().unwrap());
             PendingResult::Pending
         }
         CMD_ROBOT_COLOR_RGB => {

@@ -3,7 +3,7 @@ from api_server import (
 )
 
 from robot_plugin_api import (
-    draw_forward, move_forward, paint_tile, robot_color_rgb, turn_left, turn_right, log_trace, log_debug, log_error, log_info, log_warn
+    move_forward, paint_tile, robot_color_rgb, turn, log_trace, log_debug, log_error, log_info, log_warn
 )
 
 current_command = 0
@@ -22,7 +22,7 @@ def on_move_forward(request_id, duration):
     if current_command:
         log_error("pending command")
 
-    if not move_forward(duration):
+    if not move_forward(False, duration):
         send_boolean_response("robot control", request_id, False)
     else:
         current_command = request_id
@@ -33,7 +33,7 @@ def on_draw_forward(request_id, duration):
     if current_command:
         log_error("pending command")
 
-    if not draw_forward(duration):
+    if not move_forward(True, duration):
         send_boolean_response("robot control", request_id, False)
     else:
         current_command = request_id
@@ -44,7 +44,7 @@ def on_turn_left(request_id, duration):
     if current_command:
         log_error("pending command")
 
-    turn_left(duration)
+    turn(1, duration)
     current_command = request_id
 
 def on_turn_right(request_id, duration):
@@ -53,7 +53,7 @@ def on_turn_right(request_id, duration):
     if current_command:
         log_error("pending command")
 
-    turn_right(duration)
+    turn(-1, duration)
     current_command = request_id
 
 def on_robot_color_rgb(request_id, red, green, blue):

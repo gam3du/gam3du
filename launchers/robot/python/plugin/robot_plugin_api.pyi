@@ -1,14 +1,8 @@
 
-def move_forward(duration: int = 500) -> bool:
+def move_forward(draw: bool, duration: int = 500) -> bool:
 	pass
 
-def draw_forward(duration: int = 500) -> bool:
-	pass
-
-def turn_left(duration: int = 300):
-	pass
-
-def turn_right(duration: int = 300):
+def turn(steps_ccw: int, duration: int = 300):
 	pass
 
 def robot_color_rgb(red: float, green: float, blue: float):

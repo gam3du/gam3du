@@ -35,13 +35,13 @@ impl GameState {
         self.robot.update(&mut self.event_registries);
     }
 
-    fn turn(&mut self, step: i8, duration: Duration) {
+    fn _turn(&mut self, steps_ccw: i8, duration: Duration) {
         self.robot.complete_animation();
         #[expect(clippy::cast_sign_loss, reason = "TODO make this less cumbersome")]
-        if step < 0 {
-            self.robot.orientation -= -step as u8;
+        if steps_ccw < 0 {
+            self.robot.orientation -= -steps_ccw as u8;
         } else {
-            self.robot.orientation += step as u8;
+            self.robot.orientation += steps_ccw as u8;
         }
         self.robot.current_animation = Some(RobotAnimation::Rotate {
             start: self.robot.animation_angle,
@@ -110,22 +110,13 @@ impl GameState {
 }
 
 impl EngineApi for GameState {
-    fn move_forward(&mut self, duration: u64) -> bool {
-        self._move_forward(false, Duration::from_millis(duration))
+    fn move_forward(&mut self, draw: bool, duration: u64) -> bool {
+        self._move_forward(draw, Duration::from_millis(duration))
             .is_ok()
     }
 
-    fn draw_forward(&mut self, duration: u64) -> bool {
-        self._move_forward(true, Duration::from_millis(duration))
-            .is_ok()
-    }
-
-    fn turn_left(&mut self, duration: u64) {
-        self.turn(1, Duration::from_millis(duration));
-    }
-
-    fn turn_right(&mut self, duration: u64) {
-        self.turn(-1, Duration::from_millis(duration));
+    fn turn(&mut self, steps_ccw: i8, duration: u64) {
+        self._turn(steps_ccw, Duration::from_millis(duration));
     }
 
     fn robot_color_rgb(&mut self, red: f32, green: f32, blue: f32) {
