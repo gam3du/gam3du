@@ -887,6 +887,7 @@ checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 name = "gam3du-framework"
 version = "0.1.0"
 dependencies = [
+ "ctrlc",
  "env_logger 0.11.5",
  "gam3du-framework-common",
  "log",
@@ -1299,7 +1300,6 @@ checksum = "507460a910eb7b32ee961886ff48539633b788a36b65692b95f225b844c82553"
 name = "launcher-robot"
 version = "0.1.0"
 dependencies = [
- "ctrlc",
  "engine-robot",
  "gam3du-framework",
  "gam3du-framework-common",

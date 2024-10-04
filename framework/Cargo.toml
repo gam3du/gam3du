@@ -9,6 +9,7 @@ license-file.workspace = true
 [dependencies]
 gam3du-framework-common.workspace = true
 
+ctrlc.workspace = true
 env_logger.workspace = true
 log.workspace = true
 wgpu.workspace = true

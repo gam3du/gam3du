@@ -31,6 +31,7 @@ bytemuck = "1.18.0"
 ctrlc = "3.4.5"
 env_logger = "0.11.5"
 glam = "0.29.0"
+gltf = "1.4.1"
 indexmap = { version = "2.6.0" }
 log = "0.4.22"
 pollster = "0.3.0"
