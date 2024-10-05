@@ -16,6 +16,7 @@
         "recv",
         "repr",
         "rustpython",
+        "struct",
         "subsec",
         "subseconds",
         "texels",

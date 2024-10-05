@@ -20,12 +20,59 @@ pub(crate) struct Mesh {
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
 pub(crate) struct Vertex {
-    pub(crate) pos: Vec4,
-    pub(crate) tex_coord: Vec2,
+    // Geometric properties
+    pub(crate) position: Vec4,
+    // ---- 16 byte alignment
+    pub(crate) normal: Vec4,
+    // Material properties
+    // ---- 16 byte alignment
+    pub(crate) base_color_factor: Vec4,
+    // // ---- 16 byte alignment
+    pub(crate) base_color_texture_coordinates: Vec2,
     _padding: Vec2,
+    // pub(crate) metallic_factor: f32,
+    // pub(crate) roughness_factor: f32,
+    // // ---- 16 byte alignment
+    // pub(crate) metallic_roughness_texture_coordinates: Vec2,
+    // ---- 16 byte alignment
     // position: Vec3,
     // normal: Vec3,
     // tex_coords: Vec2,
+
+    // "materials": [
+    //     {
+    //         "pbrMetallicRoughness": {
+    //             "baseColorTexture": {
+    //                 "index": 1,
+    //                  "texCoord": 1
+    //             },
+    //             "baseColorFactor":
+    //                 [ 1.0, 0.75, 0.35, 1.0 ],
+    //             "metallicRoughnessTexture": {
+    //                 "index": 5,
+    //                 "texCoord": 1
+    //             },
+    //             "metallicFactor": 1.0,
+    //             "roughnessFactor": 0.0,
+    //         }
+    //         "normalTexture": {
+    //             "scale": 0.8,
+    //             "index": 2,
+    //             "texCoord": 1
+    //         },
+    //         "occlusionTexture": {
+    //             "strength": 0.9,
+    //             "index": 4,
+    //             "texCoord": 1
+    //         },
+    //         "emissiveTexture": {
+    //             "index": 3,
+    //             "texCoord": 1
+    //         },
+    //         "emissiveFactor":
+    //             [0.4, 0.8, 0.6]
+    //     }
+    // ],
 }
 
 // #[repr(C)]
@@ -106,7 +153,7 @@ pub(crate) fn load_model(model_path: &Path, device: &wgpu::Device) -> anyhow::Re
                         .as_mut()
                         .and_then(Iterator::next)
                         .unwrap_or_default();
-                    let _normal = normals
+                    let normal = normals
                         .as_mut()
                         .and_then(Iterator::next)
                         .unwrap_or_default();
@@ -116,10 +163,11 @@ pub(crate) fn load_model(model_path: &Path, device: &wgpu::Device) -> anyhow::Re
                         .unwrap_or_default();
 
                     Vertex {
-                        pos: (Vec3::from(position), 1.0).into(),
-                        tex_coord: tex_coord.into(),
+                        position: (Vec3::from(position), 1.0).into(),
+                        normal: (Vec3::from(normal), 1.0).into(),
+                        base_color_factor: Vec4::new(1.0, 0.0, 0.0, 1.0),
+                        base_color_texture_coordinates: tex_coord.into(),
                         _padding: Vec2::default(),
-                        // normal: normal.into(),
                     }
                 })
                 .collect::<Vec<_>>();

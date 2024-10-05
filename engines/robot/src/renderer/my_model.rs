@@ -18,7 +18,9 @@ pub(super) struct MyModelRenderer {
     index_count: u32,
     time_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
-    matrix_buf: wgpu::Buffer,
+    world_matrix_buf: wgpu::Buffer,
+    camera_matrix_buf: wgpu::Buffer,
+    projection_matrix_buf: wgpu::Buffer,
     robot_color_buf: wgpu::Buffer,
 }
 
@@ -55,6 +57,26 @@ impl MyModelRenderer {
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(64),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(64),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
@@ -64,7 +86,7 @@ impl MyModelRenderer {
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
-                    binding: 2,
+                    binding: 4,
                     visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
@@ -74,7 +96,7 @@ impl MyModelRenderer {
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
-                    binding: 3,
+                    binding: 5,
                     visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
@@ -94,7 +116,17 @@ impl MyModelRenderer {
         let texture_view = Self::create_texture_view(device, queue);
 
         let mx_ref = &[0_u8; size_of::<[f32; 16]>()];
-        let matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let world_matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer"),
+            contents: mx_ref, //bytemuck::cast_slice(mx_ref),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        let camera_matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer"),
+            contents: mx_ref, //bytemuck::cast_slice(mx_ref),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        let projection_matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
             contents: mx_ref, //bytemuck::cast_slice(mx_ref),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
@@ -119,18 +151,26 @@ impl MyModelRenderer {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: matrix_buf.as_entire_binding(),
+                    resource: world_matrix_buf.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                    resource: camera_matrix_buf.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: time_buf.as_entire_binding(),
+                    resource: projection_matrix_buf.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&texture_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: time_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
                     resource: robot_color_buf.as_entire_binding(),
                 },
             ],
@@ -150,13 +190,23 @@ impl MyModelRenderer {
             attributes: &[
                 wgpu::VertexAttribute {
                     format: wgpu::VertexFormat::Float32x4,
-                    offset: offset_of!(Vertex, pos) as u64,
+                    offset: offset_of!(Vertex, position) as u64,
                     shader_location: 0,
                 },
                 wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
-                    offset: offset_of!(Vertex, tex_coord) as u64,
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: offset_of!(Vertex, normal) as u64,
                     shader_location: 1,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: offset_of!(Vertex, base_color_factor) as u64,
+                    shader_location: 2,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x2,
+                    offset: offset_of!(Vertex, base_color_texture_coordinates) as u64,
+                    shader_location: 3,
                 },
             ],
         }];
@@ -176,7 +226,9 @@ impl MyModelRenderer {
             time_buf,
             robot_color_buf,
             bind_group,
-            matrix_buf,
+            world_matrix_buf,
+            camera_matrix_buf,
+            projection_matrix_buf,
             pipeline,
         }
     }
@@ -196,7 +248,7 @@ impl MyModelRenderer {
 
         self.update_time(state.start_time, queue);
         self.update_robot_color(state.robot_color, queue);
-        self.update_matrix(projection, &state.camera, queue, position);
+        self.update_matrices(projection, &state.camera, queue, position);
 
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);
@@ -208,16 +260,32 @@ impl MyModelRenderer {
         render_pass.draw_indexed(0..self.index_count, 0, 0..1);
     }
 
-    fn update_matrix(
+    fn update_matrices(
         &self,
         projection: &Projection,
         camera: &Camera,
         queue: &wgpu::Queue,
         position: Mat4,
     ) {
-        let matrix = projection.matrix() * camera.matrix() * position;
-        let mx_ref: &[f32; 16] = matrix.as_ref();
-        queue.write_buffer(&self.matrix_buf, 0, bytemuck::cast_slice(mx_ref));
+        queue.write_buffer(
+            &self.world_matrix_buf,
+            0,
+            bytemuck::cast_slice(position.as_ref()),
+        );
+
+        let camera_matrix = camera.matrix();
+        queue.write_buffer(
+            &self.camera_matrix_buf,
+            0,
+            bytemuck::cast_slice(camera_matrix.as_ref()),
+        );
+
+        let projection_matrix = projection.matrix();
+        queue.write_buffer(
+            &self.projection_matrix_buf,
+            0,
+            bytemuck::cast_slice(projection_matrix.as_ref()),
+        );
     }
 
     fn update_time(&self, start_time: Instant, queue: &wgpu::Queue) {
