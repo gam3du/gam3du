@@ -11,8 +11,10 @@ gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
 runtime-python.workspace = true
 
+anyhow.workspace = true
 bytemuck = { workspace = true, features = ["derive"] }
 glam = { workspace = true, features = ["bytemuck"] }
+gltf.workspace = true
 log.workspace = true
 rand.workspace = true
 rustpython-vm.workspace = true

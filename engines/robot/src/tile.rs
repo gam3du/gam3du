@@ -3,10 +3,11 @@
     reason = "false positives for Pod/Zeroable macros"
 )]
 
-use crate::game_state::Orientation;
 use bytemuck::{Pod, Zeroable};
 use glam::Vec3;
 use std::ops;
+
+use crate::game_state::Orientation;
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Default)]

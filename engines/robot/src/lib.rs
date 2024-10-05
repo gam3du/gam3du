@@ -15,6 +15,7 @@ mod camera;
 mod events;
 mod game_loop;
 mod game_state;
+mod model;
 pub mod plugin;
 mod projection;
 mod render_state;

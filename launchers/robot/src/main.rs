@@ -20,7 +20,6 @@ fn main() {
     init_logger();
 
     let (event_sender, event_receiver) = channel();
-
     register_ctrlc(&event_sender);
 
     let (python_thread, robot_api_engine_endpoint) = start_python_robot(

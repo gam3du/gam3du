@@ -27,6 +27,7 @@ gam3du-framework = { path = "framework" }
 gam3du-framework-common = { path = "framework/common" }
 
 # from crates.io
+anyhow = "1.0.89"
 bytemuck = "1.18.0"
 ctrlc = "3.4.5"
 env_logger = "0.11.5"
