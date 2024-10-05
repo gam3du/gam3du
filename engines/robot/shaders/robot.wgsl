@@ -39,9 +39,9 @@ fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let subseconds = f32(time_vec.y) / 4294967296.0;
     let time = f32(time_vec.x) + subseconds;
 
-    let y = abs(vertex.tex_coord.y);
-    let phase = (vertex.tex_coord.x * 2 - subseconds * 2.0 + y) * 1 * 3.1416;
-    // let r = fract((vertex.tex_coord.x - subseconds * 2.0 + y) * 1);
+    let y = abs(vertex.tex_coord.y * 8.0);
+    let phase = (vertex.tex_coord.x * 2 * 8 - subseconds * 2.0 + y) * 1 * 3.1416;
+    // let r = fract((vertex.tex_coord.x * 8 - subseconds * 2.0 + y) * 1);
 
     let is_border = abs(vertex.tex_coord.y) > 0.8 || abs(vertex.tex_coord.x) > 0.9;
 
