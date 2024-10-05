@@ -1,7 +1,23 @@
 {
     "rust-analyzer.check.command": "clippy",
     "cSpell.words": [
+        "bitor",
+        "bytemuck",
+        "consts",
+        "fract",
+        "gltf",
+        "multisample",
+        "multisampled",
+        "multiview",
         "recv",
-        "winit"
+        "repr",
+        "subseconds",
+        "texels",
+        "Uninit",
+        "wgpu",
+        "wgsl",
+        "winit",
+        "wireframe",
+        "Zeroable"
     ],
 }
