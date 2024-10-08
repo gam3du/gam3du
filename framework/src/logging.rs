@@ -1,3 +1,5 @@
+use env_logger::TimestampPrecision;
+
 // Initialize logging in platform dependant ways.
 pub fn init_logger() {
     // parse_default_env will read the RUST_LOG environment variable and apply it on top
@@ -15,6 +17,9 @@ pub fn init_logger() {
         .filter_module("rustpython_parser", log::LevelFilter::Debug)
         .filter_module("runtime_python", log::LevelFilter::Debug)
         .filter_module("rustpython_vm", log::LevelFilter::Debug)
+        .filter_module("rustpython_vm::frame", log::LevelFilter::Warn)
+        .filter_module("engine_robot::model", log::LevelFilter::Info)
         .parse_default_env()
+        .format_timestamp(Some(TimestampPrecision::Millis))
         .init();
 }

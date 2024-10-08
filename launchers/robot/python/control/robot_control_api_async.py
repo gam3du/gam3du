@@ -1,57 +1,62 @@
+# This file has been generated automatically and shall not be edited by hand!
+# generator: launchers/robot/build.rs
+# api descriptor: control.api.json
+
 import asyncio
-import robot_api_internal
+import api_client
 
 async def move_forward(duration: int = 500) -> bool:
-	handle = robot_api_internal.message("move forward", duration)
+	handle = api_client.message("move forward", duration)
 	while True:
-		result = robot_api_internal.poll(handle)
+		result = api_client.poll(handle)
 		if result.is_done():
 			return result.get_value()
 		await asyncio.sleep(0.01)
 
 
 async def draw_forward(duration: int = 500) -> bool:
-	handle = robot_api_internal.message("draw forward", duration)
+	handle = api_client.message("draw forward", duration)
 	while True:
-		result = robot_api_internal.poll(handle)
+		result = api_client.poll(handle)
 		if result.is_done():
 			return result.get_value()
 		await asyncio.sleep(0.01)
 
 
 async def turn_left(duration: int = 300):
-	handle = robot_api_internal.message("turn left", duration)
+	handle = api_client.message("turn left", duration)
 	while True:
-		result = robot_api_internal.poll(handle)
+		result = api_client.poll(handle)
 		if result.is_done():
 			return result.get_value()
 		await asyncio.sleep(0.01)
 
 
 async def turn_right(duration: int = 300):
-	handle = robot_api_internal.message("turn right", duration)
+	handle = api_client.message("turn right", duration)
 	while True:
-		result = robot_api_internal.poll(handle)
+		result = api_client.poll(handle)
 		if result.is_done():
 			return result.get_value()
 		await asyncio.sleep(0.01)
 
 
 async def robot_color_rgb(red: float, green: float, blue: float):
-	handle = robot_api_internal.message("robot color rgb", red, green, blue)
+	handle = api_client.message("robot color rgb", red, green, blue)
 	while True:
-		result = robot_api_internal.poll(handle)
+		result = api_client.poll(handle)
 		if result.is_done():
 			return result.get_value()
 		await asyncio.sleep(0.01)
 
 
 async def paint_tile():
-	handle = robot_api_internal.message("paint tile")
+	handle = api_client.message("paint tile")
 	while True:
-		result = robot_api_internal.poll(handle)
+		result = api_client.poll(handle)
 		if result.is_done():
 			return result.get_value()
 		await asyncio.sleep(0.01)
+
 
 

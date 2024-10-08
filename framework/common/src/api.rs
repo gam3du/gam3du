@@ -13,6 +13,7 @@ use indexmap::IndexMap as HashMap;
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
+    convert::Infallible,
     fmt::Display,
     ops::Range,
     sync::mpsc::{self, Receiver, Sender, TryRecvError},
@@ -35,9 +36,24 @@ pub struct RichText(pub String);
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Identifier(pub Cow<'static, str>);
 
+impl AsRef<str> for Identifier {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
 impl Display for Identifier {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Display::fmt(&self.0, formatter)
+    }
+}
+
+impl TryFrom<String> for Identifier {
+    // TODO this will change as soon as the validation is implemented
+    type Error = Infallible;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Ok(Self(Cow::Owned(value)))
     }
 }
 
@@ -156,7 +172,12 @@ impl ApiClientEndpoint {
     }
 
     pub fn send_to_server(&self, message: impl Into<ClientToServerMessage>) {
-        self.sender.send(message.into()).unwrap();
+        self.sender.send(message.into()).unwrap_or_else(|_| {
+            panic!(
+                "failed to send message to disconnected api server endpoint: `{}`",
+                self.api.name
+            )
+        });
     }
 
     #[must_use]
@@ -205,28 +226,25 @@ impl ApiServerEndpoint {
         }
     }
 
-    pub fn send_to_client(&mut self, message: impl Into<ServerToClientMessage>) {
+    pub fn send_to_client(&self, message: impl Into<ServerToClientMessage>) {
         self.sender.send(message.into()).unwrap();
     }
 
-    #[expect(
-        clippy::needless_pass_by_value,
-        reason = "passing a reference would make it impossible to pass a `String` without cloning"
-    )]
-    pub fn send_error(&mut self, id: RequestId, message: impl ToString) {
+    pub fn send_error(&mut self, id: RequestId, message: impl Into<String>) {
         let response = ErrorResponseMessage {
             id,
-            message: message.to_string(),
+            message: message.into(),
         };
         self.send_to_client(response);
     }
 
-    pub fn send_response(&mut self, id: RequestId, result: Value) {
+    pub fn send_response(&self, id: RequestId, result: Value) {
         let response = ResponseMessage { id, result };
         self.send_to_client(response);
     }
 
-    pub fn poll_request(&mut self) -> Option<ClientToServerMessage> {
+    #[must_use]
+    pub fn poll_request(&self) -> Option<ClientToServerMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
             Err(TryRecvError::Empty) => None,

@@ -4,7 +4,10 @@
 use rand::{thread_rng, Rng};
 
 use crate::api::{Identifier, Value};
-use std::{fmt::Display, num::NonZeroU128};
+use std::{
+    fmt::Display,
+    num::{NonZeroU128, TryFromIntError},
+};
 
 /// Any message that can be sent from a client to a server
 ///
@@ -30,9 +33,17 @@ impl RequestId {
     }
 }
 
+impl TryFrom<u128> for RequestId {
+    type Error = TryFromIntError;
+
+    fn try_from(value: u128) -> Result<Self, Self::Error> {
+        value.try_into().map(Self)
+    }
+}
+
 impl Display for RequestId {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(formatter)
+        write!(formatter, "{:032x}", self.0)
     }
 }
 

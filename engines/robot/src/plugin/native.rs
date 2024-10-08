@@ -1,5 +1,5 @@
 use crate::{api::EngineApi, events::GameEvent, GameState};
-use gam3du_framework::{
+use gam3du_framework_common::{
     api::{ApiServerEndpoint, Identifier, Value},
     message::{ClientToServerMessage, PendingResult, RequestId, RequestMessage},
 };
@@ -16,8 +16,7 @@ use super::Plugin;
 const ROBOT_API_NAME: &str = "robot";
 const CMD_MOVE_FORWARD: &str = "move forward";
 const CMD_DRAW_FORWARD: &str = "draw forward";
-const CMD_TURN_LEFT: &str = "turn left";
-const CMD_TURN_RIGHT: &str = "turn right";
+const CMD_TURN: &str = "turn";
 const CMD_PAINT_TILE: &str = "paint tile";
 const CMD_ROBOT_COLOR_RGB: &str = "robot color rgb";
 
@@ -79,6 +78,7 @@ impl NativePlugin {
             receiver,
         }
     }
+
     pub fn add_robot_controller(&mut self, robot_controller: ApiServerEndpoint) {
         let api_name = robot_controller.api().name.0.as_ref();
         assert_eq!(
@@ -90,14 +90,14 @@ impl NativePlugin {
 }
 
 impl Plugin for NativePlugin {
-    fn init(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
+    fn init(&mut self, game_state: &mut GameState) {
         game_state
             .event_registries
             .robot_stopped
             .subscribe(self.id, self.sender.clone());
     }
 
-    fn update(&mut self, game_state: &mut std::sync::RwLockWriteGuard<'_, Box<GameState>>) {
+    fn update(&mut self, game_state: &mut GameState) {
         'next_event: loop {
             match self.receiver.try_recv() {
                 Ok(GameEvent::RobotStopped) => {
@@ -136,7 +136,7 @@ impl Plugin for NativePlugin {
                                 break 'next_endpoint;
                             }
                             PendingResult::Error(error) => {
-                                robot_api_endpoint.send_error(id, error);
+                                robot_api_endpoint.send_error(id, error.to_string());
                             }
                         }
                     }
@@ -164,7 +164,7 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            if game_state.draw_forward(duration as u64) {
+            if game_state.move_forward(true, duration.try_into().unwrap()) {
                 PendingResult::Pending
             } else {
                 PendingResult::Ok(Value::Boolean(false))
@@ -179,13 +179,25 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            if game_state.move_forward(duration as u64) {
+            if game_state.move_forward(false, duration.try_into().unwrap()) {
                 PendingResult::Pending
             } else {
                 PendingResult::Ok(Value::Boolean(false))
             }
         }
-        CMD_TURN_LEFT => {
+        CMD_TURN => {
+            let Some(steps_ccw) = arguments.next() else {
+                return CommandError::MissingArgument(command, "steps_ccw").into();
+            };
+
+            let Value::Integer(steps_ccw) = steps_ccw else {
+                return CommandError::WrongArgumentType(command, "steps_ccw").into();
+            };
+
+            let Ok(steps_ccw) = steps_ccw.try_into() else {
+                return CommandError::WrongArgumentType(command, "steps_ccw").into();
+            };
+
             let Some(duration) = arguments.next() else {
                 return CommandError::MissingArgument(command, "duration").into();
             };
@@ -194,19 +206,7 @@ fn run_command(
                 return CommandError::WrongArgumentType(command, "duration").into();
             };
 
-            game_state.turn_left(duration as u64);
-            PendingResult::Pending
-        }
-        CMD_TURN_RIGHT => {
-            let Some(duration) = arguments.next() else {
-                return CommandError::MissingArgument(command, "duration").into();
-            };
-
-            let Value::Integer(duration) = duration else {
-                return CommandError::WrongArgumentType(command, "duration").into();
-            };
-
-            game_state.turn_right(duration as u64);
+            game_state.turn(steps_ccw, duration.try_into().unwrap());
             PendingResult::Pending
         }
         CMD_ROBOT_COLOR_RGB => {

@@ -1,5 +1,5 @@
 use crate::{game_state::GameState, plugin};
-use gam3du_framework::event::{ApplicationEvent, EngineEvent};
+use gam3du_framework_common::event::{ApplicationEvent, EngineEvent};
 use log::debug;
 use std::{
     sync::{

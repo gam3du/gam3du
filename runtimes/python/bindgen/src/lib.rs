@@ -1,13 +1,33 @@
-use crate::Config;
-use gam3du_framework::api::{
+#![allow(missing_docs, reason = "TODO remove before release")]
+#![expect(
+    clippy::missing_errors_doc,
+    // clippy::missing_panics_doc,
+    // clippy::unwrap_used,
+    // clippy::expect_used,
+    // clippy::todo,
+    // clippy::panic,
+    // clippy::panic_in_result_fn,
+    reason = "TODO remove and fix before release"
+)]
+
+mod identifier;
+
+use gam3du_framework_common::api::{
     ApiDescriptor, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
 };
+pub use identifier::PyIdentifier;
 use std::io::{self, Write};
+
+pub struct Config {
+    pub sync: bool,
+}
 
 pub fn generate(out: &mut impl Write, api: &ApiDescriptor, config: &Config) -> io::Result<()> {
     // TODO add documentation comments for api
 
     generate_module(out, api, config)?;
+
+    writeln!(out)?;
 
     Ok(())
 }
@@ -17,23 +37,33 @@ fn generate_module(
     api: &ApiDescriptor,
     config: &Config,
 ) -> Result<(), io::Error> {
+    let internal_module_name = "api_client";
+    let async_module_name = &format!("{}_api_async", api.name.file());
     if config.sync {
-        writeln!(out, "import robot_api_async")?;
+        writeln!(out, "import {async_module_name}")?;
         writeln!(out, "import asyncio")?;
     } else {
         writeln!(out, "import asyncio")?;
-        writeln!(out, "import robot_api_internal")?;
+        writeln!(out, "import {internal_module_name}")?;
     }
     writeln!(out)?;
-    api.functions
-        .values()
-        .try_for_each(|function| generate_function(out, function, config))?;
+    api.functions.values().try_for_each(|function| {
+        generate_function(
+            out,
+            function,
+            internal_module_name,
+            async_module_name,
+            config,
+        )
+    })?;
     Ok(())
 }
 
 pub fn generate_function(
     out: &mut impl Write,
     function: &FunctionDescriptor,
+    internal_module_name: &str,
+    async_module_name: &str,
     config: &Config,
 ) -> io::Result<()> {
     let FunctionDescriptor {
@@ -68,7 +98,7 @@ pub fn generate_function(
     if config.sync {
         write!(
             out,
-            "\tfuture = robot_api_async.{name}(",
+            "\tfuture = {async_module_name}.{name}(",
             name = identifier(name)
         )?;
         let mut first = true;
@@ -82,7 +112,7 @@ pub fn generate_function(
         writeln!(out, ")")?;
         writeln!(out, "\treturn asyncio.run(future)")?;
     } else {
-        write!(out, "\thandle = robot_api_internal.message(\"{name}\"")?;
+        write!(out, "\thandle = {internal_module_name}.message(\"{name}\"")?;
         for parameter in parameters {
             write!(out, ", ")?;
             generate_parameter(out, parameter, true)?;
@@ -91,7 +121,7 @@ pub fn generate_function(
         writeln!(
             out,
             "\twhile True:
-		result = robot_api_internal.poll(handle)
+		result = {internal_module_name}.poll(handle)
 		if result.is_done():
 			return result.get_value()
 		await asyncio.sleep(0.01)

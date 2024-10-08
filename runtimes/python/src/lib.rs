@@ -5,12 +5,13 @@
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::todo,
+    clippy::panic,
     clippy::panic_in_result_fn,
     reason = "TODO remove and fix before release"
 )]
 
 mod api_client;
-pub mod bindgen;
+mod api_server;
 mod runner;
 
 pub use runner::{PythonRunnerThread, PythonRuntime, PythonRuntimeBuilder};

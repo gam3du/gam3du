@@ -1,10 +1,12 @@
 mod floor;
-mod robot;
+mod my_model;
+// mod robot;
 
 use crate::{projection::Projection, GameState, RenderState};
 use floor::FloorRenderer;
 use gam3du_framework::renderer;
-use robot::RobotRenderer;
+use my_model::MyModelRenderer;
+// use robot::RobotRenderer;
 use std::{
     sync::{Arc, RwLock},
     time::Instant,
@@ -43,16 +45,18 @@ impl renderer::RendererBuilder for RendererBuilder {
 
         let depth_map = DepthTexture::create_depth_texture(device, surface, "depth_map");
 
-        let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
+        // let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
         let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0], &state);
+        let my_model_renderer = MyModelRenderer::new(device, queue, surface.view_formats[0]);
 
         Renderer {
             game_state,
             projection,
             depth_map,
             state,
-            robot_renderer,
+            // robot_renderer,
             floor_renderer,
+            my_model_renderer,
         }
     }
 }
@@ -63,16 +67,55 @@ pub struct Renderer {
     projection: Projection,
     depth_map: DepthTexture,
     state: RenderState,
-    robot_renderer: RobotRenderer,
+    // robot_renderer: RobotRenderer,
     floor_renderer: FloorRenderer,
+    my_model_renderer: MyModelRenderer,
 }
 
 impl Renderer {
-    fn render_robot(
+    fn render_my_model(
         &mut self,
         texture_view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         queue: &wgpu::Queue,
+    ) {
+        let render_pass_color_attachment = wgpu::RenderPassColorAttachment {
+            view: texture_view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Load,
+                store: wgpu::StoreOp::Store,
+            },
+        };
+        let color_attachments = [Some(render_pass_color_attachment)];
+        let render_pass_depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
+            view: &self.depth_map.view,
+            depth_ops: Some(wgpu::Operations {
+                load: wgpu::LoadOp::Clear(1.0),
+                store: wgpu::StoreOp::Store,
+            }),
+            stencil_ops: None,
+        };
+        let render_pass_descriptor = wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &color_attachments,
+            depth_stencil_attachment: Some(render_pass_depth_stencil_attachment.clone()),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        };
+        {
+            let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
+
+            self.my_model_renderer
+                .render(queue, &mut render_pass, &self.state, &self.projection);
+        }
+    }
+
+    fn render_robot(
+        &mut self,
+        texture_view: &wgpu::TextureView,
+        encoder: &mut wgpu::CommandEncoder,
+        _queue: &wgpu::Queue,
     ) {
         let clear_color = wgpu::Color {
             r: 0.1,
@@ -105,10 +148,10 @@ impl Renderer {
             occlusion_query_set: None,
         };
         {
-            let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
+            let mut _render_pass = encoder.begin_render_pass(&render_pass_descriptor);
 
-            self.robot_renderer
-                .render(queue, &mut render_pass, &self.state, &self.projection);
+            // self.robot_renderer
+            //     .render(queue, &mut render_pass, &self.state, &self.projection);
         }
     }
 
@@ -179,7 +222,7 @@ impl renderer::Renderer for Renderer {
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         self.render_robot(texture_view, &mut encoder, queue);
-
+        self.render_my_model(texture_view, &mut encoder, queue);
         self.render_floor(texture_view, &mut encoder, queue);
 
         queue.submit(Some(encoder.finish()));

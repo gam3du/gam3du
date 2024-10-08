@@ -1,16 +1,15 @@
 mod animation;
 mod floor;
+mod orientation;
+mod robot;
 
 use crate::{api::EngineApi, events::EventRegistries, tile::LineSegment};
 use animation::RobotAnimation;
 use floor::Floor;
 use glam::{IVec3, Vec3};
-use log::debug;
-use std::{
-    f32::consts::TAU,
-    ops::{AddAssign, SubAssign},
-    time::{Duration, Instant},
-};
+pub(crate) use orientation::Orientation;
+pub(crate) use robot::Robot;
+use std::time::{Duration, Instant};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub(crate) struct Tick(pub(crate) u64);
@@ -35,13 +34,13 @@ impl GameState {
         self.robot.update(&mut self.event_registries);
     }
 
-    fn turn(&mut self, step: i8, duration: Duration) {
+    fn _turn(&mut self, steps_ccw: i8, duration: Duration) {
         self.robot.complete_animation();
         #[expect(clippy::cast_sign_loss, reason = "TODO make this less cumbersome")]
-        if step < 0 {
-            self.robot.orientation -= -step as u8;
+        if steps_ccw < 0 {
+            self.robot.orientation -= -steps_ccw as u8;
         } else {
-            self.robot.orientation += step as u8;
+            self.robot.orientation += steps_ccw as u8;
         }
         self.robot.current_animation = Some(RobotAnimation::Rotate {
             start: self.robot.animation_angle,
@@ -110,22 +109,13 @@ impl GameState {
 }
 
 impl EngineApi for GameState {
-    fn move_forward(&mut self, duration: u64) -> bool {
-        self._move_forward(false, Duration::from_millis(duration))
+    fn move_forward(&mut self, draw: bool, duration: u64) -> bool {
+        self._move_forward(draw, Duration::from_millis(duration))
             .is_ok()
     }
 
-    fn draw_forward(&mut self, duration: u64) -> bool {
-        self._move_forward(true, Duration::from_millis(duration))
-            .is_ok()
-    }
-
-    fn turn_left(&mut self, duration: u64) {
-        self.turn(1, Duration::from_millis(duration));
-    }
-
-    fn turn_right(&mut self, duration: u64) {
-        self.turn(-1, Duration::from_millis(duration));
+    fn turn(&mut self, steps_ccw: i8, duration: u64) {
+        self._turn(steps_ccw, Duration::from_millis(duration));
     }
 
     fn robot_color_rgb(&mut self, red: f32, green: f32, blue: f32) {
@@ -134,131 +124,5 @@ impl EngineApi for GameState {
 
     fn paint_tile(&mut self) {
         self._paint_tile();
-    }
-}
-
-pub(crate) struct Robot {
-    pub(crate) animation_position: Vec3,
-    pub(crate) animation_angle: f32,
-    position: IVec3,
-    pub(crate) color: Vec3,
-    orientation: Orientation,
-    current_animation: Option<RobotAnimation>,
-}
-
-impl Robot {
-    // #[must_use]
-    // pub(crate) fn is_idle(&self) -> bool {
-    //     self.current_animation.is_none()
-    // }
-
-    fn complete_animation(&mut self) {
-        if let Some(current_animation) = self.current_animation.take() {
-            debug!("short-circuiting running animation");
-            current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
-        } else {
-            debug!("no existing animation to short-circuit");
-        }
-    }
-
-    fn update(&mut self, event_registries: &mut EventRegistries) -> bool {
-        if let Some(animation) = self.current_animation.as_ref() {
-            if animation.animate(&mut self.animation_position, &mut self.animation_angle) {
-                self.current_animation.take();
-                event_registries.robot_stopped.notify();
-                return true;
-            }
-        };
-        false
-    }
-}
-
-impl Default for Robot {
-    fn default() -> Self {
-        let orientation = Orientation::default();
-        let position = IVec3::new(0, 0, 0);
-
-        Self {
-            color: Vec3::new(0.3, 0.3, 0.3),
-            animation_position: position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
-            current_animation: None,
-            animation_angle: orientation.angle(),
-            orientation,
-            position,
-        }
-    }
-}
-
-// TODO W.I.P.
-#[expect(
-    clippy::min_ident_chars,
-    reason = "their meaning is clear from the context"
-)]
-#[derive(Clone, Copy, Default)]
-#[repr(u8)]
-pub(crate) enum Orientation {
-    /// positive x
-    #[default]
-    E = 0,
-    /// +x, +y
-    NE = 1,
-    /// positive y
-    N = 2,
-    /// -x +y
-    NW = 3,
-    /// negative x
-    W = 4,
-    /// -x -y
-    SW = 5,
-    /// negative y
-    S = 6,
-    /// +x -y
-    SE = 7,
-}
-
-impl Orientation {
-    fn as_ivec3(self) -> IVec3 {
-        match self {
-            Orientation::E => IVec3::new(1, 0, 0),
-            Orientation::NE => IVec3::new(1, 1, 0),
-            Orientation::N => IVec3::new(0, 1, 0),
-            Orientation::NW => IVec3::new(-1, 1, 0),
-            Orientation::W => IVec3::new(-1, 0, 0),
-            Orientation::SW => IVec3::new(-1, -1, 0),
-            Orientation::S => IVec3::new(0, -1, 0),
-            Orientation::SE => IVec3::new(1, -1, 0),
-        }
-    }
-
-    fn angle(self) -> f32 {
-        f32::from(self as u8) / 8.0 * TAU
-    }
-}
-
-impl From<u8> for Orientation {
-    fn from(value: u8) -> Self {
-        match value & 0x07 {
-            0 => Self::E,
-            1 => Self::NE,
-            2 => Self::N,
-            3 => Self::NW,
-            4 => Self::W,
-            5 => Self::SW,
-            6 => Self::S,
-            7 => Self::SE,
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl AddAssign<u8> for Orientation {
-    fn add_assign(&mut self, rhs: u8) {
-        *self = (*self as u8).wrapping_add(rhs).into();
-    }
-}
-
-impl SubAssign<u8> for Orientation {
-    fn sub_assign(&mut self, rhs: u8) {
-        *self = (*self as u8).wrapping_sub(rhs).into();
     }
 }

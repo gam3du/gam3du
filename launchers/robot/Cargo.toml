@@ -7,18 +7,21 @@ rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]
-ctrlc.workspace = true
-
-gam3du-framework.workspace = true
 engine-robot.workspace = true
+gam3du-framework-common.workspace = true
+gam3du-framework.workspace = true
 runtime-python.workspace = true
 
-pollster.workspace = true
 log.workspace = true
+pollster.workspace = true
+serde_json.workspace = true
 winit.workspace = true
 
+[build-dependencies]
+gam3du-framework-common.workspace = true
+runtime-python-bindgen.workspace = true
+
 serde_json.workspace = true
-tiny_http.workspace = true
 
 [lints]
 workspace = true

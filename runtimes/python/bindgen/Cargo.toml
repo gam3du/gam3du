@@ -1,0 +1,13 @@
+[package]
+name = "runtime-python-bindgen"
+description = "Binding generators for Python runtimes"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+
+[dependencies]
+gam3du-framework-common.workspace = true
+
+[lints]
+workspace = true
