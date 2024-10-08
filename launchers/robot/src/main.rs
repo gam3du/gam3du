@@ -44,7 +44,7 @@ fn main() {
     // };
 
     let (python_thread, robot_api_engine_endpoint) =
-        start_python_robot("engines/robot/api.json", "python", "robot");
+        start_python_robot("engines/robot/api.json", "python", "python/robot.py");
 
     let mut game_loop = GameLoop::default();
     let mut plugin = NativePlugin::new();
@@ -134,7 +134,7 @@ fn register_ctrlc(event_sender: &Sender<EngineEvent>) {
             drop(event_sender.send(ApplicationEvent::Exit.into()));
         }
     })
-    .expect("Error setting Ctrl-C handler");
+        .expect("Error setting Ctrl-C handler");
 }
 
 // fn http_server(command_sender: &Sender<EngineEvent>, api: &Api, exit_flag: &'static AtomicBool) {

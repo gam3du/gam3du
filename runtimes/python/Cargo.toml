@@ -12,6 +12,7 @@ serde_json.workspace = true
 log.workspace = true
 rustpython-vm.workspace = true
 rustpython = { workspace = true, features = ["stdlib"] }
+# either.workspace = true
 
 [lints]
 workspace = true

@@ -1,22 +1,41 @@
+use crate::Config;
 use gam3du_framework::api::{
     ApiDescriptor, FunctionDescriptor, Identifier, ParameterDescriptor, TypeDescriptor, Value,
 };
 use std::io::{self, Write};
 
-pub fn generate(out: &mut impl Write, api: &ApiDescriptor) -> io::Result<()> {
+pub fn generate(out: &mut impl Write, api: &ApiDescriptor, config: &Config) -> io::Result<()> {
     // TODO add documentation comments for api
 
-    writeln!(out, "import robot_api_internal")?;
-    writeln!(out)?;
-
-    api.functions
-        .values()
-        .try_for_each(|function| generate_function(out, function))?;
+    generate_module(out, api, config)?;
 
     Ok(())
 }
 
-pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) -> io::Result<()> {
+fn generate_module(
+    out: &mut impl Write,
+    api: &ApiDescriptor,
+    config: &Config,
+) -> Result<(), io::Error> {
+    if config.sync {
+        writeln!(out, "import robot_api_async")?;
+        writeln!(out, "import asyncio")?;
+    } else {
+        writeln!(out, "import asyncio")?;
+        writeln!(out, "import robot_api_internal")?;
+    }
+    writeln!(out)?;
+    api.functions
+        .values()
+        .try_for_each(|function| generate_function(out, function, config))?;
+    Ok(())
+}
+
+pub fn generate_function(
+    out: &mut impl Write,
+    function: &FunctionDescriptor,
+    config: &Config,
+) -> io::Result<()> {
     let FunctionDescriptor {
         ref name,
         caption: _,
@@ -27,6 +46,9 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
 
     // TODO add documentation comments for function and parameters
 
+    if !config.sync {
+        write!(out, "async ")?;
+    }
     write!(out, "def {name}(", name = identifier(name))?;
 
     for (index, parameter) in parameters.iter().enumerate() {
@@ -43,12 +65,39 @@ pub fn generate_function(out: &mut impl Write, function: &FunctionDescriptor) ->
     }
     writeln!(out, ":")?;
 
-    write!(out, "\treturn robot_api_internal.message(\"{name}\"")?;
-    for parameter in parameters {
-        write!(out, ", ")?;
-        generate_parameter(out, parameter, true)?;
+    if config.sync {
+        write!(
+            out,
+            "\tfuture = robot_api_async.{name}(",
+            name = identifier(name)
+        )?;
+        let mut first = true;
+        for parameter in parameters {
+            if !first {
+                write!(out, ", ")?;
+            }
+            first = false;
+            generate_parameter(out, parameter, true)?;
+        }
+        writeln!(out, ")")?;
+        writeln!(out, "\treturn asyncio.run(future)")?;
+    } else {
+        write!(out, "\thandle = robot_api_internal.message(\"{name}\"")?;
+        for parameter in parameters {
+            write!(out, ", ")?;
+            generate_parameter(out, parameter, true)?;
+        }
+        writeln!(out, ")")?;
+        writeln!(
+            out,
+            "\twhile True:
+		result = robot_api_internal.poll(handle)
+		if result.is_done():
+			return result.get_value()
+		await asyncio.sleep(0.01)
+"
+        )?;
     }
-    writeln!(out, ")",)?;
 
     writeln!(out)?;
 

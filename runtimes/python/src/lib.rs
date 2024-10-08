@@ -14,3 +14,7 @@ pub mod bindgen;
 mod runner;
 
 pub use runner::{PythonRunnerThread, PythonRuntime, PythonRuntimeBuilder};
+
+pub struct Config {
+    pub sync: bool,
+}

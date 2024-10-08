@@ -5,13 +5,8 @@ use gam3du_framework::{
     module::Module,
 };
 use log::{debug, error, info};
-use rustpython_vm::{
-    builtins::PyStrInterned,
-    convert::IntoObject,
-    function::FuncArgs,
-    signal::{user_signal_channel, UserSignal, UserSignalReceiver, UserSignalSender},
-    Interpreter, PyObjectRef, Settings,
-};
+use rustpython_vm::scope::Scope;
+use rustpython_vm::{builtins::PyStrInterned, convert::IntoObject, function::FuncArgs, identifier, signal::{user_signal_channel, UserSignal, UserSignalReceiver, UserSignalSender}, Interpreter, PyObjectRef, Settings};
 use std::{
     collections::HashMap,
     sync::atomic::{AtomicU64, Ordering},
@@ -172,7 +167,19 @@ pub struct PythonRuntime {
 impl Module for PythonRuntime {
     fn enter_main(&mut self) {
         self.interpreter.enter(|vm| {
-            match vm.import(self.main_module_name, 0) {
+            let attrs = vm.ctx.new_dict();
+            attrs.set_item(
+                identifier!(vm, __name__),
+                vm.ctx.new_str("runpy").into(),
+                vm,
+            ).unwrap();
+            attrs.set_item(
+                identifier!(vm, __file__),
+                self.main_module_name.to_object(),
+                vm,
+            ).unwrap();
+            let scope = Scope::with_builtins(None, attrs, vm);
+            match vm.run_script(scope, self.main_module_name.as_str()) {
                 Ok(_module) => {
                     info!("Python thread completed successfully");
                 }

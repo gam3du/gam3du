@@ -1,13 +1,12 @@
-use gam3du_framework::{
-    api::{ApiClientEndpoint, ApiDescriptor, Identifier, TypeDescriptor, Value},
-    message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
-};
+use crate::api_client::py_api_client::{MaybeFulfilled, RequestHandle};
+use gam3du_framework::api::{ApiClientEndpoint, ApiDescriptor, Identifier, TypeDescriptor, Value};
+use gam3du_framework::message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage};
 use log::{error, trace};
+use rustpython_vm::{builtins::PyBaseExceptionRef, convert::IntoObject};
 use rustpython_vm::{
     builtins::PyStr, convert::ToPyObject, function::PosArgs, pyclass, pymodule, PyObject,
     PyObjectRef, PyPayload, PyRef, PyResult, TryFromBorrowedObject, VirtualMachine,
 };
-use std::{thread, time::Duration};
 
 pub(crate) fn insert_api_client(vm: &VirtualMachine, api_module: &str, api: ApiClientEndpoint) {
     let api_module = vm.ctx.intern_str(api_module);
@@ -71,7 +70,11 @@ impl PyPayload for PrivateApi {
 #[pymodule]
 pub(crate) mod py_api_client {
     use super::{FunctionNameConverter, PyResult, VirtualMachine};
-    use rustpython_vm::{function::PosArgs, PyObjectRef};
+    use gam3du_framework::message::RequestId;
+    use rustpython_vm::{
+        builtins::PyBaseExceptionRef, function::PosArgs, pyclass, PyObjectRef, PyPayload,
+        TryFromObject,
+    };
 
     #[pyfunction]
     fn message(
@@ -79,9 +82,143 @@ pub(crate) mod py_api_client {
         args: PosArgs,
         // kwargs: KwArgs,
         vm: &VirtualMachine,
-    ) -> PyResult<PyObjectRef> {
+    ) -> PyResult<RequestHandle> {
         // just forward to a location outside of this macro so that the IDE can assist us
         super::message(name, args, vm)
+    }
+
+    #[pyfunction]
+    fn poll(
+        request: RequestHandle,
+        vm: &VirtualMachine,
+    ) -> Result<MaybeFulfilled, PyBaseExceptionRef> {
+        // just forward to a location outside of this macro so that the IDE can assist us
+        super::poll(request, vm)
+    }
+
+    #[pyclass(name, module = "py_api_client", no_attr)]
+    #[derive(Copy, Clone, PyPayload)]
+    pub(super) struct RequestHandle {
+        id: RequestId,
+    }
+
+    #[pyclass]
+    impl RequestHandle {}
+
+    impl RequestHandle {
+        pub(super) fn new(request_id: RequestId) -> Self {
+            Self { id: request_id }
+        }
+
+        pub(super) fn inner(&self) -> RequestId {
+            self.id
+        }
+    }
+
+    impl std::fmt::Debug for RequestHandle {
+        fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter
+                .debug_struct("RequestHandle")
+                .field("request_id", &self.id)
+                .finish()
+        }
+    }
+
+    impl TryFromObject for RequestHandle {
+        fn try_from_object(vm: &VirtualMachine, obj: PyObjectRef) -> PyResult<Self> {
+            obj.payload()
+                .copied()
+                .ok_or_else(|| vm.new_value_error("invalid pending request".to_owned()))
+        }
+    }
+
+    #[pyclass(name, module = "py_api_client", no_attr)]
+    #[derive(PyPayload)]
+    pub(super) struct MaybeFulfilled {
+        id: RequestId,
+        value: Option<PyObjectRef>,
+    }
+
+    impl MaybeFulfilled {
+        pub(super) fn new(request_id: RequestId) -> Self {
+            Self {
+                id: request_id,
+                value: None,
+            }
+        }
+
+        pub(super) fn with_value(self, value: PyObjectRef) -> Self {
+            Self {
+                id: self.id,
+                value: Some(value),
+            }
+        }
+
+        fn inner(&self) -> RequestId {
+            self.id
+        }
+    }
+
+    impl std::fmt::Debug for MaybeFulfilled {
+        fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            formatter
+                .debug_struct("MaybeFulfilled")
+                .field("request_id", &self.id)
+                .finish()
+        }
+    }
+
+    /// Public Python API
+    #[pyclass]
+    impl MaybeFulfilled {
+        #[pymethod]
+        fn is_done(&self) -> bool {
+            self.value.is_some()
+        }
+
+        #[pymethod]
+        fn get_value(&self) -> PyObjectRef {
+            self.value.clone().unwrap()
+        }
+    }
+}
+
+fn poll(request: RequestHandle, vm: &VirtualMachine) -> Result<MaybeFulfilled, PyBaseExceptionRef> {
+    let api_module = "robot_api_internal";
+    let private_api = get_api_client(vm, api_module);
+    let message_id = request.inner();
+
+    let response = private_api.api.poll_response();
+
+    match response {
+        None => Ok(MaybeFulfilled::new(message_id)),
+        Some(response) => match response {
+            ServerToClientMessage::Response(ResponseMessage { id, result }) => {
+                assert_eq!(message_id, id, "request-response id mismatch");
+                trace!("command successfully returned: {result:?}");
+                let value = match result {
+                    Value::Unit => vm.ctx.none(),
+                    Value::Integer(_) => todo!(),
+                    Value::Float(_) => todo!(),
+                    Value::Boolean(value) => value.to_pyobject(vm),
+                    Value::String(_) => todo!(),
+                    Value::List(_) => todo!(),
+                };
+                Ok(MaybeFulfilled::new(message_id).with_value(value.into_object()))
+            }
+            ServerToClientMessage::ErrorResponse(ErrorResponseMessage { id, message }) => {
+                assert_eq!(message_id, id, "request-response id mismatch");
+                error!("command returned an error: {message}");
+                let error = vm
+                    .invoke_exception(
+                        vm.ctx.exceptions.runtime_error.to_owned(),
+                        vec![vm.ctx.new_str(message).to_pyobject(vm)],
+                    )
+                    .expect("Constructor of \"RuntimeError\" should not fail");
+                vm.print_exception(error.to_owned());
+                Err(error)
+            }
+        },
     }
 }
 
@@ -91,7 +228,7 @@ fn message(
     args: PosArgs,
     // kwargs: KwArgs,
     vm: &VirtualMachine,
-) -> PyResult<PyObjectRef> {
+) -> PyResult<RequestHandle> {
     // TODO move the api selection into the caller
     // let api_name = Identifier("robot".into());
     // let vm_id = vm.wasm_id.as_ref().unwrap();
@@ -127,36 +264,9 @@ fn message(
         })
         .collect();
 
-    let message_id = private_api.api.send_command(command, arguments);
-
-    // TODO move this polling into the python bindgen layer to enable user scripts to perform async calls rather than blocking
-    let response = loop {
-        match private_api.api.poll_response() {
-            Some(response) => break response,
-            None => thread::sleep(Duration::from_millis(10)),
-        }
-    };
-
-    match response {
-        ServerToClientMessage::Response(ResponseMessage { id, result }) => {
-            assert_eq!(message_id, id, "request-response id mismatch");
-            trace!("command successfully returned: {result:?}");
-            match result {
-                Value::Unit => Ok(vm.ctx.none()),
-                Value::Integer(_) => todo!(),
-                Value::Float(_) => todo!(),
-                Value::Boolean(value) => Ok(value.to_pyobject(vm)),
-                Value::String(_) => todo!(),
-                Value::List(_) => todo!(),
-            }
-        }
-        ServerToClientMessage::ErrorResponse(ErrorResponseMessage { id, message }) => {
-            assert_eq!(message_id, id, "request-response id mismatch");
-            error!("command returned an error: {message}");
-            let error = vm.new_runtime_error(message);
-            Err(error)
-        }
-    }
+    Ok(RequestHandle::new(
+        private_api.api.send_command(command, arguments),
+    ))
 }
 
 struct FunctionNameConverter(Option<String>);

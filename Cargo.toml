@@ -46,6 +46,15 @@ serde = "1.0.210"
 tiny_http = "0.12.0"
 ctrlc = "3.4.5"
 
+# Generic helper type for iterators and formatting.
+# This is dependency is "free" because it is already in our dependency graph:
+# `either` is a dependency of `which` and `itertools` which are used by `rustpython-vm`.
+# TODO: Unused
+# either = "1.13.0"
+
+# Used to maintain the order of elements in JSON objects.
+# This makes the JSON deserialization of the `serde_json` crate deterministic
+# which is useful when generating code from the api.json file.
 indexmap = { version = "2.5.0", features = ["serde"] }
 
 # Compile all (non-workspace) dependencies with optimizations.

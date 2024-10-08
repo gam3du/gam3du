@@ -7,7 +7,7 @@
 )]
 
 use gam3du_framework::api::ApiDescriptor;
-use runtime_python::bindgen;
+use runtime_python::{bindgen, Config};
 use std::io::BufWriter;
 
 fn main() {
@@ -60,10 +60,14 @@ fn main() {
     let api: ApiDescriptor = serde_json::from_str(&api_json).unwrap();
     println!("{api:#?}");
 
-    // let mut out = String::new();
+    // Generate sync api
     let out_file = std::fs::File::create("python/robot_api.py").unwrap();
     let mut out = BufWriter::new(out_file);
-    bindgen::generate(&mut out, &api).unwrap();
+    bindgen::generate(&mut out, &api, &Config { sync: true }).unwrap();
+
+    let out_file = std::fs::File::create("python/robot_api_async.py").unwrap();
+    let mut out = BufWriter::new(out_file);
+    bindgen::generate(&mut out, &api, &Config { sync: false }).unwrap();
 
     // println!("{out}");
 }
