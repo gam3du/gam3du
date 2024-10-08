@@ -23,8 +23,8 @@ fn main() {
     register_ctrlc(&event_sender);
 
     let (python_thread, robot_api_engine_endpoint) = start_python_robot(
-        "launchers/robot/control.api.json",
-        "launchers/robot/python/control",
+        "applications/robot/control.api.json",
+        "applications/robot/python/control",
         "robot",
     );
 
@@ -39,7 +39,7 @@ fn main() {
             // the game loop might not be `Send`, so we need to create it from within the thread
             let mut game_loop = GameLoop::default();
             let mut python_runtime_builder =
-                PythonRuntimeBuilder::new("launchers/robot/python/plugin", "robot_plugin");
+                PythonRuntimeBuilder::new("applications/robot/python/plugin", "robot_plugin");
             python_runtime_builder.add_api_server(robot_api_engine_endpoint);
             let plugin = PythonPlugin::new(python_runtime_builder);
 

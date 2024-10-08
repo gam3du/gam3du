@@ -171,6 +171,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "86fdf8605db99b54d3cd748a44c6d04df638eb5dafb219b135d0149bd0db01f6"
 
 [[package]]
+name = "application-robot"
+version = "0.1.0"
+dependencies = [
+ "engine-robot",
+ "gam3du-framework",
+ "gam3du-framework-common",
+ "log",
+ "pollster",
+ "runtime-python",
+ "runtime-python-bindgen",
+ "serde_json",
+ "winit",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1371,21 +1386,6 @@ name = "lalrpop-util"
 version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "507460a910eb7b32ee961886ff48539633b788a36b65692b95f225b844c82553"
-
-[[package]]
-name = "launcher-robot"
-version = "0.1.0"
-dependencies = [
- "engine-robot",
- "gam3du-framework",
- "gam3du-framework-common",
- "log",
- "pollster",
- "runtime-python",
- "runtime-python-bindgen",
- "serde_json",
- "winit",
-]
 
 [[package]]
 name = "lazy_static"

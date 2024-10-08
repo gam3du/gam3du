@@ -1,5 +1,5 @@
 # This file has been generated automatically and shall not be edited by hand!
-# generator: launchers/robot/build.rs
+# generator: applications/robot/build.rs
 # api descriptor: control.api.json
 
 import robot_control_api_async

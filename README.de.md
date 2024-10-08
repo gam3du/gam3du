@@ -78,7 +78,7 @@ Momentan sind wir noch dabei uns zu sortieren. Wir aktualisieren diesen Abschnit
 1. [Installation der Rust-Toolchain](https://www.rust-lang.org/learn/get-started)
 2. Dieses Repository klonen: `git clone git@github.com:gam3du/gam3du.git`
 3. In das Projektverzeichnis wechseln: `cd gam3du`
-4. Das Programm bauen und starten: `cargo run --bin=launcher-robot`
+4. Das Programm bauen und starten: `cargo run --bin=application-robot`
 
 Es geht ein neues Fenster auf, in welchem sich ein Python-gesteuerter Roboter über eine Ebene bewegt.
 
