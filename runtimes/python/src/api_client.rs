@@ -81,6 +81,7 @@ impl PyPayload for PrivateApi {
 
 #[pymodule]
 pub(crate) mod py_api_client {
+
     use super::{FunctionNameConverter, PyResult, VirtualMachine};
     use gam3du_framework_common::message::RequestId;
     use rustpython_vm::{
@@ -117,6 +118,10 @@ pub(crate) mod py_api_client {
     #[pyclass]
     impl RequestHandle {}
 
+    #[allow(
+        clippy::multiple_inherent_impl,
+        reason = "required as separation between macro and non-macro code"
+    )]
     impl RequestHandle {
         pub(super) fn new(request_id: RequestId) -> Self {
             Self { id: request_id }
@@ -165,10 +170,6 @@ pub(crate) mod py_api_client {
                 value: Some(value),
             }
         }
-
-        fn inner(&self) -> RequestId {
-            self.id
-        }
     }
 
     impl std::fmt::Debug for MaybeFulfilled {
@@ -176,12 +177,16 @@ pub(crate) mod py_api_client {
             formatter
                 .debug_struct("MaybeFulfilled")
                 .field("request_id", &self.id)
-                .finish()
+                .finish_non_exhaustive()
         }
     }
 
     /// Public Python API
     #[pyclass]
+    #[allow(
+        clippy::multiple_inherent_impl,
+        reason = "required as separation between macro and non-macro code"
+    )]
     impl MaybeFulfilled {
         #[pymethod]
         fn is_done(&self) -> bool {
@@ -227,7 +232,7 @@ fn poll(request: RequestHandle, vm: &VirtualMachine) -> Result<MaybeFulfilled, P
                         vec![vm.ctx.new_str(message).to_pyobject(vm)],
                     )
                     .expect("Constructor of \"RuntimeError\" should not fail");
-                vm.print_exception(error.to_owned());
+                vm.print_exception(error.clone());
                 Err(error)
             }
         },

@@ -7,6 +7,7 @@
 
 use gam3du_framework_common::api::ApiDescriptor;
 use runtime_python_bindgen::{Config, PyIdentifier};
+use std::fs::File;
 use std::io::BufWriter;
 use std::io::Write;
 
@@ -18,28 +19,31 @@ fn main() {
     // TODO make the engine a command line parameter
     let api_json = std::fs::read_to_string(API_DESCRIPTOR).unwrap();
     let api: ApiDescriptor = serde_json::from_str(&api_json).unwrap();
+    let api_name = api.name.file();
 
     // Generate sync api
-    let api_bindings = format!("python/control/{}_api.py", api.name.file());
-
-    let out_file = std::fs::File::create(api_bindings).unwrap();
-    let mut out = BufWriter::new(out_file);
-    writeln!(
-        out,
-        "# This file has been generated automatically and shall not be edited by hand!"
-    )
-    .unwrap();
-    writeln!(out, "# generator: {}", file!()).unwrap();
-    writeln!(out, "# api descriptor: {API_DESCRIPTOR}").unwrap();
-    writeln!(out).unwrap();
-
-    runtime_python_bindgen::generate(&mut out, &api, &Config { sync: true }).unwrap();
+    {
+        let api_bindings = format!("python/control/{api_name}_api.py");
+        let mut out = new_out_file(api_bindings);
+        write_header(&mut out);
+        runtime_python_bindgen::generate(&mut out, &api, &Config { sync: true }).unwrap();
+    }
 
     // Generate async api
-    let api_bindings = format!("python/control/{}_api_async.py", api.name.file());
+    {
+        let api_bindings = format!("python/control/{api_name}_api_async.py");
+        let mut out = new_out_file(api_bindings);
+        write_header(&mut out);
+        runtime_python_bindgen::generate(&mut out, &api, &Config { sync: false }).unwrap();
+    }
+}
 
-    let out_file = std::fs::File::create(api_bindings).unwrap();
-    let mut out = BufWriter::new(out_file);
+fn new_out_file(api_bindings: String) -> BufWriter<File> {
+    let out_file = File::create(api_bindings).unwrap();
+    BufWriter::new(out_file)
+}
+
+fn write_header(out: &mut BufWriter<File>) {
     writeln!(
         out,
         "# This file has been generated automatically and shall not be edited by hand!"
@@ -48,6 +52,4 @@ fn main() {
     writeln!(out, "# generator: {}", file!()).unwrap();
     writeln!(out, "# api descriptor: {API_DESCRIPTOR}").unwrap();
     writeln!(out).unwrap();
-
-    runtime_python_bindgen::generate(&mut out, &api, &Config { sync: false }).unwrap();
 }

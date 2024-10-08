@@ -9,12 +9,10 @@ use gam3du_framework_common::{
 };
 use log::{debug, error, info};
 use runtime_python_bindgen::PyIdentifier;
-use rustpython_vm::scope::Scope;
 use rustpython_vm::{
     builtins::PyStrInterned,
     convert::IntoObject,
     function::FuncArgs,
-    identifier,
     signal::{user_signal_channel, UserSignal, UserSignalReceiver, UserSignalSender},
     Interpreter, PyObjectRef, Settings,
 };
