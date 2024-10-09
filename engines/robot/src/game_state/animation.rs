@@ -7,6 +7,7 @@ use std::{
 pub(crate) enum RobotAnimation {
     Move {
         start: Vec3,
+        via: Vec3,
         end: Vec3,
         start_time: Instant,
         duration: Duration,
@@ -49,8 +50,14 @@ impl RobotAnimation {
     fn animate_progress(&self, progress: f32, position: &mut Vec3, orientation: &mut f32) {
         let progress = progress.clamp(0.0, 1.0);
         match *self {
-            RobotAnimation::Move { start, end, .. } => {
-                *position = start.lerp(end, progress);
+            RobotAnimation::Move {
+                start, end, via, ..
+            } => {
+                *position = if progress < 0.5 {
+                    start.lerp(via, progress * 2.0)
+                } else {
+                    via.lerp(end, progress * 2.0 - 1.0)
+                };
             }
             RobotAnimation::Rotate { start, end, .. } => {
                 *orientation = if (start - end).abs() <= PI {

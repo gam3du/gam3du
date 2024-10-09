@@ -6,7 +6,7 @@ mod robot;
 use crate::{api::EngineApi, events::EventRegistries, tile::LineSegment};
 use animation::RobotAnimation;
 use floor::Floor;
-use glam::{IVec2, UVec2, Vec3, Vec3Swizzles};
+use glam::{IVec2, UVec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
 pub(crate) use orientation::Orientation;
 pub(crate) use robot::Robot;
 use std::time::{Duration, Instant};
@@ -70,6 +70,7 @@ impl GameState {
         let start_index = self.floor.to_index(start_pos.xy()).unwrap();
         self.floor.tiles[start_index].pos[2] = height;
         self.floor.tainted = self.tick;
+        self.robot.animation_position[2] = height;
     }
 
     pub fn _paint_tile(&mut self) {
@@ -110,10 +111,17 @@ impl GameState {
 
         self.robot.position.x = end_pos.x;
         self.robot.position.y = end_pos.y;
-
+        let animation_start = self.robot.animation_position;
+        let animation_end = self.floor.tiles[end_index].center_pos();
+        let animation_via = (
+            animation_start.xy().midpoint(animation_end.xy()),
+            animation_start.z.max(animation_end.z),
+        )
+            .into();
         self.robot.current_animation = Some(RobotAnimation::Move {
-            start: self.robot.animation_position,
-            end: self.robot.position.as_vec3() + Vec3::new(0.5, 0.5, 0.0),
+            start: animation_start,
+            via: animation_via,
+            end: animation_end,
             start_time: Instant::now(),
             duration,
         });

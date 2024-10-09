@@ -4,7 +4,7 @@
 )]
 
 use bytemuck::{Pod, Zeroable};
-use glam::{Vec3, Vec4};
+use glam::{Vec3, Vec4, Vec4Swizzles};
 use std::ops;
 
 use crate::game_state::Orientation;
@@ -20,6 +20,10 @@ pub(super) struct Tile {
 impl Tile {
     pub(crate) fn set_color(&mut self, color: Vec3) {
         self.color = [color.x, color.y, color.z, 1.0];
+    }
+
+    pub(crate) fn center_pos(&self) -> Vec3 {
+        Vec4::from(self.pos).xyz() + Vec3::new(0.5, 0.5, 0.0)
     }
 }
 

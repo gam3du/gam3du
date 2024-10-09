@@ -13,7 +13,7 @@ def fahre_gegen_die_wand():
         pass
 
 def beweg_dich (r,g,b):
-    set_height(0.0)
+    set_height(1.0)
     robot_color_rgb(r,g,b)
     paint_tile()
     move_forward()
