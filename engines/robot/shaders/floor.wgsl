@@ -27,6 +27,18 @@ var r_color: texture_2d<u32>;
 @binding(2)
 var<uniform> time_vec: vec2<u32>;
 
+@group(0)
+@binding(3)
+var<uniform> floor_size: vec2<u32>;
+
+@group(0)
+@binding(4)
+var<uniform> camera_pos: vec3<f32>;
+
+@group(0)
+@binding(5)
+var<uniform> light_pos: vec3<f32>;
+
 const COLUMN_MODE = true;
 
 @vertex
@@ -43,7 +55,7 @@ fn vs_floor(
     let position_index = vertex_to_position_index(vertex_index);
 
     // column and row of the tile
-    let tile_xy = vec2(i32(instance_index % 10), i32(instance_index / 10));
+    let tile_xy = vec2(i32(instance_index % floor_size.x), i32(instance_index / floor_size.x));
 
     /// vertex position within a tile
     var tile_uvw: vec3<f32> = vec3(0.0, 0.0, 0.0);
@@ -58,15 +70,14 @@ fn vs_floor(
     vertex.color = color;
     vertex.face_index = face_index;
 
-    let plane_uvw = (vec2<f32>(tile_xy) + tile_uvw.xy) / 10.0;
+    let plane_uvw = (vec2<f32>(tile_xy) + tile_uvw.xy) / vec2<f32>(floor_size);
     vertex.plane_uv = plane_uvw.xy;
     vertex.tile_uv = tile_uvw.xy;
 
     if COLUMN_MODE {
-        // let tile_center_uv = (vec2<f32>(tile_xy) + vec2(0.5, 0.5)) / 10.0;
         let texel = textureLoad(r_color, tile_xy * 25, 0);
-        let height = f32(texel.x) / 255.0;
-        vertex.position = transform * (position + vec4(tile_uvw.xy, tile_uvw.z * height, 0.0));
+        let height = position.z; // f32(texel.x) / 255.0;
+        vertex.position = transform * vec4(position.xy + tile_uvw.xy, position.z * tile_uvw.z, 1.0);
         switch face_index {
             case 0u: { vertex.normal = vec3(0.0, 0.0, 1.0); }
             case 1u: { vertex.normal = vec3(1.0, 0.0, 0.0); }
@@ -109,14 +120,15 @@ fn fs_floor_tile(vertex: FloorVertex) -> @location(0) vec4<f32> {
 
     let border: bool = cc.x < -0.95 || cc.x > 0.95 || cc.y < -0.95 || cc.y > 0.95;
 
-    let light = dot(normalize(vertex.normal), normalize(vec3(-1.0, -1.0, 1.0))) * 0.8 + 0.2;
+    // let light = dot(normalize(vertex.normal), normalize(vec3(-1.0, -1.0, 1.0))) * 0.8 + 0.2;
+    let light = max(dot(normalize(vertex.normal), normalize(light_pos)), 0.0) * 0.8 + 0.2;
 
     if line || line_end || line_corner {
         return LINE_COLOR * light;
     } else if border {
         return BORDER_COLOR * light;
     } else {
-        return tex_color * vertex.color * light;
+        return vertex.color * light;
     }
 }
 

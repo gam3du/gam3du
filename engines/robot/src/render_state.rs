@@ -2,7 +2,7 @@ use crate::{
     game_state::{GameState, Tick},
     tile::Tile,
 };
-use glam::{Vec3, Vec4};
+use glam::{UVec2, Vec3, Vec4};
 use lib_geometry::Camera;
 use std::time::Instant;
 
@@ -17,23 +17,16 @@ pub struct RenderState {
     pub(crate) start_time: Instant,
 
     pub(crate) camera: Camera,
-    // pub projection: Projection,
     /// current position of the robot
     pub(crate) animation_position: Vec3,
     /// current orientation of the robot
     pub(crate) animation_angle: f32,
-    // pub(crate) position: IVec3,
-    // pub(crate) orientation: Orientation,
-    // pub(crate) current_animation: Option<Animation>,
-    // pub(super) tiles: Vec<Tile>,
-    // pub(super) tiles_tainted: bool,
     /// Tick of when we copied the `tiles` from [`GameState::floor`].
     pub(crate) tiles_tick: Tick,
     /// Our local copy of the game loop's `floor.tiles` field
     pub(crate) tiles: Vec<Tile>,
     pub(crate) robot_color: Vec4,
-    // pub robot_renderer: RobotRenderer,
-    // pub floor_renderer: FloorRenderer,
+    pub(crate) floor_size: UVec2,
 }
 
 impl RenderState {
@@ -49,6 +42,7 @@ impl RenderState {
             tiles_tick: game_state.tick,
             tiles: game_state.floor.tiles.clone(),
             robot_color: (game_state.robot.color, 1.0).into(),
+            floor_size: game_state.floor.size,
         }
     }
 

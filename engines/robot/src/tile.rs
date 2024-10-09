@@ -4,7 +4,7 @@
 )]
 
 use bytemuck::{Pod, Zeroable};
-use glam::Vec3;
+use glam::{Vec3, Vec4};
 use std::ops;
 
 use crate::game_state::Orientation;
@@ -23,9 +23,9 @@ impl Tile {
     }
 }
 
-pub(super) fn tile(pos: [f32; 3], line_pattern: LinePattern) -> Tile {
+pub(super) fn tile(pos: impl Into<Vec3>, line_pattern: LinePattern) -> Tile {
     Tile {
-        pos: [pos[0], pos[1], pos[2], 1.0],
+        pos: Vec4::from((pos.into(), 1.0)).into(),
         color: [0.7, 0.7, 0.8, 1.0],
         line_pattern,
     }

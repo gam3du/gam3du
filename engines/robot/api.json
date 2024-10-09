@@ -3,6 +3,25 @@
   "caption": "A simple robot that can be moved across a 2D-plane and draw lines",
   "description": "Once upon a time there was a lonely robot with the serial number `#C0D1E`. …",
   "functions": {
+    "set height": {
+      "name": "set height",
+      "caption": "Sets the height of the tile at the robot's current location",
+      "description": "Sets the height of the tile at the robot's current location",
+      "parameters": [
+        {
+          "name": "height",
+          "caption": "height of the tile",
+          "description": "height of the tile",
+          "type": "Float"
+        }
+      ],
+      "returns": {
+        "name": "return",
+        "caption": "",
+        "description": "",
+        "type": null
+      }
+    },
     "move forward": {
       "name": "move forward",
       "caption": "Makes the robot move to the next tile in its current orientation",

@@ -12,9 +12,11 @@ use std::{
 use wgpu;
 use winit::{
     application::ApplicationHandler,
+    dpi::LogicalSize,
     event::{DeviceEvent, DeviceId, KeyEvent, WindowEvent},
     event_loop::ActiveEventLoop,
     keyboard::{Key, NamedKey},
+    platform::x11::WindowAttributesExtX11,
     window::{Window, WindowAttributes, WindowId},
 };
 
@@ -70,7 +72,9 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<EngineEvent>
     for Application<RendererBuilder>
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let attributes = WindowAttributes::default().with_title(&self.title);
+        let attributes = WindowAttributes::default()
+            .with_title(&self.title)
+            .with_base_size(LogicalSize::new(1600, 900));
 
         let window = Arc::new(event_loop.create_window(attributes).unwrap());
 

@@ -6,7 +6,7 @@ mod robot;
 use crate::{api::EngineApi, events::EventRegistries, tile::LineSegment};
 use animation::RobotAnimation;
 use floor::Floor;
-use glam::{IVec3, Vec3};
+use glam::{IVec2, UVec2, Vec3, Vec3Swizzles};
 pub(crate) use orientation::Orientation;
 pub(crate) use robot::Robot;
 use std::time::{Duration, Instant};
@@ -16,19 +16,28 @@ pub(crate) struct Tick(pub(crate) u64);
 
 /// Contains every information about the current state of the game.
 /// This is what needs to be stored/loaded if the game need to be suspended.
-#[derive(Default)]
+// #[derive(Default)]
 pub struct GameState {
     /// ever increasing counter representing the number of game loop iterations so far
     pub(crate) tick: Tick,
     /// current state of the robot
     pub(crate) robot: Robot,
     /// current state of the floor
-    pub(crate) floor: Floor,
+    pub floor: Floor,
 
     pub(crate) event_registries: EventRegistries,
 }
 
 impl GameState {
+    pub(crate) fn bogus() -> Self {
+        Self {
+            tick: Tick::default(),
+            robot: Robot::default(),
+            floor: Floor::new((0, 0)),
+            event_registries: EventRegistries::default(),
+        }
+    }
+
     pub(crate) fn update(&mut self) {
         self.tick.0 += 1;
         self.robot.update(&mut self.event_registries);
@@ -58,31 +67,31 @@ impl GameState {
         self.robot.complete_animation();
 
         let start_pos = self.robot.position;
-        let start_index = Floor::to_index(start_pos).unwrap();
+        let start_index = self.floor.to_index(start_pos.xy()).unwrap();
         self.floor.tiles[start_index].set_color(self.robot.color);
         self.floor.tainted = self.tick;
     }
 
     fn _move_forward(&mut self, draw: bool, duration: Duration) -> Result<(), String> {
         self.robot.complete_animation();
+
         let segment = LineSegment::from(self.robot.orientation);
 
-        let offset = self.robot.orientation.as_ivec3();
+        let offset = self.robot.orientation.as_ivec2();
 
-        let start_pos = self.robot.position;
+        let start_pos = self.robot.position.xy();
+        let start_index = self.floor.to_index(start_pos)?;
         let end_pos = start_pos + offset;
-        let end_index = Floor::to_index(end_pos)?;
+        let end_index = self.floor.to_index(end_pos)?;
 
         if draw {
-            let start_index = Floor::to_index(start_pos)?;
-
             self.floor.tiles[start_index].line_pattern |= segment;
 
             // draw adjacent diagonal corners
             if offset.x != 0 && offset.y != 0 {
-                let index0 = Floor::to_index(start_pos + IVec3::new(offset.x, 0, 0))?;
+                let index0 = self.floor.to_index(start_pos + IVec2::new(offset.x, 0))?;
                 self.floor.tiles[index0].line_pattern |= segment.get_x_corner().unwrap();
-                let index1 = Floor::to_index(start_pos + IVec3::new(0, offset.y, 0))?;
+                let index1 = self.floor.to_index(start_pos + IVec2::new(0, offset.y))?;
                 self.floor.tiles[index1].line_pattern |= -segment.get_x_corner().unwrap();
             }
 
@@ -90,7 +99,8 @@ impl GameState {
             self.floor.tainted = self.tick;
         }
 
-        self.robot.position = end_pos;
+        self.robot.position.x = end_pos.x;
+        self.robot.position.y = end_pos.y;
 
         self.robot.current_animation = Some(RobotAnimation::Move {
             start: self.robot.animation_position,
@@ -100,6 +110,20 @@ impl GameState {
         });
 
         Ok(())
+    }
+
+    pub fn new(floor_size: impl Into<UVec2>) -> Self {
+        // let robot = Robot {
+        //     position: UVec3::from((floor_size / 2, 0)).as_ivec3(),
+        //     ..Robot::default()
+        // };
+
+        Self {
+            tick: Tick::default(),
+            robot: Robot::default(),
+            floor: Floor::new(floor_size.into()),
+            event_registries: EventRegistries::default(),
+        }
     }
 
     // #[must_use]

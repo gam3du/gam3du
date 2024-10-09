@@ -1,6 +1,7 @@
 use crate::{game_state::Tick, renderer::DepthTexture, tile::Tile, RenderState};
 use bytemuck::offset_of;
-use lib_geometry::{Camera, Projection};
+use glam::Vec3;
+use lib_geometry::{Camera, Projection, SIZE_OF_MAT4, SIZE_OF_UVEC2, SIZE_OF_VEC3};
 use lib_time::elapsed_as_vec;
 use std::{borrow::Cow, mem::size_of, time::Instant};
 use wgpu::util::DeviceExt;
@@ -11,6 +12,8 @@ pub(super) struct FloorRenderer {
     // index_buf: wgpu::Buffer,
     // index_count: u32,
     time_buf: wgpu::Buffer,
+    camera_pos_buf: wgpu::Buffer,
+    light_pos_buf: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     matrix_buf: wgpu::Buffer,
     tile_buf: wgpu::Buffer,
@@ -20,7 +23,8 @@ pub(super) struct FloorRenderer {
 impl FloorRenderer {
     #[expect(
         clippy::similar_names,
-        reason = "`time` will be moved to global scope anyway"
+        clippy::too_many_lines,
+        reason = "`time` will be moved to global scope anyway; TODO split this up"
     )]
     #[must_use]
     pub(super) fn new(
@@ -58,7 +62,7 @@ impl FloorRenderer {
 
         let mx_ref = &[0_u8; size_of::<[f32; 16]>()];
         let matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
+            label: Some("Matrix Uniform Buffer"),
             contents: mx_ref, //bytemuck::cast_slice(mx_ref),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
@@ -67,6 +71,24 @@ impl FloorRenderer {
         let time_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Time Uniform Buffer"),
             contents: bytemuck::cast_slice(&elapsed_bytes),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let floor_size_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer"),
+            contents: bytemuck::bytes_of(&state.floor_size),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let camera_pos_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Camera Uniform Buffer"),
+            contents: bytemuck::bytes_of(&state.camera.position),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let light_pos_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Light Uniform Buffer"),
+            contents: bytemuck::bytes_of(&state.camera.position),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -100,6 +122,18 @@ impl FloorRenderer {
                 wgpu::BindGroupEntry {
                     binding: 2,
                     resource: time_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: floor_size_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: camera_pos_buf.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: light_pos_buf.as_entire_binding(),
                 },
             ],
             label: None,
@@ -149,6 +183,8 @@ impl FloorRenderer {
             matrix_buf,
             tile_buf,
             tiles_tick: state.tiles_tick,
+            camera_pos_buf,
+            light_pos_buf,
         }
     }
 
@@ -171,6 +207,8 @@ impl FloorRenderer {
 
         self.update_time(state.start_time, queue);
         self.update_matrix(projection, &state.camera, queue);
+        self.update_camera(state.camera.position, queue);
+        self.update_light(state.camera.position, queue);
 
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);
@@ -191,6 +229,14 @@ impl FloorRenderer {
     fn update_time(&self, start_time: Instant, queue: &wgpu::Queue) {
         let bytes = elapsed_as_vec(start_time);
         queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&bytes));
+    }
+
+    fn update_camera(&self, camera_pos: Vec3, queue: &wgpu::Queue) {
+        queue.write_buffer(&self.camera_pos_buf, 0, bytemuck::bytes_of(&camera_pos));
+    }
+
+    fn update_light(&self, light_pos: Vec3, queue: &wgpu::Queue) {
+        queue.write_buffer(&self.light_pos_buf, 0, bytemuck::bytes_of(&light_pos));
     }
 
     fn create_pipeline(
@@ -243,7 +289,7 @@ impl FloorRenderer {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(64),
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_MAT4),
                     },
                     count: None,
                 },
@@ -263,7 +309,37 @@ impl FloorRenderer {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(8),
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_UVEC2),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_UVEC2),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_VEC3),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_VEC3),
                     },
                     count: None,
                 },
@@ -326,87 +402,3 @@ fn create_texels(size: usize) -> Vec<u8> {
         })
         .collect()
 }
-
-// #[expect(clippy::similar_names, reason = "those are code names")]
-// fn create_vertices() -> (Vec<Vertex>, Vec<u16>) {
-//     let front = 0.4;
-//     let back = -0.4;
-//     let left = 0.2;
-//     let right = -0.2;
-//     let top = 0.25;
-//     let bottom = 0.0;
-//     let scale_front = 0.5;
-//     let scale_top = 0.8;
-
-//     //  xyz
-//     let flt = Vec3::new(
-//         front * scale_top,
-//         left * scale_top * scale_front,
-//         top * scale_front,
-//     );
-//     let blt = Vec3::new(back * scale_top, left * scale_top, top);
-//     let frt = Vec3::new(
-//         front * scale_top,
-//         right * scale_top * scale_front,
-//         top * scale_front,
-//     );
-//     let brt = Vec3::new(back * scale_top, right * scale_top, top);
-//     let flb = Vec3::new(front, left * scale_front, bottom * scale_front);
-//     let blb = Vec3::new(back, left, bottom);
-//     let frb = Vec3::new(front, right * scale_front, bottom * scale_front);
-//     let brb = Vec3::new(back, right, bottom);
-
-//     let vertex_data = [
-//         // front
-//         vertex(frb, Vec2::new(1.0, -1.0)),
-//         vertex(flb, Vec2::new(1.0, 1.0)),
-//         vertex(flt, Vec2::new(1.0, 1.0)),
-//         vertex(frt, Vec2::new(1.0, -1.0)),
-//         // back
-//         vertex(brt, Vec2::new(-1.0, 1.0)),
-//         vertex(blt, Vec2::new(-1.0, -1.0)),
-//         vertex(blb, Vec2::new(-1.0, -1.0)),
-//         vertex(brb, Vec2::new(-1.0, 1.0)),
-//         // left
-//         vertex(flb, Vec2::new(1.0, -1.0)),
-//         vertex(blb, Vec2::new(-1.0, -1.0)),
-//         vertex(blt, Vec2::new(-1.0, 1.0)),
-//         vertex(flt, Vec2::new(1.0, 1.0)),
-//         // right
-//         vertex(frt, Vec2::new(1.0, -1.0)),
-//         vertex(brt, Vec2::new(-1.0, -1.0)),
-//         vertex(brb, Vec2::new(-1.0, 1.0)),
-//         vertex(frb, Vec2::new(1.0, 1.0)),
-//         // top
-//         vertex(brt, Vec2::new(-1.0, -1.0)),
-//         vertex(frt, Vec2::new(1.0, -1.0)),
-//         vertex(flt, Vec2::new(1.0, 1.0)),
-//         vertex(blt, Vec2::new(-1.0, 1.0)),
-//         // bottom
-//         vertex(blb, Vec2::new(1.0, -1.0)),
-//         vertex(flb, Vec2::new(-1.0, -1.0)),
-//         vertex(frb, Vec2::new(-1.0, 1.0)),
-//         vertex(brb, Vec2::new(1.0, 1.0)),
-//     ];
-
-//     let index_data: &[u16] = &[
-//         0, 1, 2, 2, 3, 0, // top
-//         4, 5, 6, 6, 7, 4, // bottom
-//         8, 9, 10, 10, 11, 8, // right
-//         12, 13, 14, 14, 15, 12, // left
-//         16, 17, 18, 18, 19, 16, // front
-//         20, 21, 22, 22, 23, 20, // back
-//     ];
-
-//     (vertex_data.to_vec(), index_data.to_vec())
-// }
-
-// fn vertex(position: Vec3, normal: Vec3, texture_coord: Vec2, color: Vec3) -> Vertex {
-//     Vertex {
-//         position: (position, 1.0).into(),
-//         normal: (normal, 1.0).into(),
-//         base_color_factor: (color, 1.0).into(),
-//         base_color_texture_coordinates: texture_coord,
-//         _padding: Vec2::default(),
-//     }
-// }

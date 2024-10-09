@@ -3,7 +3,7 @@ use std::{
     ops::{AddAssign, SubAssign},
 };
 
-use glam::IVec3;
+use glam::IVec2;
 
 #[expect(
     clippy::min_ident_chars,
@@ -32,16 +32,16 @@ pub(crate) enum Orientation {
 }
 
 impl Orientation {
-    pub(crate) fn as_ivec3(self) -> IVec3 {
+    pub(crate) fn as_ivec2(self) -> IVec2 {
         match self {
-            Orientation::E => IVec3::new(1, 0, 0),
-            Orientation::NE => IVec3::new(1, 1, 0),
-            Orientation::N => IVec3::new(0, 1, 0),
-            Orientation::NW => IVec3::new(-1, 1, 0),
-            Orientation::W => IVec3::new(-1, 0, 0),
-            Orientation::SW => IVec3::new(-1, -1, 0),
-            Orientation::S => IVec3::new(0, -1, 0),
-            Orientation::SE => IVec3::new(1, -1, 0),
+            Orientation::E => IVec2::new(1, 0),
+            Orientation::NE => IVec2::new(1, 1),
+            Orientation::N => IVec2::new(0, 1),
+            Orientation::NW => IVec2::new(-1, 1),
+            Orientation::W => IVec2::new(-1, 0),
+            Orientation::SW => IVec2::new(-1, -1),
+            Orientation::S => IVec2::new(0, -1),
+            Orientation::SE => IVec2::new(1, -1),
         }
     }
 

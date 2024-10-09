@@ -75,6 +75,7 @@ pub struct Vertex {
     //     }
     // ],
 }
+
 impl Vertex {
     pub(crate) fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {

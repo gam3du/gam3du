@@ -30,16 +30,20 @@ pub struct GameLoop<Plugin: plugin::Plugin> {
     plugin: Option<Plugin>,
 }
 
-impl<Plugin: plugin::Plugin> Default for GameLoop<Plugin> {
-    fn default() -> Self {
+// impl<Plugin: plugin::Plugin> Default for GameLoop<Plugin> {
+//     fn default() -> Self {
+//     }
+// }
+
+impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
+    #[must_use]
+    pub fn new(game_state: GameState) -> Self {
         Self {
-            game_state: Arc::new(RwLock::new(Box::new(GameState::default()))),
+            game_state: Arc::new(RwLock::new(Box::new(game_state))),
             plugin: None,
         }
     }
-}
 
-impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
     pub fn run(mut self, event_source: &Receiver<EngineEvent>) {
         let mut time = Instant::now();
 

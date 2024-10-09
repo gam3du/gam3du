@@ -14,7 +14,7 @@ use runtime_python::{PythonRuntime, PythonRuntimeBuilder};
 use rustpython_vm::pymodule;
 
 thread_local! {
-    pub(crate) static VM_GAME_STATE: RefCell<GameState> = RefCell::default();
+    pub(crate) static VM_GAME_STATE: RefCell<GameState> = RefCell::new(GameState::bogus());
 }
 
 pub struct PythonPlugin {

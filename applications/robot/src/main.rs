@@ -5,7 +5,7 @@
     reason = "TODO remove before release"
 )]
 
-use engine_robot::{plugin::PythonPlugin, GameLoop, RendererBuilder};
+use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder};
 use gam3du_framework::{application::Application, logging::init_logger, register_ctrlc};
 use gam3du_framework_common::{
     api::{self, ApiDescriptor},
@@ -34,10 +34,13 @@ fn main() {
 
     let (game_state_sender, game_state_receiver) = channel();
 
+    let init_game_state = GameState::new((16, 16));
+
     let game_loop_thread = {
         thread::spawn(move || {
             // the game loop might not be `Send`, so we need to create it from within the thread
-            let mut game_loop = GameLoop::default();
+            let mut game_loop = GameLoop::new(init_game_state);
+
             let mut python_runtime_builder =
                 PythonRuntimeBuilder::new("applications/robot/python/plugin", "robot_plugin");
             python_runtime_builder.add_api_server(robot_api_engine_endpoint);
