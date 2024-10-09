@@ -5,6 +5,10 @@
 import robot_control_api_async
 import asyncio
 
+def set_height(height: float):
+	future = robot_control_api_async.set_height(height)
+	return asyncio.run(future)
+
 def move_forward(duration: int = 500) -> bool:
 	future = robot_control_api_async.move_forward(duration)
 	return asyncio.run(future)

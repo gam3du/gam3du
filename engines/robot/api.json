@@ -12,15 +12,11 @@
           "name": "height",
           "caption": "height of the tile",
           "description": "height of the tile",
-          "type": "Float"
+          "type": "Float",
+          "default": null
         }
       ],
-      "returns": {
-        "name": "return",
-        "caption": "",
-        "description": "",
-        "type": null
-      }
+      "returns": null
     },
     "move forward": {
       "name": "move forward",

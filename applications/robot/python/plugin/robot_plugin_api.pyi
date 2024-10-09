@@ -1,4 +1,7 @@
 
+def set_height(height: float) -> bool:
+	pass
+
 def move_forward(draw: bool, duration: int = 500) -> bool:
 	pass
 

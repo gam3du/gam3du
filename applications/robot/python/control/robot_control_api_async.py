@@ -5,6 +5,15 @@
 import asyncio
 import api_client
 
+async def set_height(height: float):
+	handle = api_client.message("set height", height)
+	while True:
+		result = api_client.poll(handle)
+		if result.is_done():
+			return result.get_value()
+		await asyncio.sleep(0.01)
+
+
 async def move_forward(duration: int = 500) -> bool:
 	handle = api_client.message("move forward", duration)
 	while True:

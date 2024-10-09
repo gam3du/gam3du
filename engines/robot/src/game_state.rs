@@ -63,6 +63,15 @@ impl GameState {
         self.robot.color = color;
     }
 
+    pub fn _set_height(&mut self, height: f32) {
+        self.robot.complete_animation();
+
+        let start_pos = self.robot.position;
+        let start_index = self.floor.to_index(start_pos.xy()).unwrap();
+        self.floor.tiles[start_index].pos[2] = height;
+        self.floor.tainted = self.tick;
+    }
+
     pub fn _paint_tile(&mut self) {
         self.robot.complete_animation();
 
@@ -133,6 +142,10 @@ impl GameState {
 }
 
 impl EngineApi for GameState {
+    fn set_height(&mut self, height: f32) {
+        self._set_height(height);
+    }
+
     fn move_forward(&mut self, draw: bool, duration: u64) -> bool {
         self._move_forward(draw, Duration::from_millis(duration))
             .is_ok()

@@ -5,6 +5,7 @@ from robot_control_api import (
     move_forward,
     turn_left,
     turn_right,
+    set_height,
 )
 
 def fahre_gegen_die_wand():
@@ -12,9 +13,11 @@ def fahre_gegen_die_wand():
         pass
 
 def beweg_dich (r,g,b):
+    set_height(0.0)
     robot_color_rgb(r,g,b)
     paint_tile()
     move_forward()
+
 
 for x in range(4):
     turn_left()

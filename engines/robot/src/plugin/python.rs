@@ -117,6 +117,12 @@ mod plugin_api {
     use rustpython_vm::VirtualMachine;
 
     #[pyfunction]
+    fn set_height(height: f32, _vm: &VirtualMachine) {
+        trace!("pyfunction: set_height({height})");
+        VM_GAME_STATE.with_borrow_mut(|game_state| game_state.set_height(height));
+    }
+
+    #[pyfunction]
     fn move_forward(draw: bool, duration: u64, _vm: &VirtualMachine) -> bool {
         trace!("pyfunction: move_forward({duration})");
         VM_GAME_STATE.with_borrow_mut(|game_state| game_state.move_forward(draw, duration))

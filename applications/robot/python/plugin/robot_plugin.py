@@ -3,7 +3,7 @@ from api_server import (
 )
 
 from robot_plugin_api import (
-    move_forward, paint_tile, robot_color_rgb, turn, log_trace, log_debug, log_error, log_info, log_warn
+    move_forward, paint_tile, robot_color_rgb, turn, log_trace, log_debug, log_error, log_info, log_warn, set_height
 )
 
 current_command = 0
@@ -15,6 +15,15 @@ def on_robot_stopped():
     send_boolean_response("robot control", current_command, True)
     log_trace("resetting command(%s)" % hex(current_command))
     current_command = 0
+
+def on_set_height(request_id, height):
+    global current_command
+    log_trace("on_set_height(%s, %s)" % (hex(request_id), height))
+    if current_command:
+        log_error("pending command")
+
+    set_height(height)
+    send_boolean_response("robot control", request_id, True)
 
 def on_move_forward(request_id, duration):
     global current_command

@@ -1,6 +1,7 @@
 {
     "rust-analyzer.check.command": "clippy",
     "cSpell.words": [
+        "bindgen",
         "bitor",
         "bytemuck",
         "consts",

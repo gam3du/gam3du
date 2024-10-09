@@ -14,6 +14,7 @@ use std::{
 use super::Plugin;
 
 const ROBOT_API_NAME: &str = "robot";
+const CMD_SET_HEIGHT: &str = "set height";
 const CMD_MOVE_FORWARD: &str = "move forward";
 const CMD_DRAW_FORWARD: &str = "draw forward";
 const CMD_TURN: &str = "turn";
@@ -155,6 +156,18 @@ fn run_command(
     let mut arguments = arguments.drain(..);
 
     match command.0.as_ref() {
+        CMD_SET_HEIGHT => {
+            let Some(height) = arguments.next() else {
+                return CommandError::MissingArgument(command, "height").into();
+            };
+
+            let Value::Float(height) = height else {
+                return CommandError::WrongArgumentType(command, "height").into();
+            };
+
+            game_state.set_height(height);
+            PendingResult::Ok(Value::Unit)
+        }
         CMD_DRAW_FORWARD => {
             let Some(duration) = arguments.next() else {
                 return CommandError::MissingArgument(command, "duration").into();
