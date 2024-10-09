@@ -5,7 +5,6 @@ use crate::{
     renderer::{elapsed_as_vec, DepthTexture},
     RenderState,
 };
-use bytemuck::offset_of;
 use core::f32;
 use glam::{Mat4, Quat, Vec3, Vec4};
 use std::{borrow::Cow, mem::size_of, path::PathBuf, time::Instant};
@@ -34,6 +33,7 @@ impl MyModelRenderer {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         view_format: wgpu::TextureFormat,
+        shader_source: Cow<'_, str>,
     ) -> Self {
         let Mesh {
             vertex_buffer,
@@ -42,37 +42,31 @@ impl MyModelRenderer {
         } = Self::create_vertices(device);
 
         // Create pipeline layout
-        let bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let matrix_binding_type = wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Uniform,
+            has_dynamic_offset: false,
+            min_binding_size: wgpu::BufferSize::new(64),
+        };
+
+        let bind_group_layout_descriptor = wgpu::BindGroupLayoutDescriptor {
             label: None,
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(64),
-                    },
+                    ty: matrix_binding_type,
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 1,
                     visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(64),
-                    },
+                    ty: matrix_binding_type,
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 2,
                     visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(64),
-                    },
+                    ty: matrix_binding_type,
                     count: None,
                 },
                 wgpu::BindGroupLayoutEntry {
@@ -106,7 +100,8 @@ impl MyModelRenderer {
                     count: None,
                 },
             ],
-        });
+        };
+        let bind_group_layout = device.create_bind_group_layout(&bind_group_layout_descriptor);
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
@@ -115,36 +110,24 @@ impl MyModelRenderer {
 
         let texture_view = Self::create_texture_view(device, queue);
 
-        let mx_ref = &[0_u8; size_of::<[f32; 16]>()];
-        let world_matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
-            contents: mx_ref, //bytemuck::cast_slice(mx_ref),
+        let uniform = |label, contents| wgpu::util::BufferInitDescriptor {
+            label: Some(label),
+            contents,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-        let camera_matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
-            contents: mx_ref, //bytemuck::cast_slice(mx_ref),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-        let projection_matrix_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
-            contents: mx_ref, //bytemuck::cast_slice(mx_ref),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        };
 
-        let elapsed_bytes = [0_u32; 2];
-        let time_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Time Uniform Buffer"),
-            contents: bytemuck::cast_slice(&elapsed_bytes),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        let uniform_matrix = |label| uniform(label, &[0_u8; size_of::<[f32; 16]>()]);
+        let uniform_time = |label| uniform(label, &[0_u8; size_of::<[u32; 2]>()]);
+        let uniform_color = |label| uniform(label, &[0_u8; size_of::<[f32; 4]>()]);
 
-        let robot_color_bytes = [0_f32; 4];
-        let robot_color_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Robot Color Uniform Buffer"),
-            contents: bytemuck::cast_slice(&robot_color_bytes),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        let world_matrix_buf =
+            device.create_buffer_init(&uniform_matrix("world matrix uniform buffer"));
+        let camera_matrix_buf =
+            device.create_buffer_init(&uniform_matrix("camera matrix uniform buffer"));
+        let projection_matrix_buf =
+            device.create_buffer_init(&uniform_matrix("projection matrix uniform buffer"));
+        let time_buf = device.create_buffer_init(&uniform_time("time uniform buffer"));
+        let robot_color_buf = device.create_buffer_init(&uniform_color("color uniform buffer"));
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
@@ -179,43 +162,14 @@ impl MyModelRenderer {
 
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
-                "../../shaders/robot.wgsl"
-            ))),
+            source: wgpu::ShaderSource::Wgsl(shader_source),
         });
-
-        let vertex_buffers = [wgpu::VertexBufferLayout {
-            array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
-                    offset: offset_of!(Vertex, position) as u64,
-                    shader_location: 0,
-                },
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
-                    offset: offset_of!(Vertex, normal) as u64,
-                    shader_location: 1,
-                },
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x4,
-                    offset: offset_of!(Vertex, base_color_factor) as u64,
-                    shader_location: 2,
-                },
-                wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x2,
-                    offset: offset_of!(Vertex, base_color_texture_coordinates) as u64,
-                    shader_location: 3,
-                },
-            ],
-        }];
 
         let pipeline = Self::create_pipeline(
             device,
             &pipeline_layout,
             &shader,
-            &vertex_buffers,
+            &[Vertex::buffer_layout()],
             view_format,
         );
 

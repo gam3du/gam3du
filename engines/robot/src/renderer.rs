@@ -8,18 +8,28 @@ use gam3du_framework::renderer;
 use my_model::MyModelRenderer;
 // use robot::RobotRenderer;
 use std::{
+    borrow::Cow,
+    fs::read_to_string,
     sync::{Arc, RwLock},
     time::Instant,
 };
 
 pub struct RendererBuilder {
     game_state: Arc<RwLock<Box<GameState>>>,
+    shader_source: Cow<'static, str>,
 }
 
 impl RendererBuilder {
     #[must_use]
     pub fn new(game_state: Arc<RwLock<Box<GameState>>>) -> Self {
-        Self { game_state }
+        let shader_source = read_to_string("engines/robot/shaders/robot.wgsl")
+            .unwrap()
+            .into();
+
+        Self {
+            game_state,
+            shader_source,
+        }
     }
 }
 
@@ -28,7 +38,7 @@ impl renderer::RendererBuilder for RendererBuilder {
 
     #[must_use]
     fn build(
-        &self,
+        self,
         _adapter: &wgpu::Adapter,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -47,7 +57,8 @@ impl renderer::RendererBuilder for RendererBuilder {
 
         // let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
         let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0], &state);
-        let my_model_renderer = MyModelRenderer::new(device, queue, surface.view_formats[0]);
+        let my_model_renderer =
+            MyModelRenderer::new(device, queue, surface.view_formats[0], self.shader_source);
 
         Renderer {
             game_state,

@@ -19,7 +19,7 @@ use winit::{
 };
 
 pub struct Application<RendererBuilder: renderer::RendererBuilder> {
-    renderer_builder: RendererBuilder,
+    renderer_builder: Option<RendererBuilder>,
     renderer: Option<RendererBuilder::Renderer>,
     pub(super) surface: SurfaceWrapper,
     context: GraphicsContext,
@@ -48,7 +48,7 @@ impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
             frame_counter: 0,
             frame_time: Instant::now(),
             event_sink: event_sender,
-            renderer_builder,
+            renderer_builder: Some(renderer_builder),
         }
     }
 
@@ -80,13 +80,18 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<EngineEvent>
         self.window = Some(window);
 
         // First-time init of the scene
-        if self.renderer.is_none() {
-            self.renderer.replace(self.renderer_builder.build(
-                &self.context.adapter,
-                &self.context.device,
-                &self.context.queue,
-                self.surface.config(),
-            ));
+        if let Some(builder) = self.renderer_builder.take() {
+            assert!(
+                self.renderer
+                    .replace(builder.build(
+                        &self.context.adapter,
+                        &self.context.device,
+                        &self.context.queue,
+                        self.surface.config(),
+                    ))
+                    .is_none(),
+                "unexpected existing renderer"
+            );
         }
     }
 

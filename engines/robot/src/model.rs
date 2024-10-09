@@ -2,6 +2,7 @@
 use std::{
     io::{BufReader, Cursor},
     iter::ExactSizeIterator,
+    mem::offset_of,
     path::Path,
 };
 
@@ -73,6 +74,37 @@ pub(crate) struct Vertex {
     //             [0.4, 0.8, 0.6]
     //     }
     // ],
+}
+impl Vertex {
+    pub(crate) fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: offset_of!(Vertex, position) as wgpu::BufferAddress,
+                    shader_location: 0,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: offset_of!(Vertex, normal) as wgpu::BufferAddress,
+                    shader_location: 1,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x4,
+                    offset: offset_of!(Vertex, base_color_factor) as wgpu::BufferAddress,
+                    shader_location: 2,
+                },
+                wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x2,
+                    offset: offset_of!(Vertex, base_color_texture_coordinates)
+                        as wgpu::BufferAddress,
+                    shader_location: 3,
+                },
+            ],
+        }
+    }
 }
 
 // #[repr(C)]

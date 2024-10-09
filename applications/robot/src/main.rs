@@ -13,7 +13,7 @@ use gam3du_framework_common::{
 };
 use log::{debug, error};
 use runtime_python::{PythonRunnerThread, PythonRuntimeBuilder};
-use std::{sync::mpsc::channel, thread};
+use std::{fs::read_to_string, sync::mpsc::channel, thread};
 use winit::event_loop::{ControlFlow, EventLoop};
 
 fn main() {
@@ -102,7 +102,7 @@ fn start_python_robot(
     python_sys_path: &str,
     python_main_module: &str,
 ) -> (PythonRunnerThread, api::ApiServerEndpoint) {
-    let api_json = std::fs::read_to_string(robot_api_descriptor_path).unwrap();
+    let api_json = read_to_string(robot_api_descriptor_path).unwrap();
     let robot_api: ApiDescriptor = serde_json::from_str(&api_json).unwrap();
 
     let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);

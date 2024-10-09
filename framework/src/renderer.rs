@@ -4,7 +4,7 @@ pub trait RendererBuilder {
     type Renderer: Renderer;
 
     fn build(
-        &self,
+        self,
         adapter: &wgpu::Adapter,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
