@@ -10,11 +10,12 @@ license-file.workspace = true
 gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
 runtime-python.workspace = true
+lib-geometry.workspace = true
+lib-time.workspace = true
+lib-gltf-model.workspace = true
 
-anyhow.workspace = true
 bytemuck = { workspace = true, features = ["derive"] }
 glam = { workspace = true, features = ["bytemuck"] }
-gltf.workspace = true
 log.workspace = true
 rand.workspace = true
 rustpython-vm.workspace = true

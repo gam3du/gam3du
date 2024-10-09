@@ -1,17 +1,18 @@
 mod floor;
-mod gltf_model;
 // mod robot;
 
-use crate::{projection::Projection, GameState, RenderState};
+use crate::{GameState, RenderState};
+use core::f32;
 use floor::FloorRenderer;
 use gam3du_framework::renderer;
-use gltf_model::GltfModelRenderer;
+use glam::{Mat4, Quat, Vec3};
+use lib_geometry::Projection;
+use lib_gltf_model::GltfModelRenderer;
 // use robot::RobotRenderer;
 use std::{
     borrow::Cow,
     fs::read_to_string,
     sync::{Arc, RwLock},
-    time::Instant,
 };
 
 pub struct RendererBuilder {
@@ -57,8 +58,15 @@ impl renderer::RendererBuilder for RendererBuilder {
 
         // let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
         let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0], &state);
-        let gltf_model_renderer =
-            GltfModelRenderer::new(device, queue, surface.view_formats[0], self.shader_source);
+
+        let depth_stencil_state = DepthTexture::depth_stencil_state();
+        let gltf_model_renderer = GltfModelRenderer::new(
+            device,
+            queue,
+            surface.view_formats[0],
+            self.shader_source,
+            depth_stencil_state,
+        );
 
         Renderer {
             game_state,
@@ -117,8 +125,21 @@ impl Renderer {
         {
             let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
 
-            self.gltf_model_renderer
-                .render(queue, &mut render_pass, &self.state, &self.projection);
+            let world_matrix = Mat4::from_scale_rotation_translation(
+                Vec3::new(0.5, 0.5, 0.5),
+                Quat::from_rotation_z(self.state.animation_angle + f32::consts::FRAC_PI_2),
+                self.state.animation_position + Vec3::new(0.0, 0.0, 0.5),
+            );
+
+            self.gltf_model_renderer.render(
+                queue,
+                &mut render_pass,
+                world_matrix,
+                &self.state.camera,
+                &self.projection,
+                self.state.robot_color,
+                self.state.start_time,
+            );
         }
     }
 
@@ -238,16 +259,6 @@ impl renderer::Renderer for Renderer {
 
         queue.submit(Some(encoder.finish()));
     }
-}
-
-pub(crate) fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {
-    let elapsed = start_time.elapsed();
-    let seconds = u32::try_from(elapsed.as_secs()).unwrap();
-    let subsec_nanos = u64::from(elapsed.subsec_nanos());
-    // map range of nanoseconds to value range of u32 with rounding
-    let subseconds = ((subsec_nanos << u32::BITS) + 500_000_000) / 1_000_000_000;
-
-    [seconds, u32::try_from(subseconds).unwrap()]
 }
 
 pub(super) struct DepthTexture {

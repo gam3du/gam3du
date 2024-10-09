@@ -1,7 +1,7 @@
 use glam::Mat4;
 use std::ops::Range;
 
-pub(super) enum Projection {
+pub enum Projection {
     Perspective {
         surface_width: u32,
         surface_height: u32,
@@ -12,7 +12,7 @@ pub(super) enum Projection {
 
 impl Projection {
     #[must_use]
-    pub(super) fn new_perspective(
+    pub fn new_perspective(
         (surface_width, surface_height): (u32, u32),
         fov: f32,
         z_range: Range<f32>,
@@ -61,14 +61,11 @@ impl Projection {
     }
 
     #[must_use]
-    pub(super) fn matrix(&self) -> Mat4 {
+    pub fn matrix(&self) -> Mat4 {
         Mat4::perspective_rh(self.fov(), self.aspect_ratio(), self.near(), self.far())
     }
 
-    pub(crate) fn set_surface_dimensions(
-        &mut self,
-        (new_surface_width, new_surface_height): (u32, u32),
-    ) {
+    pub fn set_surface_dimensions(&mut self, (new_surface_width, new_surface_height): (u32, u32)) {
         match *self {
             Projection::Perspective {
                 ref mut surface_width,

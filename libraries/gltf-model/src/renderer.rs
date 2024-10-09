@@ -1,16 +1,21 @@
-use crate::{
-    camera::Camera,
-    model::{load_model, Mesh, Vertex},
-    projection::Projection,
-    renderer::{elapsed_as_vec, DepthTexture},
-    RenderState,
-};
+// use crate::{
+//     camera::Camera,
+//     model::{load_model, Mesh, Vertex},
+//     projection::Projection,
+//     renderer::{elapsed_as_vec, DepthTexture},
+//     RenderState,
+// };
+
 use core::f32;
-use glam::{Mat4, Quat, Vec3, Vec4};
+use glam::{Mat4, Vec4};
+use lib_geometry::{Camera, Projection};
+use lib_time::elapsed_as_vec;
 use std::{borrow::Cow, mem::size_of, path::PathBuf, time::Instant};
 use wgpu::{self, util::DeviceExt};
 
-pub(super) struct GltfModelRenderer {
+use crate::model::{load_model, Mesh, Vertex};
+
+pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
@@ -23,17 +28,18 @@ pub(super) struct GltfModelRenderer {
     robot_color_buf: wgpu::Buffer,
 }
 
-impl GltfModelRenderer {
+impl Renderer {
     #[expect(
         clippy::too_many_lines,
         reason = "TODO partition this function into smaller parts"
     )]
     #[must_use]
-    pub(super) fn new(
+    pub fn new(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         view_format: wgpu::TextureFormat,
         shader_source: Cow<'_, str>,
+        depth_stencil_state: wgpu::DepthStencilState,
     ) -> Self {
         let Mesh {
             vertex_buffer,
@@ -171,6 +177,7 @@ impl GltfModelRenderer {
             &shader,
             &[Vertex::buffer_layout()],
             view_format,
+            depth_stencil_state,
         );
 
         Self {
@@ -187,22 +194,20 @@ impl GltfModelRenderer {
         }
     }
 
-    pub(super) fn render<'pipeline>(
+    #[expect(clippy::too_many_arguments, reason = "TODO")]
+    pub fn render<'pipeline>(
         &'pipeline mut self,
         queue: &wgpu::Queue,
         render_pass: &mut wgpu::RenderPass<'pipeline>,
-        state: &RenderState,
+        world_matrix: Mat4,
+        camera: &Camera,
         projection: &Projection,
+        color: Vec4,
+        time_reference: Instant,
     ) {
-        let position = Mat4::from_scale_rotation_translation(
-            Vec3::new(0.5, 0.5, 0.5),
-            Quat::from_rotation_z(state.animation_angle + f32::consts::FRAC_PI_2),
-            state.animation_position + Vec3::new(0.0, 0.0, 0.5),
-        );
-
-        self.update_time(state.start_time, queue);
-        self.update_robot_color(state.robot_color, queue);
-        self.update_matrices(projection, &state.camera, queue, position);
+        self.update_time(time_reference, queue);
+        self.update_color(color, queue);
+        self.update_matrices(projection, camera, queue, world_matrix);
 
         render_pass.push_debug_group("Prepare data for draw.");
         render_pass.set_pipeline(&self.pipeline);
@@ -242,12 +247,12 @@ impl GltfModelRenderer {
         );
     }
 
-    fn update_time(&self, start_time: Instant, queue: &wgpu::Queue) {
-        let bytes = elapsed_as_vec(start_time);
+    fn update_time(&self, time_reference: Instant, queue: &wgpu::Queue) {
+        let bytes = elapsed_as_vec(time_reference);
         queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&bytes));
     }
 
-    fn update_robot_color(&self, color: Vec4, queue: &wgpu::Queue) {
+    fn update_color(&self, color: Vec4, queue: &wgpu::Queue) {
         queue.write_buffer(
             &self.robot_color_buf,
             0,
@@ -261,6 +266,7 @@ impl GltfModelRenderer {
         shader: &wgpu::ShaderModule,
         vertex_buffers: &[wgpu::VertexBufferLayout<'_>; 1],
         view_format: wgpu::TextureFormat,
+        depth_stencil_state: wgpu::DepthStencilState,
     ) -> wgpu::RenderPipeline {
         let vertex = wgpu::VertexState {
             module: shader,
@@ -287,7 +293,7 @@ impl GltfModelRenderer {
             vertex,
             fragment: Some(fragment_state),
             primitive,
-            depth_stencil: Some(DepthTexture::depth_stencil_state()),
+            depth_stencil: Some(depth_stencil_state),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
             cache: None,

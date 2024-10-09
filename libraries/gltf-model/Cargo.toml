@@ -1,0 +1,21 @@
+[package]
+name = "lib-gltf-model"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+readme.workspace = true
+
+[dependencies]
+lib-geometry.workspace = true
+lib-time.workspace = true
+
+anyhow.workspace = true
+log.workspace = true
+bytemuck.workspace = true
+glam.workspace = true
+gltf.workspace = true
+wgpu.workspace = true
+
+[lints]
+workspace = true

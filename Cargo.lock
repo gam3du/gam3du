@@ -783,12 +783,13 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 name = "engine-robot"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "bytemuck",
  "gam3du-framework",
  "gam3du-framework-common",
  "glam",
- "gltf",
+ "lib-geometry",
+ "lib-gltf-model",
+ "lib-time",
  "log",
  "rand",
  "runtime-python",
@@ -1429,6 +1430,31 @@ version = "0.1.0"
 dependencies = [
  "glam",
 ]
+
+[[package]]
+name = "lib-geometry"
+version = "0.1.0"
+dependencies = [
+ "glam",
+]
+
+[[package]]
+name = "lib-gltf-model"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bytemuck",
+ "glam",
+ "gltf",
+ "lib-geometry",
+ "lib-time",
+ "log",
+ "wgpu",
+]
+
+[[package]]
+name = "lib-time"
+version = "0.1.0"
 
 [[package]]
 name = "libc"

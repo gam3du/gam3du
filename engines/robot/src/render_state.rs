@@ -1,9 +1,9 @@
 use crate::{
-    camera::Camera,
     game_state::{GameState, Tick},
     tile::Tile,
 };
 use glam::{Vec3, Vec4};
+use lib_geometry::Camera;
 use std::time::Instant;
 
 const CAMERA_POS: Vec3 = Vec3::new(-1.0, -7.0, 6.0);

@@ -1,12 +1,7 @@
-use crate::{
-    camera::Camera,
-    game_state::Tick,
-    projection::Projection,
-    renderer::{elapsed_as_vec, DepthTexture},
-    tile::Tile,
-    RenderState,
-};
+use crate::{game_state::Tick, renderer::DepthTexture, tile::Tile, RenderState};
 use bytemuck::offset_of;
+use lib_geometry::{Camera, Projection};
+use lib_time::elapsed_as_vec;
 use std::{borrow::Cow, mem::size_of, time::Instant};
 use wgpu::{util::DeviceExt, PipelineCompilationOptions, Queue, RenderPass, TextureFormat};
 
