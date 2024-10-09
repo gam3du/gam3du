@@ -33,9 +33,9 @@ runtime-python = { path = "runtimes/python" }
 runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 
 # from crates.io
-anyhow = "1.0.89"
-bytemuck = "1.18.0"
-ctrlc = "3.4.5"
+anyhow = { version = "1.0.89", default-features = false }
+bytemuck = { version = "1.18.0", default-features = false }
+ctrlc = { version = "3.4.5", default-features = false }
 
 # Generic helper type for iterators and formatting.
 # This is dependency is "free" because it is already in our dependency graph:
@@ -46,21 +46,33 @@ ctrlc = "3.4.5"
 # Used to maintain the order of elements in JSON objects.
 # This makes the JSON deserialization of the `serde_json` crate deterministic
 # which is useful when generating code from the api.json file.
-indexmap = { version = "2.5.0", features = ["serde"] }
+indexmap = { version = "2.5.0", default-features = false, features = ["serde"] }
 
-env_logger = "0.11.5"
-glam = "0.29.0"
-gltf = "1.4.1"
-log = "0.4.22"
-pollster = "0.3.0"
-rand = "0.8.5"
+env_logger = { version = "0.11.5", default-features = false, features = [
+    "auto-color",
+    "humantime",
+] }
+glam = { version = "0.29.0", default-features = false, features = ["std"] }
+gltf = { version = "1.4.1", default-features = false, features = ["utils"] }
+log = { version = "0.4.22", default-features = false }
+pollster = { version = "0.3.0", default-features = false }
+rand = { version = "0.8.5", default-features = false }
 rustpython = { version = "0.4.0", default-features = false }
-rustpython-vm = "0.4.0"
-serde = "1.0.210"
-serde_json = "1.0.128"
-tiny_http = "0.12.0"
-wgpu = "22.1.0"
-winit = "0.30.5"
+rustpython-vm = { version = "0.4.0", default-features = false }
+serde = { version = "1.0.210", default-features = false }
+serde_json = { version = "1.0.128", default-features = false, features = [
+    "std",
+] }
+tiny_http = { version = "0.12.0", default-features = false }
+wgpu = { version = "22.1.0", default-features = false, features = [
+    "wgsl",
+    "dx12",
+] }
+winit = { version = "0.30.5", default-features = false, features = [
+    "rwh_06",
+    "x11",
+    "wayland",
+] }
 
 # Compile all (non-workspace) dependencies with optimizations.
 # https://doc.rust-lang.org/cargo/reference/profiles.html#overrides
