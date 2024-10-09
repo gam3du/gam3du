@@ -8,4 +8,5 @@
 mod model;
 mod renderer;
 
+pub use model::Vertex;
 pub use renderer::Renderer as GltfModelRenderer;

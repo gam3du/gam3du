@@ -20,17 +20,17 @@ pub(crate) struct Mesh {
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
-pub(crate) struct Vertex {
+pub struct Vertex {
     // Geometric properties
-    pub(crate) position: Vec4,
+    pub position: Vec4,
     // ---- 16 byte alignment
-    pub(crate) normal: Vec4,
+    pub normal: Vec4,
     // Material properties
     // ---- 16 byte alignment
-    pub(crate) base_color_factor: Vec4,
+    pub base_color_factor: Vec4,
     // // ---- 16 byte alignment
-    pub(crate) base_color_texture_coordinates: Vec2,
-    _padding: Vec2,
+    pub base_color_texture_coordinates: Vec2,
+    pub _padding: Vec2,
     // pub(crate) metallic_factor: f32,
     // pub(crate) roughness_factor: f32,
     // // ---- 16 byte alignment
