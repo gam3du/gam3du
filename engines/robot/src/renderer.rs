@@ -1,11 +1,11 @@
 mod floor;
-mod my_model;
+mod gltf_model;
 // mod robot;
 
 use crate::{projection::Projection, GameState, RenderState};
 use floor::FloorRenderer;
 use gam3du_framework::renderer;
-use my_model::MyModelRenderer;
+use gltf_model::GltfModelRenderer;
 // use robot::RobotRenderer;
 use std::{
     borrow::Cow,
@@ -57,8 +57,8 @@ impl renderer::RendererBuilder for RendererBuilder {
 
         // let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
         let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0], &state);
-        let my_model_renderer =
-            MyModelRenderer::new(device, queue, surface.view_formats[0], self.shader_source);
+        let gltf_model_renderer =
+            GltfModelRenderer::new(device, queue, surface.view_formats[0], self.shader_source);
 
         Renderer {
             game_state,
@@ -67,7 +67,7 @@ impl renderer::RendererBuilder for RendererBuilder {
             state,
             // robot_renderer,
             floor_renderer,
-            my_model_renderer,
+            gltf_model_renderer,
         }
     }
 }
@@ -80,11 +80,11 @@ pub struct Renderer {
     state: RenderState,
     // robot_renderer: RobotRenderer,
     floor_renderer: FloorRenderer,
-    my_model_renderer: MyModelRenderer,
+    gltf_model_renderer: GltfModelRenderer,
 }
 
 impl Renderer {
-    fn render_my_model(
+    fn render_gltf_model(
         &mut self,
         texture_view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
@@ -117,7 +117,7 @@ impl Renderer {
         {
             let mut render_pass = encoder.begin_render_pass(&render_pass_descriptor);
 
-            self.my_model_renderer
+            self.gltf_model_renderer
                 .render(queue, &mut render_pass, &self.state, &self.projection);
         }
     }
@@ -233,7 +233,7 @@ impl renderer::Renderer for Renderer {
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         self.render_robot(texture_view, &mut encoder, queue);
-        self.render_my_model(texture_view, &mut encoder, queue);
+        self.render_gltf_model(texture_view, &mut encoder, queue);
         self.render_floor(texture_view, &mut encoder, queue);
 
         queue.submit(Some(encoder.finish()));

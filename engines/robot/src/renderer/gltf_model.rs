@@ -10,7 +10,7 @@ use glam::{Mat4, Quat, Vec3, Vec4};
 use std::{borrow::Cow, mem::size_of, path::PathBuf, time::Instant};
 use wgpu::{self, util::DeviceExt};
 
-pub(super) struct MyModelRenderer {
+pub(super) struct GltfModelRenderer {
     pipeline: wgpu::RenderPipeline,
     vertex_buf: wgpu::Buffer,
     index_buf: wgpu::Buffer,
@@ -23,7 +23,7 @@ pub(super) struct MyModelRenderer {
     robot_color_buf: wgpu::Buffer,
 }
 
-impl MyModelRenderer {
+impl GltfModelRenderer {
     #[expect(
         clippy::too_many_lines,
         reason = "TODO partition this function into smaller parts"
