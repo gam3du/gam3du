@@ -34,7 +34,7 @@ fn main() {
 
     let (game_state_sender, game_state_receiver) = channel();
 
-    let init_game_state = GameState::new((16, 16));
+    let init_game_state = GameState::new((10, 10));
 
     let game_loop_thread = {
         thread::spawn(move || {

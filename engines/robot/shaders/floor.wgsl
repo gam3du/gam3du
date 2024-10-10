@@ -1,14 +1,15 @@
 const SQRT2 = sqrt(2.0);
 const SQRT1_2 = sqrt(0.5);
 const BG_COLOR = vec4<f32>(0.6, 0.7, 0.8, 1.0);
-const LINE_COLOR = vec4<f32>(0.1, 0.1, 0.1, 1.0);
-const BORDER_COLOR = vec4<f32>(0.4, 0.5, 0.6, 1.0);
+const LINE_COLOR = vec4<f32>(0.0, 0.0, 0.0, 1.0);
+const BORDER_COLOR = vec4<f32>(0.0, 0.0, 0.0, 1.0);
 const LINE_RADIUS = 0.1;
+const AMBIENT_COLOR = vec4<f32>(0.02, 0.06, 0.08, 1.0);
 
 struct FloorVertex {
     @builtin(position) position: vec4<f32>,
     @location(1) plane_uv: vec2<f32>,
-    @location(2) tile_uv: vec2<f32>,
+    @location(2) tile_uvw: vec3<f32>,
     @location(3) line_pattern: u32,
     @location(4) color: vec4<f32>,
     @location(5) face_index: u32,
@@ -72,11 +73,11 @@ fn vs_floor(
 
     let plane_uvw = (vec2<f32>(tile_xy) + tile_uvw.xy) / vec2<f32>(floor_size);
     vertex.plane_uv = plane_uvw.xy;
-    vertex.tile_uv = tile_uvw.xy;
 
     if COLUMN_MODE {
         let texel = textureLoad(r_color, tile_xy * 25, 0);
         let height = position.z; // f32(texel.x) / 255.0;
+        vertex.tile_uvw = vec3(tile_uvw.xy, position.z * tile_uvw.z);
         vertex.position = transform * vec4(position.xy + tile_uvw.xy, position.z * tile_uvw.z, 1.0);
         switch face_index {
             case 0u: { vertex.normal = vec3(0.0, 0.0, 1.0); }
@@ -89,6 +90,7 @@ fn vs_floor(
     } else {
         let texel = textureLoad(r_color, vec2<i32>(plane_uvw.xy * 256.0), 0);
         let height = f32(texel.x) / 255.0;
+        vertex.tile_uvw = tile_uvw.xyz;
         vertex.position = transform * (position + vec4(tile_uvw.xy, tile_uvw.z * height, 0.0));
         // TODO
         vertex.normal = vec3(0.0, 0.0, 1.0);
@@ -105,12 +107,12 @@ fn vs_floor(
 @fragment
 fn fs_floor_tile(vertex: FloorVertex) -> @location(0) vec4<f32> {
 
-    let tex = textureLoad(r_color, vec2<i32>(vertex.tile_uv * 256.0), 0);
+    let tex = textureLoad(r_color, vec2<i32>(vertex.tile_uvw.xy * 256.0), 0);
     let v = f32(tex.x) / 255.0;
     let tex_color = vec4<f32>(1.0 - (v * 5.0), 1.0 - (v * 15.0), 1.0 - (v * 50.0), 1.0);
 
 
-    let cc: vec2<f32> = vertex.tile_uv * 2 - vec2<f32>(1.0); // corrected coordinates (from -1.0 to 1.0)
+    let cc: vec2<f32> = vertex.tile_uvw.xy * 2 - vec2<f32>(1.0); // corrected coordinates (from -1.0 to 1.0)
 
     let line: bool = on_line(cc.y, cc.x, LINE_RADIUS, vertex.line_pattern >> 0u) || on_line((cc.x - cc.y) * SQRT1_2, cc.x + cc.y, LINE_RADIUS, vertex.line_pattern >> 1u) || on_line(cc.x, cc.y, LINE_RADIUS, vertex.line_pattern >> 2u) || on_line((cc.x + cc.y) * SQRT1_2, cc.y - cc.x, LINE_RADIUS, vertex.line_pattern >> 3u);
 
@@ -120,16 +122,33 @@ fn fs_floor_tile(vertex: FloorVertex) -> @location(0) vec4<f32> {
 
     let border: bool = cc.x < -0.95 || cc.x > 0.95 || cc.y < -0.95 || cc.y > 0.95;
 
-    // let light = dot(normalize(vertex.normal), normalize(vec3(-1.0, -1.0, 1.0))) * 0.8 + 0.2;
-    let light = max(dot(normalize(vertex.normal), normalize(light_pos)), 0.0) * 0.8 + 0.2;
+
+    var color = vertex.color;
 
     if line || line_end || line_corner {
-        return LINE_COLOR * light;
-    } else if border {
-        return BORDER_COLOR * light;
-    } else {
-        return vertex.color * light;
+        color = mix(color, LINE_COLOR, 0.9);
     }
+
+    if border && vertex.face_index == 0 {
+        color = mix(color, BORDER_COLOR, 0.5);
+    }
+
+    // ambient dimming
+    var light = max(dot(normalize(vertex.normal), normalize(vec3(light_pos))), 0.0);
+    color = mix(AMBIENT_COLOR, color, light);
+
+    // specular
+    let highlight = light * light * light * light * light * light * light * light;
+    color = mix(color, vec4(1.0, 1.0, 1.0, 1.0), highlight);
+
+    // ambient occlusion for walls
+    if vertex.face_index != 0 {
+        let height = 1.0 - min(vertex.tile_uvw.z * 5.0, 1.0);
+        color = mix(vec4(0.0, 0.0, 0.0, 1.0), color, 1.0 - height * height);
+    }
+
+    return color;
+
 }
 
 fn on_line(axis: f32, part_axis: f32, line_width: f32, axis_pattern: u32) -> bool {
