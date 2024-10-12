@@ -6,7 +6,7 @@ mod robot;
 use crate::{api::EngineApi, events::EventRegistries, tile::LineSegment};
 use animation::RobotAnimation;
 use floor::Floor;
-use glam::{IVec2, UVec2, Vec3, Vec3Swizzles, Vec4, Vec4Swizzles};
+use glam::{IVec2, UVec2, Vec3, Vec3Swizzles};
 pub(crate) use orientation::Orientation;
 pub(crate) use robot::Robot;
 use std::time::{Duration, Instant};

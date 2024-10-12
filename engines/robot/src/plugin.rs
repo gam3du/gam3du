@@ -1,9 +1,7 @@
 use crate::GameState;
 
-mod native;
 mod python;
 
-pub use native::NativePlugin;
 pub use python::PythonPlugin;
 
 pub trait Plugin {

@@ -36,39 +36,37 @@ fn main() {
 
     let init_game_state = GameState::new((10, 10));
 
-    let game_loop_thread = {
-        thread::spawn(move || {
-            // the game loop might not be `Send`, so we need to create it from within the thread
-            let mut game_loop = GameLoop::new(init_game_state);
+    let game_loop_thread = thread::spawn(move || {
+        // the game loop might not be `Send`, so we need to create it from within the thread
+        let mut game_loop = GameLoop::new(init_game_state);
 
-            let mut python_runtime_builder =
-                PythonRuntimeBuilder::new("applications/robot/python/plugin", "robot_plugin");
-            python_runtime_builder.add_api_server(robot_api_engine_endpoint);
-            let plugin = PythonPlugin::new(python_runtime_builder);
+        let mut python_runtime_builder =
+            PythonRuntimeBuilder::new("applications/robot/python/plugin", "robot_plugin");
+        python_runtime_builder.add_api_server(robot_api_engine_endpoint);
+        let plugin = PythonPlugin::new(python_runtime_builder);
 
-            // let mut plugin = NativePlugin::new();
-            // plugin.add_robot_controller(robot_api_engine_endpoint);
-            game_loop.add_plugin(plugin);
+        // let mut plugin = NativePlugin::new();
+        // plugin.add_robot_controller(robot_api_engine_endpoint);
+        game_loop.add_plugin(plugin);
 
-            // the game state is needed in the main window's loop so we send a reference thereof out of this thread
-            game_state_sender.send(game_loop.clone_state()).unwrap();
+        // the game state is needed in the main window's loop so we send a reference thereof out of this thread
+        game_state_sender.send(game_loop.clone_state()).unwrap();
 
-            debug!("thread[game loop]: starting game loop");
-            game_loop.run(&event_receiver);
-            debug!("thread[game loop]: game loop returned");
+        debug!("thread[game loop]: starting game loop");
+        game_loop.run(&event_receiver);
+        debug!("thread[game loop]: game loop returned");
 
-            // shut down everything
+        // shut down everything
 
-            debug!("thread[game loop]: instruct window event loop to stop now");
-            window_proxy
-                .send_event(ApplicationEvent::Exit.into())
-                .unwrap();
-            debug!("thread[game loop]: instruct python vm to stop now");
-            python_thread.stop();
-            debug!("thread[game loop]: exit");
-            python_thread
-        })
-    };
+        debug!("thread[game loop]: instruct window event loop to stop now");
+        window_proxy
+            .send_event(ApplicationEvent::Exit.into())
+            .unwrap();
+        debug!("thread[game loop]: instruct python vm to stop now");
+        python_thread.stop();
+        debug!("thread[game loop]: exit");
+        python_thread
+    });
 
     // wait for the game loop to send us a copy of its state, so that we can pass it to the renderer
     let game_state = game_state_receiver.recv().unwrap();
