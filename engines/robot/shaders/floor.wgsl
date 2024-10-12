@@ -134,7 +134,7 @@ fn fs_floor_tile(vertex: FloorVertex) -> @location(0) vec4<f32> {
     }
 
     // ambient dimming
-    var light = max(dot(normalize(vertex.normal), normalize(vec3(light_pos))), 0.0);
+    var light = max(dot(normalize(vertex.normal), normalize(vec3(light_pos))), 0.0) * 0.8 + 0.2;
     color = mix(AMBIENT_COLOR, color, light);
 
     // specular
