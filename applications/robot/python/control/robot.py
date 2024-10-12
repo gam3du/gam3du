@@ -8,9 +8,27 @@ from robot_control_api import (
     set_height,
 )
 
+def turn_left_90():
+    drehe_links(2)
+
+def umdrehen():
+    drehe_links(4)
+
+def drehe_links(wie_oft):
+    for x in range(wie_oft):
+        turn_left()
+
 def fahre_gegen_die_wand():
     while draw_forward():
         pass
+
+def umrandung ():
+    for x in range(9):
+        draw_forward()
+
+def treppe (height):
+    move_forward()
+    set_height(height)
 
 def beweg_dich (r,g,b):
     set_height(1.0)
@@ -18,16 +36,15 @@ def beweg_dich (r,g,b):
     paint_tile()
     move_forward()
 
+##############################################################################
 
-for x in range(4):
-    turn_left()
-
+# In Startposition bringen
+umdrehen()
 for x in range(4):
     move_forward()
+umdrehen()
 
-for x in range(4):
-    turn_right()
-
+# male Regenbogenbrücke
 beweg_dich(1,0.1,0.1)
 beweg_dich(1,0.5,0)
 beweg_dich(1,1,0)
@@ -38,25 +55,26 @@ beweg_dich(0.1,0.1,1)
 beweg_dich(0.5,0,1)
 robot_color_rgb(1,1,1)
 
-turn_left()
-turn_left()
+# Male Umrandung
+turn_left_90()
 draw_forward()
-turn_left()
-turn_left()
-fahre_gegen_die_wand()
-turn_left()
-turn_left()
+turn_left_90()
+umrandung()
+turn_left_90()
 draw_forward()
 draw_forward()
-turn_left()
-turn_left()
-fahre_gegen_die_wand()
-turn_left()
-turn_left()
+turn_left_90()
+umrandung()
+turn_left_90()
 draw_forward()
-turn_right()
-turn_right()
-robot_color_rgb(0,0,0)
 
+# Male Treppe
+drehe_links(2)
+for x in range(8):
+    treppe(1.0 - x * 0.1)  # geld → kg
+
+# Werde verrückt
+move_forward()
+robot_color_rgb(0,0,0)
 while True:
     turn_right(1000/80)
