@@ -3,7 +3,7 @@ use crate::{
     renderer::{self, Renderer},
     surface_wrapper::SurfaceWrapper,
 };
-use gam3du_framework_common::event::{ApplicationEvent, EngineEvent};
+use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
 use log::{debug, info, trace};
 use std::{
     sync::{mpsc::Sender, Arc},
@@ -29,13 +29,13 @@ pub struct Application<RendererBuilder: renderer::RendererBuilder> {
     title: String,
     frame_counter: u32,
     frame_time: Instant,
-    event_sink: Sender<EngineEvent>,
+    event_sink: Sender<FrameworkEvent>,
 }
 
 impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
     pub async fn new(
-        title: String,
-        event_sender: Sender<EngineEvent>,
+        title: impl Into<String>,
+        event_sender: Sender<FrameworkEvent>,
         renderer_builder: RendererBuilder,
     ) -> Self {
         let mut surface = SurfaceWrapper::new();
@@ -46,7 +46,7 @@ impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
             surface,
             context,
             window: None,
-            title,
+            title: title.into(),
             frame_counter: 0,
             frame_time: Instant::now(),
             event_sink: event_sender,
@@ -68,7 +68,7 @@ impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
     }
 }
 
-impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<EngineEvent>
+impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<FrameworkEvent>
     for Application<RendererBuilder>
 {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
@@ -85,6 +85,8 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<EngineEvent>
 
         // First-time init of the scene
         if let Some(builder) = self.renderer_builder.take() {
+            info!("Building renderer");
+            let now = Instant::now();
             assert!(
                 self.renderer
                     .replace(builder.build(
@@ -96,12 +98,13 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<EngineEvent>
                     .is_none(),
                 "unexpected existing renderer"
             );
+            debug!("Building the renderer took {:?}", now.elapsed());
         }
     }
 
-    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: EngineEvent) {
+    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: FrameworkEvent) {
         match event {
-            EngineEvent::Application {
+            FrameworkEvent::Application {
                 event: ApplicationEvent::Exit,
             } => {
                 info!("Window event loop received an ExitEvent. Shutting down event loop.");
@@ -160,21 +163,29 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<EngineEvent>
                                 self.event_sink.send(ApplicationEvent::Exit.into()).unwrap();
                             }
                             _ => {
-                                self.event_sink.send(EngineEvent::Window { event }).unwrap();
+                                self.event_sink
+                                    .send(FrameworkEvent::Window { event })
+                                    .unwrap();
                             }
                         }
                     }
                     Key::Character(ref key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Character({key:?})");
-                        self.event_sink.send(EngineEvent::Window { event }).unwrap();
+                        self.event_sink
+                            .send(FrameworkEvent::Window { event })
+                            .unwrap();
                     }
                     Key::Unidentified(ref key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Unidentified({key:?})");
-                        self.event_sink.send(EngineEvent::Window { event }).unwrap();
+                        self.event_sink
+                            .send(FrameworkEvent::Window { event })
+                            .unwrap();
                     }
                     Key::Dead(key) => {
                         trace!("WindowEvent::KeyboardInput::logical_key::Dead({key:?})");
-                        self.event_sink.send(EngineEvent::Window { event }).unwrap();
+                        self.event_sink
+                            .send(FrameworkEvent::Window { event })
+                            .unwrap();
                     }
                 }
             }
@@ -203,7 +214,9 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<EngineEvent>
                 // self.event_sink.send(EngineEvent::Window { event }).unwrap();
             }
             _ => {
-                self.event_sink.send(EngineEvent::Window { event }).unwrap();
+                self.event_sink
+                    .send(FrameworkEvent::Window { event })
+                    .unwrap();
             }
         }
     }

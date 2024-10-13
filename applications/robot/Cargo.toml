@@ -12,8 +12,10 @@ gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
 runtime-python.workspace = true
 
+tokio = { workspace = true, features = ["rt", "signal", "macros", "time"] }
+tokio-util = { workspace = true }
+rustpython-vm.workspace = true
 log.workspace = true
-pollster.workspace = true
 serde_json.workspace = true
 winit.workspace = true
 

@@ -14,7 +14,7 @@
 
 use std::sync::mpsc::Sender;
 
-use gam3du_framework_common::event::{ApplicationEvent, EngineEvent};
+use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
 use log::debug;
 
 pub mod application;
@@ -27,7 +27,7 @@ mod surface_wrapper;
 ///
 /// # Panics
 /// Will return an error if a system error occurred while setting the handler.
-pub fn register_ctrlc(event_sender: &Sender<EngineEvent>) {
+pub fn register_ctrlc(event_sender: &Sender<FrameworkEvent>) {
     ctrlc::set_handler({
         let event_sender = event_sender.clone();
         move || {
@@ -35,5 +35,5 @@ pub fn register_ctrlc(event_sender: &Sender<EngineEvent>) {
             drop(event_sender.send(ApplicationEvent::Exit.into()));
         }
     })
-    .expect("Error setting Ctrl-C handler");
+    .expect("Error setting Ctrl+C handler");
 }

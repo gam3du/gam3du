@@ -1,7 +1,7 @@
 use winit::event::WindowEvent;
 
 #[derive(Clone, Debug)]
-pub enum EngineEvent {
+pub enum FrameworkEvent {
     Window { event: WindowEvent },
     Device { event: winit::event::DeviceEvent },
     Application { event: ApplicationEvent },
@@ -12,7 +12,7 @@ pub enum ApplicationEvent {
     Exit,
 }
 
-impl From<ApplicationEvent> for EngineEvent {
+impl From<ApplicationEvent> for FrameworkEvent {
     fn from(event: ApplicationEvent) -> Self {
         Self::Application { event }
     }

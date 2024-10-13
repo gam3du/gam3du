@@ -1,7 +1,7 @@
 mod floor;
 // mod robot;
 
-use crate::{GameState, RenderState};
+use crate::{RenderState, SharedGameState};
 use core::f32;
 use floor::FloorRenderer;
 use gam3du_framework::renderer;
@@ -9,20 +9,16 @@ use glam::{Mat4, Quat, Vec3};
 use lib_geometry::Projection;
 use lib_gltf_model::GltfModelRenderer;
 // use robot::RobotRenderer;
-use std::{
-    borrow::Cow,
-    fs::read_to_string,
-    sync::{Arc, RwLock},
-};
+use std::{borrow::Cow, fs::read_to_string, sync::Arc};
 
 pub struct RendererBuilder {
-    game_state: Arc<RwLock<Box<GameState>>>,
+    game_state: SharedGameState,
     shader_source: Cow<'static, str>,
 }
 
 impl RendererBuilder {
     #[must_use]
-    pub fn new(game_state: Arc<RwLock<Box<GameState>>>) -> Self {
+    pub fn new(game_state: SharedGameState) -> Self {
         let shader_source = read_to_string("engines/robot/shaders/robot.wgsl")
             .unwrap()
             .into();
@@ -81,7 +77,7 @@ impl renderer::RendererBuilder for RendererBuilder {
 }
 
 pub struct Renderer {
-    game_state: Arc<RwLock<Box<GameState>>>,
+    game_state: SharedGameState,
     // TODO check whether `projection` should be moved into `RenderState`
     projection: Projection,
     depth_map: DepthTexture,

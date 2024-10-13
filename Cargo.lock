@@ -9,6 +9,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe438c63458706e03479442743baae6c88256498e6431708f6dfc520a26515d3"
 
 [[package]]
+name = "addr2line"
+version = "0.24.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dfbe277e56a376000877090da837660b4427aad530e3028d44e0bffe4f89a1c1"
+dependencies = [
+ "gimli",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -162,10 +171,12 @@ dependencies = [
  "gam3du-framework",
  "gam3du-framework-common",
  "log",
- "pollster",
  "runtime-python",
  "runtime-python-bindgen",
+ "rustpython-vm",
  "serde_json",
+ "tokio",
+ "tokio-util",
  "winit",
 ]
 
@@ -227,6 +238,21 @@ name = "autocfg"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ace50bade8e6234aa140d9a2f552bbee1db4d353f69b8217bc503490fc1a9f26"
+
+[[package]]
+name = "backtrace"
+version = "0.3.74"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d82cb332cdfaed17ae235a638438ac4d4839913cc2af585c3c6746e8f8bee1a"
+dependencies = [
+ "addr2line",
+ "cfg-if",
+ "libc",
+ "miniz_oxide",
+ "object",
+ "rustc-demangle",
+ "windows-targets 0.52.6",
+]
 
 [[package]]
 name = "base64"
@@ -879,6 +905,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "aa9a19cbb55df58761df49b23516a86d432839add4af60fc256da840f66ed35b"
 
 [[package]]
+name = "futures-core"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05f29059c0c2090612e8d742178b0580d2dc940c837851ad723096f87af6663e"
+
+[[package]]
+name = "futures-sink"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e575fab7d1e0dcb8d0c7bcf9a63ee213816ab51902e6d244a95819acacf1d4f7"
+
+[[package]]
 name = "gam3du-framework"
 version = "0.1.0"
 dependencies = [
@@ -951,6 +989,12 @@ dependencies = [
  "wasi",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "gimli"
+version = "0.31.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07e28edb80900c19c28f1072f2e8aeca7fa06b23cd4169cefe1af5aa3260783f"
 
 [[package]]
 name = "gl_generator"
@@ -1649,6 +1693,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "mio"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80e04d1dcff3aae0704555fe5fee3bcfaf3d1fdf8a7e521d5b9d2b42acb52cec"
+dependencies = [
+ "hermit-abi 0.3.9",
+ "libc",
+ "wasi",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
 name = "mt19937"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2034,6 +2090,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "object"
+version = "0.36.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aedf0a2d09c573ed1d8d85b30c119153926a2b36dce0ab28322c09a117a4683e"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2194,12 +2259,6 @@ dependencies = [
  "tracing",
  "windows-sys 0.59.0",
 ]
-
-[[package]]
-name = "pollster"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22686f4785f02a4fcc856d3b3bb19bf6c8160d103f7a99cc258bddd0251dc7f2"
 
 [[package]]
 name = "ppv-lite86"
@@ -2431,6 +2490,12 @@ version = "0.1.0"
 dependencies = [
  "gam3du-framework-common",
 ]
+
+[[package]]
+name = "rustc-demangle"
+version = "0.1.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "719b953e2095829ee67db738b3bfa9fa368c94900df327b3f07fe6e794d2fe1f"
 
 [[package]]
 name = "rustc-hash"
@@ -2984,6 +3049,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
+name = "signal-hook-registry"
+version = "1.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9e9e0b4211b72e7b8b6e85c807d36c212bdb33ea8587f7569562a84df5465b1"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3247,6 +3321,45 @@ name = "tinyvec_macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
+
+[[package]]
+name = "tokio"
+version = "1.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2b070231665d27ad9ec9b8df639893f46727666c6767db40317fbe920a5d998"
+dependencies = [
+ "backtrace",
+ "libc",
+ "mio",
+ "pin-project-lite",
+ "signal-hook-registry",
+ "tokio-macros",
+ "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "693d596312e88961bc67d7f1f97af8a70227d9f90c31bba5806eec004978d752"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.79",
+]
+
+[[package]]
+name = "tokio-util"
+version = "0.7.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61e7c3654c13bcd040d4a03abee2c75b1d14a37b423cf5a813ceae1cc903ec6a"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-sink",
+ "pin-project-lite",
+ "tokio",
+]
 
 [[package]]
 name = "toml_datetime"

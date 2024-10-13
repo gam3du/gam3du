@@ -196,17 +196,15 @@ impl PythonRuntimeBuilder {
     }
 
     #[must_use]
-    pub fn build_runner_thread(self, user_signal_sender: UserSignalSender) -> PythonRunnerThread {
-        let handle = thread::Builder::new()
+    pub fn build_runner_thread(self) -> JoinHandle<()> {
+        thread::Builder::new()
             // .stack_size(10 * 1024 * 1024)
             .spawn(|| {
                 debug!("thread[python]: start interpreter");
                 let mut runtime = self.build();
                 runtime.enter_main();
             })
-            .unwrap();
-
-        PythonRunnerThread::new(handle, user_signal_sender)
+            .unwrap()
     }
 }
 

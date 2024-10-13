@@ -9,10 +9,15 @@ use floor::Floor;
 use glam::{IVec2, UVec2, Vec3, Vec3Swizzles};
 pub(crate) use orientation::Orientation;
 pub(crate) use robot::Robot;
-use std::time::{Duration, Instant};
+use std::{
+    sync::{Arc, RwLock},
+    time::{Duration, Instant},
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub(crate) struct Tick(pub(crate) u64);
+
+pub type SharedGameState = Arc<RwLock<Box<GameState>>>;
 
 /// Contains every information about the current state of the game.
 /// This is what needs to be stored/loaded if the game need to be suspended.
@@ -36,6 +41,11 @@ impl GameState {
             floor: Floor::new((0, 0)),
             event_registries: EventRegistries::default(),
         }
+    }
+
+    #[must_use]
+    pub fn into_shared(self) -> SharedGameState {
+        Arc::new(RwLock::new(Box::new(self)))
     }
 
     pub(crate) fn update(&mut self) {

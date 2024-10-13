@@ -20,6 +20,6 @@ mod renderer;
 mod tile;
 
 pub use game_loop::GameLoop;
-pub use game_state::GameState;
+pub use game_state::{GameState, SharedGameState};
 pub use render_state::RenderState;
 pub use renderer::{Renderer, RendererBuilder};

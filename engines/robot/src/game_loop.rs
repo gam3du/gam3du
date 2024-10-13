@@ -1,10 +1,10 @@
-use crate::{game_state::GameState, plugin};
-use gam3du_framework_common::event::{ApplicationEvent, EngineEvent};
+use crate::{plugin, SharedGameState};
+use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
 use log::debug;
 use std::{
     sync::{
         mpsc::{Receiver, TryRecvError},
-        Arc, RwLock,
+        Arc,
     },
     thread,
     time::{Duration, Instant},
@@ -26,7 +26,7 @@ pub struct GameLoop<Plugin: plugin::Plugin> {
     /// Contains the current state which will be updated by the game loop.
     /// This might be shared with renderers.
     /// In order to allow multiple renderers, this is a `RwLock` rather than a `Mutex`.
-    game_state: Arc<RwLock<Box<GameState>>>,
+    game_state: SharedGameState,
     plugin: Option<Plugin>,
 }
 
@@ -37,14 +37,14 @@ pub struct GameLoop<Plugin: plugin::Plugin> {
 
 impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
     #[must_use]
-    pub fn new(game_state: GameState) -> Self {
+    pub fn new(game_state: SharedGameState) -> Self {
         Self {
-            game_state: Arc::new(RwLock::new(Box::new(game_state))),
+            game_state,
             plugin: None,
         }
     }
 
-    pub fn run(mut self, event_source: &Receiver<EngineEvent>) {
+    pub fn run(mut self, event_source: &Receiver<FrameworkEvent>) {
         let mut time = Instant::now();
 
         if let Some(plugin) = &mut self.plugin {
@@ -60,13 +60,13 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
                 'next_event: loop {
                     match event_source.try_recv() {
                         Ok(engine_event) => match engine_event {
-                            EngineEvent::Window { event } => {
+                            FrameworkEvent::Window { event } => {
                                 debug!("{event:?}");
                             }
-                            EngineEvent::Device { event } => {
+                            FrameworkEvent::Device { event } => {
                                 debug!("{event:?}");
                             }
-                            EngineEvent::Application { event } => match event {
+                            FrameworkEvent::Application { event } => match event {
                                 ApplicationEvent::Exit => {
                                     debug!("Received Exit-event. Exiting game loop");
                                     break 'game_loop;
@@ -100,7 +100,7 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
     }
 
     #[must_use]
-    pub fn clone_state(&self) -> Arc<RwLock<Box<GameState>>> {
+    pub fn clone_state(&self) -> SharedGameState {
         Arc::clone(&self.game_state)
     }
 
