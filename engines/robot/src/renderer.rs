@@ -9,7 +9,11 @@ use glam::{Mat4, Quat, Vec3};
 use lib_geometry::Projection;
 use lib_gltf_model::GltfModelRenderer;
 // use robot::RobotRenderer;
-use std::{borrow::Cow, fs::read_to_string, sync::Arc};
+use std::{
+    borrow::Cow,
+    fs::read_to_string,
+    sync::{Arc, TryLockError},
+};
 
 pub struct RendererBuilder {
     game_state: SharedGameState,
@@ -227,6 +231,18 @@ impl Renderer {
 impl renderer::Renderer for Renderer {
     fn update(&mut self) {
         self.state.update(&self.game_state.read().unwrap());
+    }
+
+    fn try_update(&mut self) -> bool {
+        let game_state = &self.game_state.try_read();
+        match game_state {
+            Ok(game_state) => {
+                self.state.update(game_state);
+                true
+            }
+            Err(TryLockError::WouldBlock) => false,
+            Err(TryLockError::Poisoned(err)) => panic!("lock poisoned: {err}"),
+        }
     }
 
     fn resize(

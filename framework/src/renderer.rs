@@ -14,6 +14,7 @@ pub trait RendererBuilder {
 
 pub trait Renderer {
     fn update(&mut self);
+    fn try_update(&mut self) -> bool;
 
     fn resize(
         &mut self,
