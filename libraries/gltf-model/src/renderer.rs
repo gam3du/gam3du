@@ -10,7 +10,7 @@ use core::f32;
 use glam::{Mat4, Vec4};
 use lib_geometry::{Camera, Projection};
 use lib_time::elapsed_as_vec;
-use std::{borrow::Cow, mem::size_of, path::PathBuf, time::Instant};
+use std::{borrow::Cow, mem::size_of, path::Path, time::Instant};
 use wgpu::{self, util::DeviceExt};
 
 use crate::model::{load_model, Mesh, Vertex};
@@ -25,10 +25,15 @@ pub struct Renderer {
     world_matrix_buf: wgpu::Buffer,
     camera_matrix_buf: wgpu::Buffer,
     projection_matrix_buf: wgpu::Buffer,
-    robot_color_buf: wgpu::Buffer,
+    color_buf: wgpu::Buffer,
 }
 
 impl Renderer {
+    /// Creates a new [`Renderer`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if the model cannot be loaded from the source file.
     #[expect(
         clippy::too_many_lines,
         reason = "TODO partition this function into smaller parts"
@@ -40,12 +45,17 @@ impl Renderer {
         view_format: wgpu::TextureFormat,
         shader_source: Cow<'_, str>,
         depth_stencil_state: wgpu::DepthStencilState,
+        model_path: &Path,
     ) -> Self {
         let Mesh {
             vertex_buffer,
             index_buffer,
             index_count,
-        } = Self::create_vertices(device);
+        } = {
+            let mut model = load_model(model_path, device).unwrap();
+
+            model.pop().unwrap()
+        };
 
         // Create pipeline layout
         let matrix_binding_type = wgpu::BindingType::Buffer {
@@ -133,7 +143,7 @@ impl Renderer {
         let projection_matrix_buf =
             device.create_buffer_init(&uniform_matrix("projection matrix uniform buffer"));
         let time_buf = device.create_buffer_init(&uniform_time("time uniform buffer"));
-        let robot_color_buf = device.create_buffer_init(&uniform_color("color uniform buffer"));
+        let color_buf = device.create_buffer_init(&uniform_color("color uniform buffer"));
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &bind_group_layout,
@@ -160,7 +170,7 @@ impl Renderer {
                 },
                 wgpu::BindGroupEntry {
                     binding: 5,
-                    resource: robot_color_buf.as_entire_binding(),
+                    resource: color_buf.as_entire_binding(),
                 },
             ],
             label: None,
@@ -185,7 +195,7 @@ impl Renderer {
             index_buf: index_buffer,
             index_count,
             time_buf,
-            robot_color_buf,
+            color_buf,
             bind_group,
             world_matrix_buf,
             camera_matrix_buf,
@@ -253,11 +263,7 @@ impl Renderer {
     }
 
     fn update_color(&self, color: Vec4, queue: &wgpu::Queue) {
-        queue.write_buffer(
-            &self.robot_color_buf,
-            0,
-            bytemuck::cast_slice(color.as_ref()),
-        );
+        queue.write_buffer(&self.color_buf, 0, bytemuck::cast_slice(color.as_ref()));
     }
 
     fn create_pipeline(
@@ -331,13 +337,6 @@ impl Renderer {
             texture_extent,
         );
         texture_view
-    }
-
-    fn create_vertices(device: &wgpu::Device) -> Mesh {
-        let mut model =
-            load_model(&PathBuf::from("engines/robot/assets/monkey.gltf"), device).unwrap();
-
-        model.pop().unwrap()
     }
 
     fn create_texels(size: usize) -> Vec<u8> {

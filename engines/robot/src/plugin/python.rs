@@ -129,6 +129,12 @@ mod plugin_api {
     }
 
     #[pyfunction]
+    fn jump(duration: u64, _vm: &VirtualMachine) -> bool {
+        trace!("pyfunction: jump({duration})");
+        VM_GAME_STATE.with_borrow_mut(|game_state| game_state.jump(duration))
+    }
+
+    #[pyfunction]
     fn turn(steps_ccw: i8, duration: u64, _vm: &VirtualMachine) {
         trace!("pyfunction: turn_left({duration})");
         VM_GAME_STATE.with_borrow_mut(|game_state| game_state.turn(steps_ccw, duration));

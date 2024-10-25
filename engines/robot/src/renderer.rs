@@ -12,6 +12,7 @@ use lib_gltf_model::GltfModelRenderer;
 use std::{
     borrow::Cow,
     fs::read_to_string,
+    path::PathBuf,
     sync::{Arc, TryLockError},
 };
 
@@ -66,6 +67,7 @@ impl renderer::RendererBuilder for RendererBuilder {
             surface.view_formats[0],
             self.shader_source,
             depth_stencil_state,
+            &PathBuf::from("engines/robot/assets/monkey.gltf"),
         );
 
         Renderer {

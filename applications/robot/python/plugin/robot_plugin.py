@@ -3,7 +3,7 @@ from api_server import (
 )
 
 from robot_plugin_api import (
-    move_forward, paint_tile, robot_color_rgb, turn, log_trace, log_debug, log_error, log_info, log_warn, set_height
+    move_forward, paint_tile, robot_color_rgb, turn, log_trace, log_debug, log_error, log_info, log_warn, set_height, jump
 )
 
 current_command = 0
@@ -32,6 +32,17 @@ def on_move_forward(request_id, duration):
         log_error("pending command")
 
     if not move_forward(False, duration):
+        send_boolean_response("robot control", request_id, False)
+    else:
+        current_command = request_id
+
+def on_jump(request_id, duration):
+    global current_command
+    log_trace("on_jump(%s, %s)" % (hex(request_id), duration))
+    if current_command:
+        log_error("pending command")
+
+    if not jump(duration):
         send_boolean_response("robot control", request_id, False)
     else:
         current_command = request_id

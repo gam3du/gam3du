@@ -45,6 +45,33 @@
         "type": "Boolean"
       }
     },
+    "jump": {
+      "name": "jump",
+      "caption": "Makes the robot jump to the next tile in its current orientation",
+      "description": "Makes the robot jump to the next tile in its current orientation",
+      "parameters": [
+        {
+          "name": "duration",
+          "caption": "Duration of the jump animation",
+          "description": "Duration of the jump animation. The duration is in milliseconds and must be smaller than 10000.",
+          "type": {
+            "Integer": [
+              0,
+              10000
+            ]
+          },
+          "default": {
+            "Integer": 500
+          }
+        }
+      ],
+      "returns": {
+        "name": "return",
+        "caption": "",
+        "description": "",
+        "type": "Boolean"
+      }
+    },
     "draw forward": {
       "name": "draw forward",
       "caption": "Makes the robot move to the next tile in its current orientation and draw a line onto the floor",

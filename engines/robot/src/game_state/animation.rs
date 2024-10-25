@@ -12,6 +12,12 @@ pub(crate) enum RobotAnimation {
         start_time: Instant,
         duration: Duration,
     },
+    Jump {
+        start: Vec3,
+        end: Vec3,
+        start_time: Instant,
+        duration: Duration,
+    },
     Rotate {
         start: f32,
         end: f32,
@@ -24,6 +30,11 @@ impl RobotAnimation {
     fn progress(&self) -> f32 {
         match *self {
             RobotAnimation::Move {
+                start_time,
+                duration,
+                ..
+            }
+            | RobotAnimation::Jump {
                 start_time,
                 duration,
                 ..
@@ -58,6 +69,10 @@ impl RobotAnimation {
                 } else {
                     via.lerp(end, progress * 2.0 - 1.0)
                 };
+            }
+            RobotAnimation::Jump { start, end, .. } => {
+                *position = start.lerp(end, progress)
+                    + Vec3::new(0.0, 0.0, 4.0 * progress * (1.0 - progress));
             }
             RobotAnimation::Rotate { start, end, .. } => {
                 *orientation = if (start - end).abs() <= PI {

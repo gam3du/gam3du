@@ -22,15 +22,15 @@ pub(crate) struct Mesh {
 #[derive(Clone, Copy, Pod, Zeroable, Default)]
 pub struct Vertex {
     // Geometric properties
-    pub position: Vec4,
+    position: Vec4,
     // ---- 16 byte alignment
-    pub normal: Vec4,
+    normal: Vec4,
     // Material properties
     // ---- 16 byte alignment
-    pub base_color_factor: Vec4,
+    base_color_factor: Vec4,
     // // ---- 16 byte alignment
-    pub base_color_texture_coordinates: Vec2,
-    pub _padding: Vec2,
+    base_color_texture_coordinates: Vec2,
+    _padding: Vec2,
     // pub(crate) metallic_factor: f32,
     // pub(crate) roughness_factor: f32,
     // // ---- 16 byte alignment
@@ -77,6 +77,21 @@ pub struct Vertex {
 }
 
 impl Vertex {
+    fn new(
+        position: Vec4,
+        normal: Vec4,
+        base_color_factor: Vec4,
+        base_color_texture_coordinates: Vec2,
+    ) -> Self {
+        Self {
+            position,
+            normal,
+            base_color_factor,
+            base_color_texture_coordinates,
+            _padding: Vec2::default(),
+        }
+    }
+
     pub(crate) fn buffer_layout() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: size_of::<Vertex>() as wgpu::BufferAddress,

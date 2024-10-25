@@ -54,7 +54,7 @@ impl GameState {
     }
 
     fn _turn(&mut self, steps_ccw: i8, duration: Duration) {
-        self.robot.complete_animation();
+        self.robot.complete_animation(&mut self.event_registries);
         #[expect(clippy::cast_sign_loss, reason = "TODO make this less cumbersome")]
         if steps_ccw < 0 {
             self.robot.orientation -= -steps_ccw as u8;
@@ -74,7 +74,7 @@ impl GameState {
     }
 
     pub fn _set_height(&mut self, height: f32) {
-        self.robot.complete_animation();
+        self.robot.complete_animation(&mut self.event_registries);
 
         let start_pos = self.robot.position;
         let start_index = self.floor.to_index(start_pos.xy()).unwrap();
@@ -84,7 +84,7 @@ impl GameState {
     }
 
     pub fn _paint_tile(&mut self) {
-        self.robot.complete_animation();
+        self.robot.complete_animation(&mut self.event_registries);
 
         let start_pos = self.robot.position;
         let start_index = self.floor.to_index(start_pos.xy()).unwrap();
@@ -93,7 +93,7 @@ impl GameState {
     }
 
     fn _move_forward(&mut self, draw: bool, duration: Duration) -> Result<(), String> {
-        self.robot.complete_animation();
+        self.robot.complete_animation(&mut self.event_registries);
 
         let segment = LineSegment::from(self.robot.orientation);
 
@@ -103,6 +103,18 @@ impl GameState {
         let start_index = self.floor.to_index(start_pos)?;
         let end_pos = start_pos + offset;
         let end_index = self.floor.to_index(end_pos)?;
+
+        let animation_start = self.robot.animation_position;
+        let animation_end = self.floor.tiles[end_index].center_pos();
+        let animation_via = (
+            animation_start.xy().midpoint(animation_end.xy()),
+            animation_start.z.max(animation_end.z),
+        )
+            .into();
+
+        if (animation_start.z - animation_end.z).abs() >= 0.5 {
+            return Err("too high".into());
+        }
 
         if draw {
             self.floor.tiles[start_index].line_pattern |= segment;
@@ -121,16 +133,37 @@ impl GameState {
 
         self.robot.position.x = end_pos.x;
         self.robot.position.y = end_pos.y;
-        let animation_start = self.robot.animation_position;
-        let animation_end = self.floor.tiles[end_index].center_pos();
-        let animation_via = (
-            animation_start.xy().midpoint(animation_end.xy()),
-            animation_start.z.max(animation_end.z),
-        )
-            .into();
         self.robot.current_animation = Some(RobotAnimation::Move {
             start: animation_start,
             via: animation_via,
+            end: animation_end,
+            start_time: Instant::now(),
+            duration,
+        });
+
+        Ok(())
+    }
+
+    fn _jump(&mut self, duration: Duration) -> Result<(), String> {
+        self.robot.complete_animation(&mut self.event_registries);
+
+        let offset = self.robot.orientation.as_ivec2();
+
+        let start_pos = self.robot.position.xy();
+        let end_pos = start_pos + offset;
+        let end_index = self.floor.to_index(end_pos)?;
+
+        let animation_start = self.robot.animation_position;
+        let animation_end = self.floor.tiles[end_index].center_pos();
+
+        if (animation_start.z - animation_end.z).abs() >= 1.0 {
+            return Err("too high".into());
+        }
+
+        self.robot.position.x = end_pos.x;
+        self.robot.position.y = end_pos.y;
+        self.robot.current_animation = Some(RobotAnimation::Jump {
+            start: animation_start,
             end: animation_end,
             start_time: Instant::now(),
             duration,
@@ -167,6 +200,10 @@ impl EngineApi for GameState {
     fn move_forward(&mut self, draw: bool, duration: u64) -> bool {
         self._move_forward(draw, Duration::from_millis(duration))
             .is_ok()
+    }
+
+    fn jump(&mut self, duration: u64) -> bool {
+        self._jump(Duration::from_millis(duration)).is_ok()
     }
 
     fn turn(&mut self, steps_ccw: i8, duration: u64) {

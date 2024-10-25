@@ -23,6 +23,15 @@ async def move_forward(duration: int = 500) -> bool:
 		await asyncio.sleep(0.01)
 
 
+async def jump(duration: int = 500) -> bool:
+	handle = api_client.message("jump", duration)
+	while True:
+		result = api_client.poll(handle)
+		if result.is_done():
+			return result.get_value()
+		await asyncio.sleep(0.01)
+
+
 async def draw_forward(duration: int = 500) -> bool:
 	handle = api_client.message("draw forward", duration)
 	while True:

@@ -20,10 +20,12 @@ impl Robot {
     //     self.current_animation.is_none()
     // }
 
-    pub(crate) fn complete_animation(&mut self) {
-        if let Some(current_animation) = self.current_animation.take() {
+    pub(crate) fn complete_animation(&mut self, event_registries: &mut EventRegistries) {
+        if let Some(animation) = self.current_animation.take() {
             debug!("short-circuiting running animation");
-            current_animation.complete(&mut self.animation_position, &mut self.animation_angle);
+            animation.complete(&mut self.animation_position, &mut self.animation_angle);
+            debug!("notifying `robot_stopped` listeners");
+            event_registries.robot_stopped.notify();
         } else {
             debug!("no existing animation to short-circuit");
         }
