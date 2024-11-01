@@ -10,11 +10,14 @@ readme = "README.md"
 winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a9452b72e749a4890db23b92d65abc2", features = [
     "default",
 ] }
-
+wgpu = { version = "23.0.0", features = ["webgl"] }
+# console_log = "*"
 image = { version = "0.25.0", default-features = false, features = ["png"] }
 tracing = { version = "0.1.40", default-features = false, features = ["log"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 raw-window-handle = "0.6.2"
+wasm-bindgen = "*"
+web-sys = "*"
 
 [target.'cfg(not(target_os = "android"))'.dependencies]
 softbuffer = { version = "0.4.6", default-features = false, features = [
@@ -27,7 +30,7 @@ softbuffer = { version = "0.4.6", default-features = false, features = [
 [target.'cfg(target_family = "wasm")'.dependencies]
 console_error_panic_hook = "0.1"
 tracing-web = "0.1"
-wasm-bindgen-test = "0.3"
+# wasm-bindgen-test = "0.3"
 
 [lints.rust]
 # more lints can be found in [lints.clippy]

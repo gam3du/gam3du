@@ -6,7 +6,7 @@
 )]
 //! Simple winit application.
 
-use ::tracing::{error, info};
+use ::tracing::{debug, error, info};
 #[cfg(not(android_platform))]
 use raw_window_handle::{DisplayHandle, HasDisplayHandle};
 #[cfg(not(android_platform))]
@@ -29,21 +29,20 @@ use winit::platform::macos::{
 use winit::platform::startup_notify::{
     self, EventLoopExtStartupNotify, WindowAttributesExtStartupNotify, WindowExtStartupNotify,
 };
-#[cfg(web_platform)]
+#[cfg(target_arch = "wasm32")]
 use winit::platform::web::{ActiveEventLoopExtWeb, WindowAttributesExtWeb};
 use winit::window::{Icon, Window, WindowAttributes, WindowId};
 
 mod tracing;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    #[cfg(web_platform)]
-    console_error_panic_hook::set_once();
-
     tracing::init();
+    info!("Logging start");
 
+    debug!("Creating new event loop");
     let event_loop = EventLoop::new()?;
-
     let app = Application::new(&event_loop);
+
     Ok(event_loop.run_app(app)?)
 }
 
@@ -156,8 +155,9 @@ impl ApplicationHandler for Application {
         let this = &mut *self;
         // TODO read-out activation token.
 
-        let window_attributes = WindowAttributes::default()
+        let mut window_attributes = WindowAttributes::default()
             .with_title("Demo window")
+            .with_surface_size(PhysicalSize::new(800, 600))
             .with_window_icon(Some(this.icon.clone()));
 
         #[cfg(any(x11_platform, wayland_platform))]
@@ -167,10 +167,41 @@ impl ApplicationHandler for Application {
             window_attributes = window_attributes.with_activation_token(token);
         }
 
-        #[cfg(web_platform)]
+        // #[cfg(web_platform)]
+        #[cfg(target_arch = "wasm32")]
         {
-            window_attributes = window_attributes.with_append(true);
+            use wasm_bindgen::JsCast;
+            // use winit::platform::web::WindowBuilderExtWebSys;
+            let canvas = web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .get_element_by_id("canvas")
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap();
+            window_attributes = window_attributes.with_canvas(Some(canvas));
+
+            // window_attributes = window_attributes.with_canvas(canvas).with_append(true);
         }
+
+        // #[allow(unused_mut)]
+        // let mut builder = winit::window::WindowBuilder::new();
+        // #[cfg(target_arch = "wasm32")]
+        // {
+        //     use wasm_bindgen::JsCast;
+        //     use winit::platform::web::WindowBuilderExtWebSys;
+        //     let canvas = web_sys::window()
+        //         .unwrap()
+        //         .document()
+        //         .unwrap()
+        //         .get_element_by_id("canvas")
+        //         .unwrap()
+        //         .dyn_into::<web_sys::HtmlCanvasElement>()
+        //         .unwrap();
+        //     builder = builder.with_canvas(Some(canvas));
+        // }
+        // let window = builder.build(&event_loop).unwrap();
 
         let window = event_loop
             .create_window(window_attributes)

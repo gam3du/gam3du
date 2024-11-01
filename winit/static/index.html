@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>My WINIT example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div class="root">
+        <div id="menu-button"><span></span><span></span><span></span></div>
+
+        <div id="banner">
+            <div class="banner-prefix">
+                <p>
+                    <a href="../index.html">
+                        Back to home page
+                    </a>
+                </p>
+            </div>
+            <div class="backend-list-container">
+                <div class="backend-list">
+                    <p class="backend-name">WebGL2</p>
+                    <div class="item-list" id="webgl2-list">
+
+                    </div>
+                </div>
+                <div class="backend-list">
+                    <p class="backend-name">WebGPU</p>
+                    <div class="item-list" id="webgpu-list">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <canvas class="main-canvas" id="canvas"></canvas>
+    </div>
+    <script type="module">
+        import(`./webgl2.js`).then((module) => module.default());
+        /*const params = new URLSearchParams(window.location.search);
+        const backend = params.get("backend");
+        const example = params.get("example");
+        if (backend !== null && example !== null) {
+            import(`./${backend}.js`).then((module) => module.default());
+        } else {
+            window.location.assign(
+                `${window.location.href}?backend=webgl2&example=hello_triangle`
+            );
+        }
+
+        const menuButton = document.getElementById("menu-button");
+        const banner = document.getElementById("banner");
+        menuButton.onclick = () => {
+            if (menuButton.classList.contains("active")) {
+                menuButton.classList.remove("active");
+                banner.classList.remove("visible");
+            } else {
+                menuButton.classList.add("active");
+                banner.classList.add("visible");
+            }
+        };*/
+    </script>
+</body>
+
+</html>
