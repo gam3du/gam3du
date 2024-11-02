@@ -15,6 +15,7 @@
         "softbuffer",
         "Touchpad",
         "wayland",
+        "wgpu",
         "winit",
         "Winit",
         "xffff"

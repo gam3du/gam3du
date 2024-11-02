@@ -1,20 +1,8 @@
-#![expect(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::unwrap_in_result,
-    reason = "just demo code"
-)]
+#![expect(clippy::unwrap_used, clippy::expect_used, reason = "just demo code")]
 //! Simple winit application.
 
-use ::tracing::{debug, error, info};
-#[cfg(not(android_platform))]
-use raw_window_handle::{DisplayHandle, HasDisplayHandle};
-#[cfg(not(android_platform))]
-use softbuffer::{Context, Surface};
+use ::tracing::{debug, info};
 use std::error::Error;
-use std::mem;
-#[cfg(not(android_platform))]
-use std::num::NonZeroU32;
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
@@ -41,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     debug!("Creating new event loop");
     let event_loop = EventLoop::new()?;
-    let app = Application::new(&event_loop);
+    let app = Application::new();
 
     Ok(event_loop.run_app(app)?)
 }
@@ -51,32 +39,17 @@ struct Application {
     /// Application icon.
     icon: Icon,
     window_state: Option<WindowState>,
-    /// Drawing context.
-    ///
-    /// With OpenGL it could be `EGLDisplay`.
-    #[cfg(not(android_platform))]
-    context: Option<Context<DisplayHandle<'static>>>,
+    // /// Drawing context.
+    // ///
+    // /// With OpenGL it could be `EGLDisplay`.
+    // context: Option<Context<DisplayHandle<'static>>>,
 }
 
 impl Application {
-    fn new(event_loop: &EventLoop) -> Self {
-        #[cfg(not(android_platform))]
-        #[expect(unsafe_code, reason = "this was taken from the winit example code")]
-        let context = Some(
-            // SAFETY: we drop the context right before the event loop is stopped, thus making it safe.
-            Context::new(unsafe {
-                mem::transmute::<DisplayHandle<'_>, DisplayHandle<'static>>(
-                    event_loop.display_handle().unwrap(),
-                )
-            })
-            .unwrap(),
-        );
-
+    fn new() -> Self {
         let icon = load_icon(include_bytes!("../icon.png"));
 
         Self {
-            #[cfg(not(android_platform))]
-            context,
             icon,
             window_state: None,
         }
@@ -108,9 +81,10 @@ impl ApplicationHandler for Application {
                 window_state.resize(size);
             }
             WindowEvent::RedrawRequested => {
-                if let Err(err) = window_state.draw() {
-                    error!("Error drawing window: {err}");
-                }
+                window_state.draw();
+                // if let Err(err) = window_state.draw() {
+                //     error!("Error drawing window: {err}");
+                // }
             }
             WindowEvent::KeyboardInput {
                 event: key_event, ..
@@ -152,13 +126,11 @@ impl ApplicationHandler for Application {
         info!("Ready to create surfaces");
 
         // Create initial window.
-        let this = &mut *self;
-        // TODO read-out activation token.
-
+        #[allow(unused_mut, reason = "required for target=wasm")]
         let mut window_attributes = WindowAttributes::default()
             .with_title("Demo window")
             .with_surface_size(PhysicalSize::new(800, 600))
-            .with_window_icon(Some(this.icon.clone()));
+            .with_window_icon(Some(self.icon.clone()));
 
         #[cfg(any(x11_platform, wayland_platform))]
         if let Some(token) = event_loop.read_token_from_env() {
@@ -167,7 +139,6 @@ impl ApplicationHandler for Application {
             window_attributes = window_attributes.with_activation_token(token);
         }
 
-        // #[cfg(web_platform)]
         #[cfg(target_arch = "wasm32")]
         {
             use wasm_bindgen::JsCast;
@@ -185,32 +156,16 @@ impl ApplicationHandler for Application {
             // window_attributes = window_attributes.with_canvas(canvas).with_append(true);
         }
 
-        // #[allow(unused_mut)]
-        // let mut builder = winit::window::WindowBuilder::new();
-        // #[cfg(target_arch = "wasm32")]
-        // {
-        //     use wasm_bindgen::JsCast;
-        //     use winit::platform::web::WindowBuilderExtWebSys;
-        //     let canvas = web_sys::window()
-        //         .unwrap()
-        //         .document()
-        //         .unwrap()
-        //         .get_element_by_id("canvas")
-        //         .unwrap()
-        //         .dyn_into::<web_sys::HtmlCanvasElement>()
-        //         .unwrap();
-        //     builder = builder.with_canvas(Some(canvas));
-        // }
-        // let window = builder.build(&event_loop).unwrap();
-
         let window = event_loop
             .create_window(window_attributes)
             .expect("failed to create initial window");
 
-        let window_state = WindowState::new(this, window).expect("failed to create initial window");
+        let window_state =
+            pollster::block_on(WindowState::new(window)).expect("failed to create initial window");
+
         let window_id = window_state.window.id();
         info!("Created new window with id={window_id:?}");
-        this.window_state.replace(window_state);
+        self.window_state.replace(window_state);
     }
 
     fn about_to_wait(&mut self, event_loop: &dyn ActiveEventLoop) {
@@ -220,77 +175,170 @@ impl ApplicationHandler for Application {
         }
     }
 
-    #[cfg(not(android_platform))]
-    fn exiting(&mut self, _event_loop: &dyn ActiveEventLoop) {
-        // We must drop the context here.
-        drop(self.context.take());
-    }
+    fn exiting(&mut self, _event_loop: &dyn ActiveEventLoop) {}
 }
 
 /// State of the window.
 struct WindowState {
+    /// The actual winit Window.
+    window: Arc<dyn Window>,
+    _instance: wgpu::Instance,
     /// Render surface.
     ///
     /// NOTE: This surface must be dropped before the `Window`.
-    #[cfg(not(android_platform))]
-    surface: Surface<DisplayHandle<'static>, Arc<dyn Window>>,
-    /// The actual winit Window.
-    window: Arc<dyn Window>,
+    surface: wgpu::Surface<'static>,
+    surface_config: wgpu::SurfaceConfiguration,
+    // surface: Surface<DisplayHandle<'static>, Arc<dyn Window>>,
+    _adapter: wgpu::Adapter,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
 }
 
 impl WindowState {
-    fn new(app: &Application, window: Box<dyn Window>) -> Result<Self, Box<dyn Error>> {
+    async fn new(window: Box<dyn Window>) -> Result<Self, Box<dyn Error>> {
         let window: Arc<dyn Window> = Arc::from(window);
-
-        // SAFETY: the surface is dropped before the `window` which provided it with handle, thus
-        // it doesn't outlive it.
-        #[cfg(not(android_platform))]
-        let surface = Surface::new(app.context.as_ref().unwrap(), Arc::clone(&window))?;
-
         let size = window.surface_size();
-        let mut state = Self {
-            #[cfg(not(android_platform))]
-            surface,
+        debug!("new window state; size: {size:?}");
+
+        let instance = wgpu::Instance::default();
+        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::default(),
+                force_fallback_adapter: false,
+                // Request an adapter which can render to our surface
+                compatible_surface: Some(&surface),
+            })
+            .await
+            .expect("Failed to find an appropriate adapter");
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: None,
+                    required_features: wgpu::Features::empty(),
+                    // Make sure we use the texture resolution limits from the adapter, so we can support images the size of the swapchain.
+                    required_limits: wgpu::Limits::downlevel_webgl2_defaults()
+                        .using_resolution(adapter.limits()),
+                    memory_hints: wgpu::MemoryHints::MemoryUsage,
+                },
+                None,
+            )
+            .await
+            .expect("Failed to create device");
+
+        // // Load the shaders from disk
+        // let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        //     label: None,
+        //     source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
+        // });
+
+        // let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+        //     label: None,
+        //     bind_group_layouts: &[],
+        //     push_constant_ranges: &[],
+        // });
+
+        // let swapchain_capabilities = surface.get_capabilities(&adapter);
+        // let swapchain_format = swapchain_capabilities.formats[0];
+
+        // let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        //     label: None,
+        //     layout: Some(&pipeline_layout),
+        //     vertex: wgpu::VertexState {
+        //         module: &shader,
+        //         entry_point: Some("vs_main"),
+        //         buffers: &[],
+        //         compilation_options: Default::default(),
+        //     },
+        //     fragment: Some(wgpu::FragmentState {
+        //         module: &shader,
+        //         entry_point: Some("fs_main"),
+        //         compilation_options: Default::default(),
+        //         targets: &[Some(swapchain_format.into())],
+        //     }),
+        //     primitive: wgpu::PrimitiveState::default(),
+        //     depth_stencil: None,
+        //     multisample: wgpu::MultisampleState::default(),
+        //     multiview: None,
+        //     cache: None,
+        // });
+
+        let surface_config = surface
+            .get_default_config(&adapter, size.width.max(1), size.height.max(1))
+            .unwrap();
+        surface.configure(&device, &surface_config);
+
+        let state = Self {
             window,
+            _instance: instance,
+            surface,
+            surface_config,
+            _adapter: adapter,
+            device,
+            queue,
         };
 
-        state.resize(size);
+        // state.resize(size);
         Ok(state)
     }
 
     /// Resize the surface to the new size.
     fn resize(&mut self, size: PhysicalSize<u32>) {
         info!("Surface resized to {size:?}");
-        #[cfg(not(android_platform))]
-        {
-            let (Some(width), Some(height)) =
-                (NonZeroU32::new(size.width), NonZeroU32::new(size.height))
-            else {
-                return;
-            };
-            self.surface
-                .resize(width, height)
-                .expect("failed to resize inner buffer");
+
+        if size.width == 0 || size.height == 0 {
+            debug!("cannot resize to zero size");
+            return;
         }
+
+        self.surface_config.width = size.width;
+        self.surface_config.height = size.height;
+        self.surface.configure(&self.device, &self.surface_config);
+
         self.window.request_redraw();
     }
 
     /// Draw the window contents.
-    #[cfg(not(android_platform))]
-    fn draw(&mut self) -> Result<(), Box<dyn Error>> {
-        const BACKGROUND_COLOR: u32 = 0xff_18_18_58;
+    fn draw(&mut self) {
+        let frame = self
+            .surface
+            .get_current_texture()
+            .expect("Failed to acquire next swap chain texture");
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        {
+            // let mut rpass =
+            encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: None,
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.4,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            // rpass.set_pipeline(&self.render_pipeline);
+            // rpass.draw(0..3, 0..1);
+        }
 
-        let mut buffer = self.surface.buffer_mut()?;
-        buffer.fill(BACKGROUND_COLOR);
+        self.queue.submit(Some(encoder.finish()));
+
         self.window.pre_present_notify();
-        buffer.present()?;
-        Ok(())
-    }
-
-    #[cfg(android_platform)]
-    fn draw(&mut self) -> Result<(), Box<dyn Error>> {
-        info!("Drawing but without rendering...");
-        Ok(())
+        frame.present();
     }
 }
 

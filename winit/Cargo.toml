@@ -15,17 +15,18 @@ wgpu = { version = "23.0.0", features = ["webgl"] }
 image = { version = "0.25.0", default-features = false, features = ["png"] }
 tracing = { version = "0.1.40", default-features = false, features = ["log"] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-raw-window-handle = "0.6.2"
+# raw-window-handle = "0.6.2"
 wasm-bindgen = "*"
 web-sys = "*"
+pollster = "*"
 
-[target.'cfg(not(target_os = "android"))'.dependencies]
-softbuffer = { version = "0.4.6", default-features = false, features = [
-    "x11",
-    "x11-dlopen",
-    "wayland",
-    "wayland-dlopen",
-] }
+# [target.'cfg(not(target_os = "android"))'.dependencies]
+# softbuffer = { version = "0.4.6", default-features = false, features = [
+#     "x11",
+#     "x11-dlopen",
+#     "wayland",
+#     "wayland-dlopen",
+# ] }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 console_error_panic_hook = "0.1"
