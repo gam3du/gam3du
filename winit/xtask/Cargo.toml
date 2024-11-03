@@ -16,5 +16,6 @@ pico-args = { version = "0.5.0", features = [
     "combined-flags",
 ] }
 xshell = "0.2.6"
+reqwest = { version = "0.12.9", features = ["blocking"] }
 
 [workspace]

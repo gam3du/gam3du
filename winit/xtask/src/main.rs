@@ -13,7 +13,7 @@ fn main() -> anyhow::Result<ExitCode> {
         .format_indent(Some(0))
         .init();
 
-    let mut args = Arguments::from_env();
+    let args = Arguments::from_env();
 
     // -- Shell Creation --
 

@@ -1,128 +1,98 @@
-:focus {
-    outline: none;
+:root {
+    --foreground-color: #C0D1E0;
+    --background-color: #0C0D1E;
+    --log-trace-color: #666;
+    --log-debug-color: #636;
+    --log-info-color: #36f;
+    --log-warn-color: #cc3;
+    --log-error-color: #c66;
+    --log-marker-opacity: 50%;
 }
 
 body {
-    margin: 0px;
-    background: #fff;
-    font-family: "Calibri", "Arial", sans-serif;
-    width: 100%;
-    height: 100%;
-}
-
-.root {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-#banner {
-    background: #dee;
-    padding: 0.5em 0;
-    border-bottom: 1px solid #abb;
-
-    @media only screen and (max-width: 1000px) {
-        max-height: 0;
-        transition: max-height 0.15s ease;
-        overflow: hidden;
-        padding: 0;
-    }
-}
-
-#banner.visible {
-    max-height: 100%;
-}
-
-.banner-prefix {
-    text-align: center;
-}
-
-p {
-    font-size: 0.8em;
-    padding: 0;
-    margin: 0.5em 0;
-}
-
-.backend-list-container {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-evenly;
-
-    @media only screen and (max-width: 1000px) {
-        flex-direction: column;
-    }
-}
-
-.backend-list {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    justify-content: center;
-}
-
-.item-list {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    align-content: center;
-    height: 100px;
-
-    @media only screen and (max-width: 1000px) {
-        flex-direction: row;
-        height: initial;
-    }
-}
-
-.example-item {
-    @media only screen and (max-width: 1000px) {
-        width: 33vw;
-    }
-
-    @media only screen and (max-width: 500px) {
-        width: 50vw;
-    }
-}
-
-.example-link {
-    margin-left: 7px;
-    margin-right: 7px;
-}
-
-.backend-name {
-    text-align: center;
-}
-
-.main-canvas {
+    background-color: var(--background-color);
     margin: 0;
-    /* This allows the flexbox to grow to max size, this is needed for WebGPU */
-    /* flex: 1; */
-    /* This forces CSS to ignore the width/height of the canvas, this is needed for WebGL */
-    contain: size;
+    padding: 0;
 }
 
+main {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 
-#menu-button {
-    display: none;
+    display: grid;
 
-    @media only screen and (max-width: 1000px) {
-        display: block;
-        width: 30px;
-        height: 33px;
-        margin: 0 auto;
-    }
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 3em 1fr 7em;
+    grid-template-areas:
+        "controls editor"
+        "canvas   editor"
+        "log      editor";
 }
 
-#menu-button span {
-    display: block;
+#controls {
+    grid-area: controls;
+    border-bottom: 2px solid var(--foreground-color);
+}
+
+#editor {
+    grid-area: editor;
+    min-width: 720px;
+    max-width: 50vw;
+    border-left: 2px solid var(--foreground-color);
+}
+
+#canvas {
+    grid-area: canvas;
     width: 100%;
-    height: 3px;
-    margin: 6px auto;
-    background-color: #333;
-    transition: all 0.3s ease-in-out;
+    height: 100%;
 }
 
-canvas {
-    background-color: #963;
-    border: 1px solid black;
+#log {
+    grid-area: log;
+    overflow: scroll;
+    color: #ccc;
+    border-top: 2px solid var(--foreground-color);
+    font-family: monospace;
+    margin: 0;
+    padding: 0;
+    list-style-type: none;
 }
+
+#log>li {
+    padding: 0 0 0 0.5em;
+}
+
+#log>li.trace {
+    color: var(--log-trace-color);
+    border-left: 1em solid color-mix(in srgb, var(--log-trace-color) var(--log-marker-opacity), transparent);
+}
+
+#log>li.debug {
+    color: var(--log-debug-color);
+    border-left: 1em solid color-mix(in srgb, var(--log-debug-color) var(--log-marker-opacity), transparent);
+}
+
+#log>li.info {
+    color: var(--log-info-color);
+    border-left: 1em solid color-mix(in srgb, var(--log-info-color) var(--log-marker-opacity), transparent);
+}
+
+#log>li.warn {
+    color: var(--log-warn-color);
+    border-left: 1em solid color-mix(in srgb, var(--log-warn-color) var(--log-marker-opacity), transparent);
+}
+
+#log>li.error {
+    color: var(--log-error-color);
+    border-left: 1em solid color-mix(in srgb, var(--log-error-color) var(--log-marker-opacity), transparent);
+}
+
+/* #canvas { */
+/* This allows the flexbox to grow to max size, this is needed for WebGPU */
+/* flex: 1; */
+/* This forces CSS to ignore the width/height of the canvas, this is needed for WebGL */
+/*contain: size;
+/* } */
