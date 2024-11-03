@@ -8,7 +8,7 @@ license-file.workspace = true
 
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
-winit.workspace = true
+winit = { workspace = true, default-features = true }
 rand.workspace = true
 indexmap = { workspace = true, features = ["serde"] }
 

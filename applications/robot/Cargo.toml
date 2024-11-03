@@ -17,7 +17,7 @@ tokio-util = { workspace = true }
 rustpython-vm.workspace = true
 log.workspace = true
 serde_json.workspace = true
-winit.workspace = true
+winit = { workspace = true, default-features = true }
 
 [build-dependencies]
 gam3du-framework-common.workspace = true

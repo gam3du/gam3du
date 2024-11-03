@@ -6,14 +6,17 @@ use crate::{
 use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
 use log::{debug, info, trace};
 use std::{
-    sync::{mpsc::Sender, Arc},
+    sync::{
+        mpsc::{Receiver, Sender},
+        Arc,
+    },
     time::{Duration, Instant},
 };
 use wgpu;
 use winit::{
     application::ApplicationHandler,
     dpi::LogicalSize,
-    event::{DeviceEvent, DeviceId, KeyEvent, WindowEvent},
+    event::{KeyEvent, WindowEvent},
     event_loop::ActiveEventLoop,
     keyboard::{Key, NamedKey},
     platform::x11::WindowAttributesExtX11,
@@ -25,11 +28,12 @@ pub struct Application<RendererBuilder: renderer::RendererBuilder> {
     renderer: Option<RendererBuilder::Renderer>,
     pub(super) surface: SurfaceWrapper,
     context: GraphicsContext,
-    window: Option<Arc<Window>>,
+    window: Option<Arc<dyn Window>>,
     title: String,
     frame_counter: u32,
     frame_time: Instant,
     event_sink: Sender<FrameworkEvent>,
+    framework_events: Receiver<FrameworkEvent>,
 }
 
 impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
@@ -37,6 +41,7 @@ impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
         title: impl Into<String>,
         event_sender: Sender<FrameworkEvent>,
         renderer_builder: RendererBuilder,
+        framework_events: Receiver<FrameworkEvent>,
     ) -> Self {
         let mut surface = SurfaceWrapper::new();
         let context = GraphicsContext::init_async(&mut surface).await;
@@ -51,6 +56,7 @@ impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
             frame_time: Instant::now(),
             event_sink: event_sender,
             renderer_builder: Some(renderer_builder),
+            framework_events,
         }
     }
 
@@ -68,15 +74,15 @@ impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
     }
 }
 
-impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<FrameworkEvent>
+impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler
     for Application<RendererBuilder>
 {
-    fn resumed(&mut self, event_loop: &ActiveEventLoop) {
+    fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         let attributes = WindowAttributes::default()
             .with_title(&self.title)
             .with_base_size(LogicalSize::new(1600, 900));
 
-        let window = Arc::new(event_loop.create_window(attributes).unwrap());
+        let window = Arc::from(event_loop.create_window(attributes).unwrap());
 
         self.surface
             .resume(&self.context, Arc::clone(&window), true);
@@ -102,26 +108,30 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<FrameworkEve
         }
     }
 
-    fn user_event(&mut self, event_loop: &ActiveEventLoop, event: FrameworkEvent) {
-        match event {
-            FrameworkEvent::Application {
-                event: ApplicationEvent::Exit,
-            } => {
-                info!("Window event loop received an ExitEvent. Shutting down event loop.");
-                event_loop.exit();
+    fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
+        // TODO handle receiver errors
+        while let Ok(event) = self.framework_events.recv() {
+            match event {
+                FrameworkEvent::Application {
+                    event: ApplicationEvent::Exit,
+                } => {
+                    info!("Window event loop received an ExitEvent. Shutting down event loop.");
+                    event_loop.exit();
+                }
+                other => todo!("unknown event: {other:?}"),
             }
-            other => todo!("unknown event: {other:?}"),
         }
     }
 
     fn window_event(
         &mut self,
-        _event_loop: &ActiveEventLoop,
+        _event_loop: &dyn ActiveEventLoop,
         _window_id: WindowId,
         event: WindowEvent,
     ) {
         match event {
-            WindowEvent::Resized(size) => {
+            // WindowEvent::Resized(size) => {
+            WindowEvent::SurfaceResized(size) => {
                 trace!("WindowEvent::Resized({size:?})");
 
                 self.surface.resize(&self.context, size);
@@ -133,7 +143,6 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<FrameworkEve
 
                 self.window.as_ref().unwrap().request_redraw();
             }
-
             WindowEvent::CloseRequested => {
                 trace!("WindowEvent::CloseRequested()");
                 self.event_sink.send(ApplicationEvent::Exit.into()).unwrap();
@@ -221,46 +230,11 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler<FrameworkEve
         }
     }
 
-    fn device_event(
-        &mut self,
-        _event_loop: &ActiveEventLoop,
-        _device_id: DeviceId,
-        event: DeviceEvent,
-    ) {
-        match event {
-            DeviceEvent::Added => {
-                trace!("DeviceEvent::Added");
-            }
-            DeviceEvent::Removed => {
-                trace!("DeviceEvent::Removed");
-            }
-            DeviceEvent::MouseMotion {
-                delta: (_delta_x, _delta_y),
-            } => {
-                // these are super-noisy
-                // trace!("DeviceEvent::MouseMotion({delta_x}, {delta_y})");
-            }
-            DeviceEvent::MouseWheel { delta } => {
-                trace!("DeviceEvent::MouseWheel({delta:?})");
-            }
-            DeviceEvent::Motion { axis: _, value: _ } => {
-                // these are super-noisy
-                // trace!("DeviceEvent::Motion({axis}, {value})");
-            }
-            DeviceEvent::Button { button, state } => {
-                trace!("DeviceEvent::Button({button}, {state:?})");
-            }
-            DeviceEvent::Key(key) => {
-                trace!("DeviceEvent::Key({key:?})");
-            }
-        }
-    }
-
-    fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
+    fn exiting(&mut self, _event_loop: &dyn ActiveEventLoop) {
         trace!("window event loop is exiting");
     }
 
-    fn suspended(&mut self, _event_loop: &ActiveEventLoop) {
+    fn suspended(&mut self, _event_loop: &dyn ActiveEventLoop) {
         trace!("window event loop was suspended");
         self.surface.suspend();
     }

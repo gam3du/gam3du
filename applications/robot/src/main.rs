@@ -18,11 +18,7 @@ use std::{
     fmt::{self, Display},
     fs::read_to_string,
     process::ExitCode,
-    sync::{
-        self,
-        mpsc::{channel, Sender},
-        Arc,
-    },
+    sync::{self, mpsc::channel, Arc},
     thread,
     time::{Duration, Instant},
 };
@@ -67,13 +63,17 @@ async fn async_main() -> ApplicationResult<()> {
     let ctrl_c_task = ctrl_c_task(cancellation_token.clone());
 
     let (event_sender, event_receiver) = channel();
+    let (window_event_sender, window_event_receiver) = channel();
     // register_ctrlc(&event_sender);
 
     let game_state = GameState::new((10, 10));
     let shared_game_state = game_state.into_shared();
 
-    let (main_window_task, window_proxy) =
-        open_main_window(Arc::clone(&shared_game_state), event_sender.clone());
+    let (main_window_task, window_proxy) = open_main_window(
+        Arc::clone(&shared_game_state),
+        event_sender.clone(),
+        window_event_receiver,
+    );
 
     let (python_thread, python_signal_handler, robot_api_engine_endpoint) = start_python_robot(
         "applications/robot/control.api.json",
@@ -124,8 +124,9 @@ async fn async_main() -> ApplicationResult<()> {
         cancellation_token.cancel();
     }
 
-    match window_proxy.send_event(ApplicationEvent::Exit.into()) {
+    match window_event_sender.send(ApplicationEvent::Exit.into()) {
         Ok(()) => {
+            window_proxy.wake_up();
             debug!("exit event successfully sent to main window");
         }
         Err(error) => {
@@ -236,12 +237,13 @@ fn ctrl_c_task(cancellation_token: CancellationToken) -> tokio::task::JoinHandle
 
 fn open_main_window(
     shared_game_state: SharedGameState,
-    event_sender: Sender<FrameworkEvent>,
+    event_sender: sync::mpsc::Sender<FrameworkEvent>,
+    framework_events: sync::mpsc::Receiver<FrameworkEvent>,
 ) -> (
     tokio::task::JoinHandle<ApplicationResult<()>>,
-    EventLoopProxy<FrameworkEvent>,
+    EventLoopProxy,
 ) {
-    let window_event_loop = EventLoop::with_user_event().build().unwrap();
+    let window_event_loop = EventLoop::new().unwrap();
     window_event_loop.set_control_flow(ControlFlow::Poll);
     let window_proxy = window_event_loop.create_proxy();
 
@@ -250,6 +252,7 @@ fn open_main_window(
             WINDOW_TITLE,
             event_sender,
             RendererBuilder::new(shared_game_state),
+            framework_events,
         )
         .await;
 

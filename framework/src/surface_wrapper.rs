@@ -24,9 +24,14 @@ impl SurfaceWrapper {
     /// On all native platforms, this is where we create the surface.
     ///
     /// Additionally, we configure the surface based on the (now valid) window size.
-    pub(super) fn resume(&mut self, context: &GraphicsContext, window: Arc<Window>, srgb: bool) {
+    pub(super) fn resume(
+        &mut self,
+        context: &GraphicsContext,
+        window: Arc<dyn Window>,
+        srgb: bool,
+    ) {
         // Window size is only actually valid after we enter the event loop.
-        let window_size = window.inner_size();
+        let window_size = window.surface_size();
         let width = window_size.width.max(1);
         let height = window_size.height.max(1);
 
