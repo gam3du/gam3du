@@ -34,15 +34,15 @@ runtime-python = { path = "runtimes/python" }
 runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 
 # from crates.io
-anyhow = { version = "1.0.89", default-features = false }
-bytemuck = { version = "1.18.0", default-features = false }
+anyhow = { version = "1.0.92", default-features = false }
+bytemuck = { version = "1.19.0", default-features = false }
 ctrlc = { version = "3.4.5", default-features = false }
 async-std = "1.13.0"
 # Generic helper type for iterators and formatting.
 # This is dependency is "free" because it is already in our dependency graph:
 # `either` is a dependency of `which` and `itertools` which are used by `rustpython-vm`.
 # either = "1.13.0"
-tokio = { version = "1.40.0", default-features = false }
+tokio = { version = "1.41.0", default-features = false }
 tokio-util = { version = "0.7.12", default-features = false }
 # Used to maintain the order of elements in JSON objects.
 # This makes the JSON deserialization of the `serde_json` crate deterministic
@@ -52,18 +52,18 @@ env_logger = { version = "0.11.5", default-features = false, features = [
     "auto-color",
     "humantime",
 ] }
-glam = { version = "0.29.0", default-features = false, features = ["std"] }
+glam = { version = "0.29.1", default-features = false, features = ["std"] }
 gltf = { version = "1.4.1", default-features = false, features = ["utils"] }
 log = { version = "0.4.22", default-features = false }
 rand = { version = "0.8.5", default-features = false }
 rustpython = { version = "0.4.0", default-features = false }
 rustpython-vm = { version = "0.4.0", default-features = false }
-serde = { version = "1.0.210", default-features = false }
-serde_json = { version = "1.0.128", default-features = false, features = [
+serde = { version = "1.0.214", default-features = false }
+serde_json = { version = "1.0.132", default-features = false, features = [
     "std",
 ] }
 tiny_http = { version = "0.12.0", default-features = false }
-wgpu = { version = "22.1.0", default-features = false, features = [
+wgpu = { version = "23.0.0", default-features = false, features = [
     "wgsl",
     "dx12",
 ] }

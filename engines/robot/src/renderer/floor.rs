@@ -248,14 +248,14 @@ impl FloorRenderer {
     ) -> wgpu::RenderPipeline {
         let vertex = wgpu::VertexState {
             module: shader,
-            entry_point: "vs_floor",
+            entry_point: Some("vs_floor"),
             compilation_options: wgpu::PipelineCompilationOptions::default(),
             buffers: vertex_buffers,
         };
 
         let fragment_state = wgpu::FragmentState {
             module: shader,
-            entry_point: "fs_floor_tile",
+            entry_point: Some("fs_floor_tile"),
             compilation_options: wgpu::PipelineCompilationOptions::default(),
             targets: &[Some(view_format.into())],
         };
