@@ -11,8 +11,8 @@ use std::{
     collections::{hash_map, HashMap},
     num::NonZeroU64,
     sync::atomic::{AtomicU64, Ordering},
-    time::Duration,
 };
+use web_time::Duration;
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 struct EntityId(NonZeroU64);

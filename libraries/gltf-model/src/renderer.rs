@@ -10,7 +10,8 @@ use core::f32;
 use glam::{Mat4, Vec4};
 use lib_geometry::{Camera, Projection};
 use lib_time::elapsed_as_vec;
-use std::{borrow::Cow, mem::size_of, path::Path, time::Instant};
+use std::{borrow::Cow, mem::size_of, path::Path};
+use web_time::Instant;
 use wgpu::{self, util::DeviceExt};
 
 use crate::model::{load_model, Mesh, Vertex};

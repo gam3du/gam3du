@@ -9,10 +9,8 @@ use floor::Floor;
 use glam::{IVec2, UVec2, Vec3, Vec3Swizzles};
 pub(crate) use orientation::Orientation;
 pub(crate) use robot::Robot;
-use std::{
-    sync::{Arc, RwLock},
-    time::{Duration, Instant},
-};
+use std::sync::{Arc, RwLock};
+use web_time::{Duration, Instant};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default)]
 pub(crate) struct Tick(pub(crate) u64);

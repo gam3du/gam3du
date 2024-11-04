@@ -3,7 +3,8 @@ use bytemuck::offset_of;
 use glam::Vec3;
 use lib_geometry::{Camera, Projection, SIZE_OF_MAT4, SIZE_OF_UVEC2, SIZE_OF_VEC3};
 use lib_time::elapsed_as_vec;
-use std::{borrow::Cow, mem::size_of, time::Instant};
+use std::{borrow::Cow, mem::size_of};
+use web_time::Instant;
 use wgpu::util::DeviceExt;
 
 pub(super) struct FloorRenderer {

@@ -20,6 +20,7 @@ log.workspace = true
 rand.workspace = true
 rustpython-vm.workspace = true
 wgpu.workspace = true
+web-time.workspace = true
 
 [lints]
 workspace = true

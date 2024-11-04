@@ -18,6 +18,7 @@ use rustpython_vm::{
 };
 use std::{
     collections::HashMap,
+    path::Path,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc, Mutex,
@@ -45,9 +46,9 @@ pub struct PythonRuntimeBuilder {
 
 impl PythonRuntimeBuilder {
     #[must_use]
-    pub fn new(sys_path: impl Into<String>, main_module_name: impl Into<String>) -> Self {
+    pub fn new(sys_path: &Path, main_module_name: impl Into<String>) -> Self {
         Self {
-            sys_path: sys_path.into(),
+            sys_path: sys_path.to_string_lossy().into_owned(),
             main_module_name: main_module_name.into(),
             user_signal_receiver: None,
             api_clients: HashMap::new(),

@@ -11,7 +11,9 @@ engine-robot.workspace = true
 gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
 runtime-python.workspace = true
+lib-file-storage.workspace = true
 
+web-time.workspace = true
 # "signal", 
 tokio = { workspace = true, features = ["rt", "macros", "time"] }
 tokio-util = { workspace = true }
@@ -19,12 +21,18 @@ rustpython-vm.workspace = true
 log.workspace = true
 serde_json.workspace = true
 winit = { workspace = true, default-features = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 # [target.'cfg(not(target_os = "wasm32"))'.features]
 # default = ["general_feature"]
 
 # [target.'cfg(target_arch = "wasm32")'.features]
 # default = ["winonly_replacement"]
+
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+console_error_panic_hook.workspace = true
+tracing-web.workspace = true
 
 [build-dependencies]
 gam3du-framework-common.workspace = true

@@ -3,8 +3,8 @@ use std::{
     mem,
     sync::{Arc, RwLock, RwLockWriteGuard},
     thread,
-    time::Instant,
 };
+use web_time::Instant;
 
 #[derive(Default)]
 pub(crate) struct ApplicationRuntime;

@@ -3,6 +3,7 @@
     "cSpell.words": [
         "bindgen",
         "bitor",
+        "builtins",
         "bytemuck",
         "consts",
         "fract",

@@ -11,7 +11,8 @@ use crate::{
 };
 use bytemuck::{offset_of, Pod, Zeroable};
 use glam::{Mat4, Quat, Vec2, Vec3, Vec4};
-use std::{borrow::Cow, mem::size_of, time::Instant};
+use std::{borrow::Cow, mem::size_of};
+use web_time::Instant;
 use wgpu::{self, util::DeviceExt};
 
 pub(super) struct RobotRenderer {

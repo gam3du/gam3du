@@ -8,6 +8,7 @@ license-file.workspace = true
 
 [dependencies]
 glam.workspace = true
+web-time.workspace = true
 
 [lints]
 workspace = true

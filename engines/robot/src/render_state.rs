@@ -4,7 +4,7 @@ use crate::{
 };
 use glam::{UVec2, Vec3, Vec4};
 use lib_geometry::Camera;
-use std::time::Instant;
+use web_time::Instant;
 
 const CAMERA_POS: Vec3 = Vec3::new(-1.0, -7.0, 6.0);
 

@@ -7,8 +7,8 @@ use std::{
         Arc,
     },
     thread,
-    time::{Duration, Instant},
 };
+use web_time::{Duration, Instant};
 
 /// Number of game loop iterations per second.
 /// This is a multiple of common frame rates.

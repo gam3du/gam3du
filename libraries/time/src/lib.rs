@@ -5,7 +5,7 @@
     reason = "TODO remove before release"
 )]
 
-use std::time::Instant;
+use web_time::Instant;
 
 #[must_use]
 pub fn elapsed_as_vec(start_time: Instant) -> [u32; 2] {

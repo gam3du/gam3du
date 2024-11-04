@@ -5,25 +5,29 @@
     reason = "TODO remove before release"
 )]
 
+mod tracing;
+
 use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder, SharedGameState};
 use gam3du_framework::{application::Application, logging::init_logger};
 use gam3du_framework_common::{
     api::{self, ApiDescriptor, ApiServerEndpoint},
     event::{ApplicationEvent, FrameworkEvent},
 };
+use lib_file_storage::{FileStorage, StaticStorage};
 use log::{debug, error, info, trace, warn};
 use runtime_python::PythonRuntimeBuilder;
 use rustpython_vm::signal::{UserSignal, UserSignalSender};
 use std::{
     fmt::{self, Display},
     fs::read_to_string,
+    path::Path,
     process::ExitCode,
     sync::{self, mpsc::channel, Arc},
     thread,
-    time::{Duration, Instant},
 };
 use tokio::join;
 use tokio_util::sync::CancellationToken;
+use web_time::{Duration, Instant};
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy};
 
 const WINDOW_TITLE: &str = "Robot";
@@ -39,7 +43,8 @@ fn main() -> ExitCode {
 }
 
 fn guarded_main() -> ApplicationResult<()> {
-    init_logger();
+    tracing::init();
+    // init_logger();
 
     let local_set = tokio::task::LocalSet::new();
 
@@ -58,6 +63,13 @@ fn guarded_main() -> ApplicationResult<()> {
 
 #[allow(clippy::too_many_lines, reason = "TODO split this up later")]
 async fn async_main() -> ApplicationResult<()> {
+    let mut storage = StaticStorage::default();
+
+    storage.store(
+        Path::new("applications/robot/control.api.json"),
+        include_bytes!("../control.api.json").into(),
+    );
+
     let cancellation_token = CancellationToken::new();
 
     let ctrl_c_task = ctrl_c_task(cancellation_token.clone());
@@ -76,8 +88,9 @@ async fn async_main() -> ApplicationResult<()> {
     );
 
     let (python_thread, python_signal_handler, robot_api_engine_endpoint) = start_python_robot(
-        "applications/robot/control.api.json",
-        "applications/robot/python/control",
+        &storage,
+        Path::new("applications/robot/control.api.json"),
+        Path::new("applications/robot/python/control"),
         "robot",
     );
 
@@ -273,8 +286,10 @@ fn start_game_loop(
     event_receiver: sync::mpsc::Receiver<FrameworkEvent>,
 ) -> thread::JoinHandle<()> {
     thread::spawn(move || {
-        let mut python_runtime_builder =
-            PythonRuntimeBuilder::new("applications/robot/python/plugin", "robot_plugin");
+        let mut python_runtime_builder = PythonRuntimeBuilder::new(
+            Path::new("applications/robot/python/plugin"),
+            "robot_plugin",
+        );
         python_runtime_builder.add_api_server(robot_api_engine_endpoint);
         let plugin = PythonPlugin::new(python_runtime_builder);
 
@@ -292,12 +307,15 @@ fn start_game_loop(
 }
 
 fn start_python_robot(
-    robot_api_descriptor_path: &str,
-    python_sys_path: &str,
+    storage: &dyn FileStorage,
+    robot_api_descriptor_path: &Path,
+    python_sys_path: &Path,
     python_main_module: &str,
 ) -> (thread::JoinHandle<()>, UserSignalSender, ApiServerEndpoint) {
-    let api_json = read_to_string(robot_api_descriptor_path).unwrap();
-    let robot_api: ApiDescriptor = serde_json::from_str(&api_json).unwrap();
+    let api_json = storage
+        .get_content(Path::new(robot_api_descriptor_path))
+        .unwrap();
+    let robot_api: ApiDescriptor = serde_json::from_slice(&api_json).unwrap();
 
     let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);
 

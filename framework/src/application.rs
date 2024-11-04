@@ -1,10 +1,9 @@
 use crate::{render_surface::RenderSurface, renderer};
 use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
 use log::{debug, info, trace};
-use std::{
-    sync::mpsc::{Receiver, Sender},
-    time::{Duration, Instant},
-};
+use std::sync::mpsc::{Receiver, Sender};
+use web_time::{Duration, Instant};
+
 // #[cfg(not(target_arch = "wasm32"))]
 // use winit::platform::x11::WindowAttributesExtX11;
 use winit::{
