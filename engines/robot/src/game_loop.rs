@@ -1,6 +1,6 @@
 use crate::{plugin, SharedGameState};
 use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
-use log::debug;
+use log::{debug, warn};
 use std::{
     sync::{
         mpsc::{Receiver, TryRecvError},
@@ -21,6 +21,10 @@ const TICK_DURATION: Duration = Duration::from_nanos(
     (1_000_000_000_u64 + TICKS_PER_SECOND as u64 / 2) / TICKS_PER_SECOND as u64,
 );
 
+/// Time to wait before the game loop stops trying to catch up to real time
+/// giving giving the current thread a chance do its work
+const TIMEOUT: Duration = Duration::from_millis(1000);
+
 /// The root object of a running engine
 pub struct GameLoop<Plugin: plugin::Plugin> {
     /// Contains the current state which will be updated by the game loop.
@@ -29,11 +33,6 @@ pub struct GameLoop<Plugin: plugin::Plugin> {
     game_state: SharedGameState,
     plugin: Option<Plugin>,
 }
-
-// impl<Plugin: plugin::Plugin> Default for GameLoop<Plugin> {
-//     fn default() -> Self {
-//     }
-// }
 
 impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
     #[must_use]
@@ -45,58 +44,87 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
     }
 
     pub fn run(mut self, event_source: &Receiver<FrameworkEvent>) {
-        let mut time = Instant::now();
+        self.init();
 
+        let mut due = Instant::now();
+        while let Some(due_next) = self.progress(event_source, due) {
+            due = due_next;
+        }
+    }
+
+    fn init(&mut self) {
         if let Some(plugin) = &mut self.plugin {
             let mut game_state = self.game_state.write().unwrap();
 
             plugin.init(&mut game_state);
         }
+    }
 
-        'game_loop: loop {
-            {
-                let mut game_state = self.game_state.write().unwrap();
+    fn progress(
+        &mut self,
+        event_source: &Receiver<FrameworkEvent>,
+        mut tick_time: Instant,
+    ) -> Option<Instant> {
+        // wait until we've reached the target time,
+        // giving the renderer some time to fetch the current state
+        if let Some(delay) = tick_time.checked_duration_since(Instant::now()) {
+            thread::sleep(delay);
+        }
 
-                'next_event: loop {
-                    match event_source.try_recv() {
-                        Ok(engine_event) => match engine_event {
-                            FrameworkEvent::Window { event } => {
-                                debug!("{event:?}");
-                            }
-                            FrameworkEvent::Device { event } => {
-                                debug!("{event:?}");
-                            }
-                            FrameworkEvent::Application { event } => match event {
-                                ApplicationEvent::Exit => {
-                                    debug!("Received Exit-event. Exiting game loop");
-                                    break 'game_loop;
-                                }
-                            },
-                        },
-                        Err(TryRecvError::Disconnected) => {
-                            debug!("Event source disconnected. Exiting game loop");
-                            break 'game_loop;
+        // lock game_state for the entire scope
+        let mut game_state = self.game_state.write().unwrap();
+        let timeout = Instant::now();
+        let mut too_slow_count = 0;
+        'next_tick: loop {
+            'next_event: loop {
+                match event_source.try_recv() {
+                    Ok(engine_event) => match engine_event {
+                        FrameworkEvent::Window { event } => {
+                            debug!("{event:?}");
                         }
-                        Err(TryRecvError::Empty) => break 'next_event,
+                        FrameworkEvent::Device { event } => {
+                            debug!("{event:?}");
+                        }
+                        FrameworkEvent::Application { event } => match event {
+                            ApplicationEvent::Exit => {
+                                debug!("Received Exit-event. Exiting game loop");
+                                return None;
+                            }
+                        },
+                    },
+                    Err(TryRecvError::Disconnected) => {
+                        debug!("Event source disconnected. Exiting game loop");
+                        return None;
                     }
+                    Err(TryRecvError::Empty) => break 'next_event,
                 }
-
-                // run scripting runtimes here
-                if let Some(plugin) = &mut self.plugin {
-                    plugin.update(&mut game_state);
-                }
-
-                game_state.update();
             }
+
+            // run scripting runtimes here
+            if let Some(plugin) = &mut self.plugin {
+                plugin.update(&mut game_state);
+            }
+
+            game_state.update();
 
             // compute the timestamp of the next game loop iteration
-            time += TICK_DURATION;
-            if let Some(delay) = time.checked_duration_since(Instant::now()) {
-                thread::sleep(delay);
-            } else {
-                // game loop is running too slow
+            tick_time += TICK_DURATION;
+            // see whether the next tick is due
+            if Instant::now() < tick_time {
+                // there's still some time left; yielding to caller
+                break 'next_tick;
+            }
+            // game loop is running too slow so we don't give back our lock this time
+            too_slow_count += 1;
+
+            // prevent endless-looping
+            if timeout.elapsed() >= TIMEOUT {
+                warn!("Game loop wasn't able to keep up for at least {TIMEOUT:?} ({too_slow_count} ticks) - yielding to caller");
+                break 'next_tick;
             }
         }
+
+        Some(tick_time)
     }
 
     #[must_use]
