@@ -73,9 +73,12 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
 
         // lock game_state for the entire scope
         let mut game_state = self.game_state.write().unwrap();
+        // timeout to make sure the lock and current thread aren't blocked for too long
         let timeout = Instant::now();
+        // statistics for overload handling
         let mut too_slow_count = 0;
         'next_tick: loop {
+            // drain event queue
             'next_event: loop {
                 match event_source.try_recv() {
                     Ok(engine_event) => match engine_event {
@@ -105,6 +108,7 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
                 plugin.update(&mut game_state);
             }
 
+            // perform the actual state-transition for this tick
             game_state.update();
 
             // compute the timestamp of the next game loop iteration
@@ -114,7 +118,8 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
                 // there's still some time left; yielding to caller
                 break 'next_tick;
             }
-            // game loop is running too slow so we don't give back our lock this time
+
+            // game loop is running too slow so we don't give back our lock, yet
             too_slow_count += 1;
 
             // prevent endless-looping
@@ -124,6 +129,7 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
             }
         }
 
+        // see you then!
         Some(tick_time)
     }
 
