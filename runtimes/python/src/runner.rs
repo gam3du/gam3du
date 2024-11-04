@@ -296,13 +296,13 @@ pub struct PythonRunnerThread {
 }
 
 impl PythonRunnerThread {
-    #[must_use]
-    fn new(join_handle: JoinHandle<()>, user_signal_sender: UserSignalSender) -> Self {
-        Self {
-            join_handle,
-            user_signal_sender,
-        }
-    }
+    // #[must_use]
+    // fn new(join_handle: JoinHandle<()>, user_signal_sender: UserSignalSender) -> Self {
+    //     Self {
+    //         join_handle,
+    //         user_signal_sender,
+    //     }
+    // }
 
     pub fn stop(&self) {
         let make_interrupt: UserSignal = Box::new(|vm| {

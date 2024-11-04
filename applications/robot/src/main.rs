@@ -253,8 +253,7 @@ fn open_main_window(
             event_sender,
             RendererBuilder::new(shared_game_state),
             framework_events,
-        )
-        .await;
+        );
 
         log::info!("main: Entering event loop...");
         window_event_loop.run_app(&mut application).unwrap();

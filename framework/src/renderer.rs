@@ -16,12 +16,7 @@ pub trait Renderer {
     fn update(&mut self);
     fn try_update(&mut self) -> bool;
 
-    fn resize(
-        &mut self,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        surface: &wgpu::SurfaceConfiguration,
-    );
+    fn resize(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, width: u32, height: u32);
 
     fn render(
         &mut self,

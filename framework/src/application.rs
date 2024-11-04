@@ -1,18 +1,10 @@
-use crate::{
-    graphics_context::GraphicsContext,
-    renderer::{self, Renderer},
-    surface_wrapper::SurfaceWrapper,
-};
+use crate::{render_surface::RenderSurface, renderer};
 use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
 use log::{debug, info, trace};
 use std::{
-    sync::{
-        mpsc::{Receiver, Sender},
-        Arc,
-    },
+    sync::mpsc::{Receiver, Sender},
     time::{Duration, Instant},
 };
-use wgpu;
 use winit::{
     application::ApplicationHandler,
     dpi::LogicalSize,
@@ -20,43 +12,34 @@ use winit::{
     event_loop::ActiveEventLoop,
     keyboard::{Key, NamedKey},
     platform::x11::WindowAttributesExtX11,
-    window::{Window, WindowAttributes, WindowId},
+    window::{WindowAttributes, WindowId},
 };
 
 pub struct Application<RendererBuilder: renderer::RendererBuilder> {
     renderer_builder: Option<RendererBuilder>,
-    renderer: Option<RendererBuilder::Renderer>,
-    pub(super) surface: SurfaceWrapper,
-    context: GraphicsContext,
-    window: Option<Arc<dyn Window>>,
     title: String,
     frame_counter: u32,
     frame_time: Instant,
     event_sink: Sender<FrameworkEvent>,
     framework_events: Receiver<FrameworkEvent>,
+    render_surface: Option<RenderSurface<RendererBuilder::Renderer>>,
 }
 
 impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
-    pub async fn new(
+    pub fn new(
         title: impl Into<String>,
         event_sender: Sender<FrameworkEvent>,
         renderer_builder: RendererBuilder,
         framework_events: Receiver<FrameworkEvent>,
     ) -> Self {
-        let mut surface = SurfaceWrapper::new();
-        let context = GraphicsContext::init_async(&mut surface).await;
-
         Self {
-            renderer: None,
-            surface,
-            context,
-            window: None,
             title: title.into(),
             frame_counter: 0,
             frame_time: Instant::now(),
             event_sink: event_sender,
             renderer_builder: Some(renderer_builder),
             framework_events,
+            render_surface: None,
         }
     }
 
@@ -82,30 +65,19 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler
             .with_title(&self.title)
             .with_base_size(LogicalSize::new(1600, 900));
 
-        let window = Arc::from(event_loop.create_window(attributes).unwrap());
+        let window = event_loop.create_window(attributes).unwrap();
 
-        self.surface
-            .resume(&self.context, Arc::clone(&window), true);
+        let now = Instant::now();
+        let render_surface = pollster::block_on(RenderSurface::new(
+            window,
+            self.renderer_builder.take().unwrap(),
+        ));
+        debug!("creating the render surface took {:?}", now.elapsed());
 
-        self.window = Some(window);
-
-        // First-time init of the scene
-        if let Some(builder) = self.renderer_builder.take() {
-            info!("Building renderer");
-            let now = Instant::now();
-            assert!(
-                self.renderer
-                    .replace(builder.build(
-                        &self.context.adapter,
-                        &self.context.device,
-                        &self.context.queue,
-                        self.surface.config(),
-                    ))
-                    .is_none(),
-                "unexpected existing renderer"
-            );
-            debug!("Building the renderer took {:?}", now.elapsed());
-        }
+        assert!(
+            self.render_surface.replace(render_surface).is_none(),
+            "Double initialization of the main window"
+        );
     }
 
     fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
@@ -130,19 +102,25 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler
         event: WindowEvent,
     ) {
         match event {
-            // WindowEvent::Resized(size) => {
             WindowEvent::SurfaceResized(size) => {
-                trace!("WindowEvent::Resized({size:?})");
-
-                self.surface.resize(&self.context, size);
-                self.renderer.as_mut().unwrap().resize(
-                    &self.context.device,
-                    &self.context.queue,
-                    self.surface.config(),
-                );
-
-                self.window.as_ref().unwrap().request_redraw();
+                trace!("WindowEvent::SurfaceResized({size:?})");
+                let Some(render_surface) = self.render_surface.as_mut() else {
+                    trace!("cannot resize a not (yet?) existing surface");
+                    return;
+                };
+                render_surface.resize(size);
             }
+
+            WindowEvent::RedrawRequested => {
+                // trace!("WindowEvent::RedrawRequested");
+                let Some(render_surface) = self.render_surface.as_mut() else {
+                    trace!("cannot redraw a not (yet?) existing surface");
+                    return;
+                };
+                render_surface.redraw();
+                self.update_fps();
+            }
+
             WindowEvent::CloseRequested => {
                 trace!("WindowEvent::CloseRequested()");
                 self.event_sink.send(ApplicationEvent::Exit.into()).unwrap();
@@ -198,30 +176,6 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler
                     }
                 }
             }
-            WindowEvent::RedrawRequested => {
-                // On MacOS, currently redraw requested comes in _before_ Init does.
-                // If this happens, just drop the requested redraw on the floor.
-                //
-                // See https://github.com/rust-windowing/winit/issues/3235 for some discussion
-                let Some(renderer) = self.renderer.as_mut() else {
-                    return;
-                };
-
-                let frame = self.surface.acquire(&self.context);
-                let texture_view = frame.texture.create_view(&wgpu::TextureViewDescriptor {
-                    format: Some(self.surface.config().view_formats[0]),
-                    ..wgpu::TextureViewDescriptor::default()
-                });
-
-                renderer.update();
-                renderer.render(&texture_view, &self.context.device, &self.context.queue);
-
-                frame.present();
-                self.update_fps();
-
-                self.window.as_ref().unwrap().request_redraw();
-                // self.event_sink.send(EngineEvent::Window { event }).unwrap();
-            }
             _ => {
                 self.event_sink
                     .send(FrameworkEvent::Window { event })
@@ -231,27 +185,6 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler
     }
 
     fn exiting(&mut self, _event_loop: &dyn ActiveEventLoop) {
-        trace!("window event loop is exiting");
-    }
-
-    fn suspended(&mut self, _event_loop: &dyn ActiveEventLoop) {
-        trace!("window event loop was suspended");
-        self.surface.suspend();
+        debug!("window event loop is exiting");
     }
 }
-
-// pub fn start(mut app: Application) {
-//     let event_loop = EventLoop::new().unwrap();
-
-//     // ControlFlow::Poll continuously runs the event loop, even if the OS hasn't
-//     // dispatched any events. This is ideal for games and similar applications.
-//     event_loop.set_control_flow(ControlFlow::Poll);
-
-//     let proxy = event_loop.create_proxy();
-
-//     //proxy.send_event(event);
-
-//     //let app = Application::new(title, receiver, event_sender);
-//     log::info!("Entering event loop...");
-//     event_loop.run_app(&mut app).unwrap();
-// }

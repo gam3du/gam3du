@@ -8,6 +8,7 @@ use gam3du_framework::renderer;
 use glam::{Mat4, Quat, Vec3};
 use lib_geometry::Projection;
 use lib_gltf_model::GltfModelRenderer;
+use log::{debug, trace};
 // use robot::RobotRenderer;
 use std::{
     borrow::Cow,
@@ -55,16 +56,18 @@ impl renderer::RendererBuilder for RendererBuilder {
             1.0..15.0,
         );
 
-        let depth_map = DepthTexture::create_depth_texture(device, surface, "depth_map");
+        trace!("creating depth texture with config: {surface:?}");
+        let depth_map =
+            DepthTexture::create_depth_texture(device, surface.width, surface.height, "depth_map");
 
         // let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
-        let floor_renderer = FloorRenderer::new(device, queue, surface.view_formats[0], &state);
+        let floor_renderer = FloorRenderer::new(device, queue, surface.format, &state);
 
         let depth_stencil_state = DepthTexture::depth_stencil_state();
         let gltf_model_renderer = GltfModelRenderer::new(
             device,
             queue,
-            surface.view_formats[0],
+            surface.format,
             self.shader_source,
             depth_stencil_state,
             &PathBuf::from("engines/robot/assets/monkey.gltf"),
@@ -247,15 +250,9 @@ impl renderer::Renderer for Renderer {
         }
     }
 
-    fn resize(
-        &mut self,
-        device: &wgpu::Device,
-        _queue: &wgpu::Queue,
-        surface: &wgpu::SurfaceConfiguration,
-    ) {
-        self.projection
-            .set_surface_dimensions((surface.width, surface.height));
-        self.depth_map = DepthTexture::create_depth_texture(device, surface, "depth_map");
+    fn resize(&mut self, device: &wgpu::Device, _queue: &wgpu::Queue, width: u32, height: u32) {
+        self.projection.set_surface_dimensions((width, height));
+        self.depth_map = DepthTexture::create_depth_texture(device, width, height, "depth_map");
     }
 
     fn render(
@@ -282,17 +279,17 @@ pub(super) struct DepthTexture {
 }
 
 impl DepthTexture {
-    pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float; // 1.
+    pub(crate) const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
 
     pub(crate) fn create_depth_texture(
         device: &wgpu::Device,
-        config: &wgpu::SurfaceConfiguration,
+        width: u32,
+        height: u32,
         label: &str,
     ) -> Self {
         let size = wgpu::Extent3d {
-            // 2.
-            width: config.width,
-            height: config.height,
+            width,
+            height,
             depth_or_array_layers: 1,
         };
         let desc = wgpu::TextureDescriptor {
@@ -302,27 +299,30 @@ impl DepthTexture {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: Self::DEPTH_FORMAT,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT // 3.
-                | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         };
+        trace!("depth texture description: {desc:?}");
+        debug!("creating depth texture");
         let texture = device.create_texture(&desc);
 
+        debug!("creating depth texture view");
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        debug!("creating depth texture sampler");
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            // 4.
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
             mipmap_filter: wgpu::FilterMode::Nearest,
-            compare: Some(wgpu::CompareFunction::LessEqual), // 5.
+            compare: Some(wgpu::CompareFunction::LessEqual),
             lod_min_clamp: 0.0,
             lod_max_clamp: 100.0,
             ..Default::default()
         });
 
+        debug!("creation of depth texture complete");
         Self {
             _texture: texture,
             view,
@@ -334,8 +334,8 @@ impl DepthTexture {
         wgpu::DepthStencilState {
             format: DepthTexture::DEPTH_FORMAT,
             depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less, // 1.
-            stencil: wgpu::StencilState::default(),     // 2.
+            depth_compare: wgpu::CompareFunction::Less,
+            stencil: wgpu::StencilState::default(),
             bias: wgpu::DepthBiasState::default(),
         }
     }

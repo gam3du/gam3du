@@ -2,7 +2,7 @@
 #![expect(
     clippy::cast_precision_loss,
     clippy::expect_used,
-    clippy::indexing_slicing,
+    // clippy::indexing_slicing,
     // clippy::missing_errors_doc,
     // clippy::missing_panics_doc,
     // clippy::panic,
@@ -12,16 +12,14 @@
     reason = "TODO remove before release"
 )]
 
-use std::sync::mpsc::Sender;
-
 use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
 use log::debug;
+use std::sync::mpsc::Sender;
 
 pub mod application;
-mod graphics_context;
 pub mod logging;
+mod render_surface;
 pub mod renderer;
-mod surface_wrapper;
 
 /// notify a connected receiver if CTRL+C was pressed
 ///
