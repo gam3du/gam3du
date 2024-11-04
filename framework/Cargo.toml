@@ -9,12 +9,37 @@ license-file.workspace = true
 [dependencies]
 gam3du-framework-common.workspace = true
 
-ctrlc.workspace = true
+# ctrlc.workspace = true
 env_logger.workspace = true
 log.workspace = true
 wgpu.workspace = true
 winit = { workspace = true, default-features = true }
 pollster.workspace = true
+
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+# env_logger.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# winit = { workspace = true, features = ["wasm"] }
+# console_error_panic_hook.workspace = true
+# console_log.workspace = true
+# fern.workspace = true
+wasm-bindgen.workspace = true
+# wasm-bindgen-futures.workspace = true
+# # We need these features in the framework examples and tests
+web-sys = { workspace = true, features = [
+    # "Location",
+    # "Blob",
+    # "RequestInit",
+    # "RequestMode",
+    # "Request",
+    # "ImageData",
+    # "Response",
+    # "HtmlImageElement",
+    # "WebGl2RenderingContext",
+    # "CanvasRenderingContext2d",
+] }
 
 [lints]
 workspace = true

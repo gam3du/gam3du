@@ -5,13 +5,14 @@ use std::{
     sync::mpsc::{Receiver, Sender},
     time::{Duration, Instant},
 };
+// #[cfg(not(target_arch = "wasm32"))]
+// use winit::platform::x11::WindowAttributesExtX11;
 use winit::{
     application::ApplicationHandler,
-    dpi::LogicalSize,
+    dpi::PhysicalSize,
     event::{KeyEvent, WindowEvent},
     event_loop::ActiveEventLoop,
     keyboard::{Key, NamedKey},
-    platform::x11::WindowAttributesExtX11,
     window::{WindowAttributes, WindowId},
 };
 
@@ -61,11 +62,38 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler
     for Application<RendererBuilder>
 {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
-        let attributes = WindowAttributes::default()
+        // Create initial window.
+        #[allow(unused_mut, reason = "required for target=wasm")]
+        let mut window_attributes = WindowAttributes::default()
             .with_title(&self.title)
-            .with_base_size(LogicalSize::new(1600, 900));
+            .with_surface_size(PhysicalSize::new(1600, 900));
 
-        let window = event_loop.create_window(attributes).unwrap();
+        #[cfg(any(x11_platform, wayland_platform))]
+        if let Some(token) = event_loop.read_token_from_env() {
+            startup_notify::reset_activation_token_env();
+            info!("Using token {:?} to activate a window", token);
+            window_attributes = window_attributes.with_activation_token(token);
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            use wasm_bindgen::JsCast;
+            use winit::platform::web::WindowAttributesExtWeb;
+            // use winit::platform::web::WindowBuilderExtWebSys;
+            let canvas = web_sys::window()
+                .unwrap()
+                .document()
+                .unwrap()
+                .get_element_by_id("canvas")
+                .unwrap()
+                .dyn_into::<web_sys::HtmlCanvasElement>()
+                .unwrap();
+            window_attributes = window_attributes.with_canvas(Some(canvas));
+
+            // window_attributes = window_attributes.with_canvas(canvas).with_append(true);
+        }
+
+        let window = event_loop.create_window(window_attributes).unwrap();
 
         let now = Instant::now();
         let render_surface = pollster::block_on(RenderSurface::new(

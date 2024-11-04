@@ -1,0 +1,24 @@
+[package]
+name = "xtask"
+description = "Provides commands to assist with more complex builds and deployments"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+readme.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+env_logger.workspace = true
+log.workspace = true
+pico-args = { workspace = true, features = [
+    "eq-separator",
+    "short-space-opt",
+    "combined-flags",
+] }
+xshell.workspace = true
+reqwest = { workspace = true, features = ["blocking"] }
+
+[lints]
+workspace = true

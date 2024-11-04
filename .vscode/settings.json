@@ -14,6 +14,7 @@
         "multisampled",
         "multiview",
         "nanos",
+        "pico",
         "pyfunction",
         "pymodule",
         "recip",
@@ -40,6 +41,7 @@
         "wgsl",
         "winit",
         "wireframe",
+        "xshell",
         "Zeroable"
     ],
 }

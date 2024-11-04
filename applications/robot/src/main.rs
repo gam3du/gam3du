@@ -216,18 +216,19 @@ async fn async_main() -> ApplicationResult<()> {
 fn ctrl_c_task(cancellation_token: CancellationToken) -> tokio::task::JoinHandle<()> {
     tokio::task::spawn_local(async move {
         tokio::select! {
-            result = tokio::signal::ctrl_c() => {
-                match result {
-                    Ok(()) => {
-                        info!("CTRL+C pressed");
-                    },
-                    Err(error) => {
-                        warn!("cannot wait for CTRL+C: {error}");
-                        // wait for regular external cancellation instead
-                        cancellation_token.cancelled().await;
-                    }
-                }
-            }
+            // TODO not supported on WASM
+            // result = tokio::signal::ctrl_c() => {
+            //     match result {
+            //         Ok(()) => {
+            //             info!("CTRL+C pressed");
+            //         },
+            //         Err(error) => {
+            //             warn!("cannot wait for CTRL+C: {error}");
+            //             // wait for regular external cancellation instead
+            //             cancellation_token.cancelled().await;
+            //         }
+            //     }
+            // }
             () = cancellation_token.cancelled() => {
                 debug!("CTRL+C-task has been cancelled by token");
             }
