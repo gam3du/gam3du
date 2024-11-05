@@ -60,8 +60,8 @@ async-std = "1.13.0"
 # This is dependency is "free" because it is already in our dependency graph:
 # `either` is a dependency of `which` and `itertools` which are used by `rustpython-vm`.
 # either = "1.13.0"
-tokio = { version = "1.41.0", default-features = false }
-tokio-util = { version = "0.7.12", default-features = false }
+# tokio = { version = "1.41.0", default-features = false }
+# tokio-util = { version = "0.7.12", default-features = false }
 # Used to maintain the order of elements in JSON objects.
 # This makes the JSON deserialization of the `serde_json` crate deterministic
 # which is useful when generating code from the api.json file.

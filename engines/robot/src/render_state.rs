@@ -2,7 +2,7 @@ use crate::{
     game_state::{GameState, Tick},
     tile::Tile,
 };
-use glam::{UVec2, Vec3, Vec4};
+use glam::{UVec2, UVec4, Vec3, Vec4};
 use lib_geometry::Camera;
 use web_time::Instant;
 
@@ -26,7 +26,7 @@ pub struct RenderState {
     /// Our local copy of the game loop's `floor.tiles` field
     pub(crate) tiles: Vec<Tile>,
     pub(crate) robot_color: Vec4,
-    pub(crate) floor_size: UVec2,
+    pub(crate) floor_size: UVec4,
 }
 
 impl RenderState {
@@ -42,7 +42,7 @@ impl RenderState {
             tiles_tick: game_state.tick,
             tiles: game_state.floor.tiles.clone(),
             robot_color: (game_state.robot.color, 1.0).into(),
-            floor_size: game_state.floor.size,
+            floor_size: (game_state.floor.size, 0, 0).into(),
         }
     }
 
@@ -50,7 +50,7 @@ impl RenderState {
         let time = self.start_time.elapsed();
 
         let (dy, dx) = (time.as_secs_f32() * 0.1).sin_cos();
-        self.camera.position = CAMERA_POS + Vec3::new(dx * 0.3, -dy * 0.3, 0.0);
+        self.camera.position = (CAMERA_POS + Vec3::new(dx * 0.3, -dy * 0.3, 0.0), 1.0).into();
 
         self.animation_position = game_state.robot.animation_position;
         self.animation_angle = game_state.robot.animation_angle;

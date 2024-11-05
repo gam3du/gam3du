@@ -23,7 +23,7 @@ var r_color: texture_2d<u32>;
 
 @group(0)
 @binding(4)
-var<uniform> time_vec: vec2<u32>;
+var<uniform> time_vec: vec4<u32>;
 
 @group(0)
 @binding(5)

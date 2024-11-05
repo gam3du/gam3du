@@ -52,7 +52,7 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
         }
     }
 
-    fn init(&mut self) {
+    pub fn init(&mut self) {
         if let Some(plugin) = &mut self.plugin {
             let mut game_state = self.game_state.write().unwrap();
 
@@ -60,16 +60,17 @@ impl<Plugin: plugin::Plugin> GameLoop<Plugin> {
         }
     }
 
-    fn progress(
+    pub fn progress(
         &mut self,
         event_source: &Receiver<FrameworkEvent>,
         mut tick_time: Instant,
     ) -> Option<Instant> {
-        // wait until we've reached the target time,
-        // giving the renderer some time to fetch the current state
-        if let Some(delay) = tick_time.checked_duration_since(Instant::now()) {
-            thread::sleep(delay);
-        }
+        // // wait until we've reached the target time,
+        // // giving the renderer some time to fetch the current state
+        // if let Some(delay) = tick_time.checked_duration_since(Instant::now()) {
+        // FIXME PLEASE!
+        //     thread::sleep(delay);
+        // }
 
         // lock game_state for the entire scope
         let mut game_state = self.game_state.write().unwrap();

@@ -131,22 +131,28 @@ impl Vertex {
 //     _padding: Vec2,
 // }
 
-fn load_string(file_name: &str) -> anyhow::Result<String> {
-    let path = Path::new("assets").join(file_name);
-    let txt = std::fs::read_to_string(path)?;
+// fn load_string(file_name: &str) -> anyhow::Result<String> {
+//     let path = Path::new("assets").join(file_name);
+//     let txt = std::fs::read_to_string(path)?;
 
-    Ok(txt)
-}
+//     Ok(txt)
+// }
 
-fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
-    let path = Path::new("assets").join(file_name);
-    let data = std::fs::read(path)?;
+// fn load_binary(file_name: &str) -> anyhow::Result<Vec<u8>> {
+//     if file_name.ends_with(".bin") {
+//         return Ok(include_bytes!("../../../engines/robot/assets/monkey.bin").into());
+//     }
 
-    Ok(data)
-}
+//     let path = Path::new("assets").join(file_name);
+//     let data = std::fs::read(path)?;
 
+//     Ok(data)
+// }
+
+#[expect(clippy::panic_in_result_fn, reason = "TODO")]
 pub(crate) fn load_model(model_path: &Path, device: &wgpu::Device) -> anyhow::Result<Vec<Mesh>> {
-    let gltf_text = std::fs::read_to_string(model_path)?;
+    // let gltf_text = std::fs::read_to_string(model_path)?;
+    let gltf_text = include_str!("../../../engines/robot/assets/monkey.gltf"); // std::fs::read_to_string(model_path)?;
     let gltf_cursor = Cursor::new(gltf_text);
     let gltf_reader = BufReader::new(gltf_cursor);
     let gltf = Gltf::from_reader(gltf_reader)?;
@@ -162,8 +168,10 @@ pub(crate) fn load_model(model_path: &Path, device: &wgpu::Device) -> anyhow::Re
                 // };
             }
             buffer::Source::Uri(uri) => {
-                let path = model_path.with_file_name(uri);
-                let bin = std::fs::read(path)?;
+                assert!(uri.ends_with("monkey.bin"), "AAAAAAAAAAAAH");
+                let bin = include_bytes!("../../../engines/robot/assets/monkey.bin").to_vec();
+                // let path = model_path.with_file_name(uri);
+                // let bin = std::fs::read(path)?;
                 buffer_data.push(bin);
             }
         }

@@ -26,19 +26,19 @@ var r_color: texture_2d<u32>;
 
 @group(0)
 @binding(2)
-var<uniform> time_vec: vec2<u32>;
+var<uniform> time_vec: vec4<u32>;
 
 @group(0)
 @binding(3)
-var<uniform> floor_size: vec2<u32>;
+var<uniform> floor_size: vec4<u32>;
 
 @group(0)
 @binding(4)
-var<uniform> camera_pos: vec3<f32>;
+var<uniform> camera_pos: vec4<f32>;
 
 @group(0)
 @binding(5)
-var<uniform> light_pos: vec3<f32>;
+var<uniform> light_pos: vec4<f32>;
 
 const COLUMN_MODE = true;
 
@@ -71,7 +71,7 @@ fn vs_floor(
     vertex.color = color;
     vertex.face_index = face_index;
 
-    let plane_uvw = (vec2<f32>(tile_xy) + tile_uvw.xy) / vec2<f32>(floor_size);
+    let plane_uvw = (vec2<f32>(tile_xy) + tile_uvw.xy) / vec2<f32>(floor_size.xy);
     vertex.plane_uv = plane_uvw.xy;
 
     if COLUMN_MODE {
@@ -134,7 +134,7 @@ fn fs_floor_tile(vertex: FloorVertex) -> @location(0) vec4<f32> {
     }
 
     // ambient dimming
-    var light = max(dot(normalize(vertex.normal), normalize(vec3(light_pos))), 0.0) * 0.8 + 0.2;
+    var light = max(dot(normalize(vertex.normal), normalize(vec3(light_pos.xyz))), 0.0) * 0.8 + 0.2;
     color = mix(AMBIENT_COLOR, color, light);
 
     // specular

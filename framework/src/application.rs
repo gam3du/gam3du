@@ -15,7 +15,7 @@ use winit::{
     window::{WindowAttributes, WindowId},
 };
 
-pub struct Application<RendererBuilder: renderer::RendererBuilder> {
+pub struct Application<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()> {
     renderer_builder: Option<RendererBuilder>,
     title: String,
     frame_counter: u32,
@@ -23,14 +23,18 @@ pub struct Application<RendererBuilder: renderer::RendererBuilder> {
     event_sink: Sender<FrameworkEvent>,
     framework_events: Receiver<FrameworkEvent>,
     render_surface: Option<RenderSurface<RendererBuilder::Renderer>>,
+    game_loop_updater: Updater,
 }
 
-impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
+impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()>
+    Application<RendererBuilder, Updater>
+{
     pub fn new(
         title: impl Into<String>,
         event_sender: Sender<FrameworkEvent>,
         renderer_builder: RendererBuilder,
         framework_events: Receiver<FrameworkEvent>,
+        game_loop_updater: Updater,
     ) -> Self {
         Self {
             title: title.into(),
@@ -40,6 +44,7 @@ impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
             renderer_builder: Some(renderer_builder),
             framework_events,
             render_surface: None,
+            game_loop_updater,
         }
     }
 
@@ -57,8 +62,8 @@ impl<RendererBuilder: renderer::RendererBuilder> Application<RendererBuilder> {
     }
 }
 
-impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler
-    for Application<RendererBuilder>
+impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()> ApplicationHandler
+    for Application<RendererBuilder, Updater>
 {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         // Create initial window.
@@ -144,6 +149,7 @@ impl<RendererBuilder: renderer::RendererBuilder> ApplicationHandler
                     trace!("cannot redraw a not (yet?) existing surface");
                     return;
                 };
+                (self.game_loop_updater)();
                 render_surface.redraw();
                 self.update_fps();
             }

@@ -1,7 +1,9 @@
 use crate::{game_state::Tick, renderer::DepthTexture, tile::Tile, RenderState};
 use bytemuck::offset_of;
-use glam::Vec3;
-use lib_geometry::{Camera, Projection, SIZE_OF_MAT4, SIZE_OF_UVEC2, SIZE_OF_VEC3};
+use glam::{Vec3, Vec4};
+use lib_geometry::{
+    Camera, Projection, SIZE_OF_MAT4, SIZE_OF_UVEC2, SIZE_OF_UVEC4, SIZE_OF_VEC3, SIZE_OF_VEC4,
+};
 use lib_time::elapsed_as_vec;
 use std::{borrow::Cow, mem::size_of};
 use web_time::Instant;
@@ -68,7 +70,7 @@ impl FloorRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let elapsed_bytes = [0_u32; 2];
+        let elapsed_bytes = [0_u32; 4];
         let time_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Time Uniform Buffer"),
             contents: bytemuck::cast_slice(&elapsed_bytes),
@@ -76,7 +78,7 @@ impl FloorRenderer {
         });
 
         let floor_size_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Uniform Buffer"),
+            label: Some("Floor size Uniform Buffer"),
             contents: bytemuck::bytes_of(&state.floor_size),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
@@ -232,11 +234,11 @@ impl FloorRenderer {
         queue.write_buffer(&self.time_buf, 0, bytemuck::cast_slice(&bytes));
     }
 
-    fn update_camera(&self, camera_pos: Vec3, queue: &wgpu::Queue) {
+    fn update_camera(&self, camera_pos: Vec4, queue: &wgpu::Queue) {
         queue.write_buffer(&self.camera_pos_buf, 0, bytemuck::bytes_of(&camera_pos));
     }
 
-    fn update_light(&self, light_pos: Vec3, queue: &wgpu::Queue) {
+    fn update_light(&self, light_pos: Vec4, queue: &wgpu::Queue) {
         queue.write_buffer(&self.light_pos_buf, 0, bytemuck::bytes_of(&light_pos));
     }
 
@@ -310,7 +312,7 @@ impl FloorRenderer {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_UVEC2),
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_UVEC4),
                     },
                     count: None,
                 },
@@ -320,7 +322,7 @@ impl FloorRenderer {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_UVEC2),
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_UVEC4),
                     },
                     count: None,
                 },
@@ -330,7 +332,7 @@ impl FloorRenderer {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_VEC3),
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_VEC4),
                     },
                     count: None,
                 },
@@ -340,7 +342,7 @@ impl FloorRenderer {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_VEC3),
+                        min_binding_size: wgpu::BufferSize::new(SIZE_OF_VEC4),
                     },
                     count: None,
                 },

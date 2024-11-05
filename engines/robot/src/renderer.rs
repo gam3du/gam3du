@@ -24,14 +24,14 @@ pub struct RendererBuilder {
 
 impl RendererBuilder {
     #[must_use]
-    pub fn new(game_state: SharedGameState) -> Self {
-        let shader_source = read_to_string("engines/robot/shaders/robot.wgsl")
-            .unwrap()
-            .into();
+    pub fn new(game_state: SharedGameState, shader_source: String) -> Self {
+        // let shader_source = read_to_string("engines/robot/shaders/robot.wgsl")
+        //     .unwrap()
+        //     .into();
 
         Self {
             game_state,
-            shader_source,
+            shader_source: shader_source.into(),
         }
     }
 }
@@ -58,7 +58,7 @@ impl renderer::RendererBuilder for RendererBuilder {
 
         trace!("creating depth texture with config: {surface:?}");
         let depth_map =
-            DepthTexture::create_depth_texture(device, surface.width, surface.height, "depth_map");
+            DepthTexture::create_depth_texture(device, surface.width.max(1), surface.height.max(1), "depth_map");
 
         // let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
         let floor_renderer = FloorRenderer::new(device, queue, surface.format, &state);

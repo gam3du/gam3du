@@ -102,7 +102,7 @@ impl Renderer {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(8),
+                        min_binding_size: wgpu::BufferSize::new(8 * 2),
                     },
                     count: None,
                 },
@@ -134,7 +134,7 @@ impl Renderer {
         };
 
         let uniform_matrix = |label| uniform(label, &[0_u8; size_of::<[f32; 16]>()]);
-        let uniform_time = |label| uniform(label, &[0_u8; size_of::<[u32; 2]>()]);
+        let uniform_time = |label| uniform(label, &[0_u8; size_of::<[u32; 4]>()]);
         let uniform_color = |label| uniform(label, &[0_u8; size_of::<[f32; 4]>()]);
 
         let world_matrix_buf =

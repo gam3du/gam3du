@@ -113,7 +113,7 @@ impl RobotRenderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
-        let elapsed_bytes = [0_u32; 2];
+        let elapsed_bytes = [0_u32; 4];
         let time_buf = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Time Uniform Buffer"),
             contents: bytemuck::cast_slice(&elapsed_bytes),
