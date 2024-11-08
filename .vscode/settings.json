@@ -43,6 +43,7 @@
         "winit",
         "wireframe",
         "xshell",
+        "xtask",
         "Zeroable"
     ],
 }

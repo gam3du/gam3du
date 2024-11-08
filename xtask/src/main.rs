@@ -1,11 +1,14 @@
 //! Provides commands to assist with more complex builds and deployments
 #![cfg_attr(
     target_arch = "wasm32",
-    allow(unused_crate_dependencies, reason = "no implementation for wasm")
+    allow(
+        unused_crate_dependencies,
+        clippy::panic,
+        reason = "no implementation for wasm"
+    )
 )]
 #[cfg(target_arch = "wasm32")]
 fn main() {
-    #![allow(clippy::panic, reason = "wasm is not supported")]
     panic!("WASM is not supported for xtask");
 }
 

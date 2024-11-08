@@ -1,21 +1,17 @@
 [workspace]
 resolver = "2"
 members = [
-    "engines/robot",
     "framework",
     "framework/common",
-    "applications/robot",
-    # "libraries/ecs",
-    "libraries/ecs-kawogi",
-    "runtimes/python",
+    "engines/*",
+    "applications/*",
+    "libraries/*",
+    "runtimes/*",
     "runtimes/python/bindgen",
-    "libraries/gltf-model",
-    "libraries/geometry",
-    "libraries/time",
+    "runtimes/python/wasm",
     "xtask",
-    "libraries/file-storage",
 ]
-exclude = ["winit"]
+exclude = ["winit", "libraries/ecs"]
 
 # [workspace.target.'cfg(not(target_os = "windows"))'.features]
 # default = ["general_feature"]
@@ -41,47 +37,39 @@ lib-gltf-model = { path = "libraries/gltf-model" }
 lib-time = { path = "libraries/time" }
 runtime-python = { path = "runtimes/python" }
 runtime-python-bindgen = { path = "runtimes/python/bindgen" }
+runtime-python-wasm = { path = "runtimes/python/wasm" }
 
 # from crates.io
-web-time = "1.1.0"
-regex-lite = "0.1.6"
-pico-args = { version = "0.5.0", features = [
-    "eq-separator",
-    "short-space-opt",
-    "combined-flags",
-] }
-xshell = "0.2.6"
-reqwest = { version = "0.12.9", features = ["blocking"] }
-anyhow = { version = "1.0.92", default-features = false }
-bytemuck = { version = "1.19.0", default-features = false }
-ctrlc = { version = "3.4.5", default-features = false }
-async-std = "1.13.0"
+regex-lite = { version = "0.1", default-features = false }
+xshell = { version = "0.2", default-features = false }
+web-time = { version = "1", default-features = false }
+pico-args = { version = "0.5", default-features = false }
+reqwest = { version = "0.12", default-features = false }
+anyhow = { version = "1", default-features = false }
+bytemuck = { version = "1", default-features = false }
+ctrlc = { version = "3", default-features = false }
+async-std = { version = "1", default-features = false }
 # Generic helper type for iterators and formatting.
 # This is dependency is "free" because it is already in our dependency graph:
 # `either` is a dependency of `which` and `itertools` which are used by `rustpython-vm`.
 # either = "1.13.0"
-tokio = { version = "1.41.0", default-features = false }
-tokio-util = { version = "0.7.12", default-features = false }
+tokio = { version = "1", default-features = false }
+tokio-util = { version = "0.7", default-features = false }
 # Used to maintain the order of elements in JSON objects.
 # This makes the JSON deserialization of the `serde_json` crate deterministic
 # which is useful when generating code from the api.json file.
-indexmap = { version = "2.5.0", default-features = false, features = ["serde"] }
-env_logger = { version = "0.11.5", default-features = false, features = [
-    "auto-color",
-    "humantime",
-] }
-glam = { version = "0.29.1", default-features = false, features = ["std"] }
-gltf = { version = "1.4.1", default-features = false, features = ["utils"] }
-log = { version = "0.4.22", default-features = false }
-rand = { version = "0.8.5", default-features = false }
-rustpython = { version = "0.4.0", default-features = false }
-rustpython-vm = { version = "0.4.0", default-features = false }
-serde = { version = "1.0.214", default-features = false }
-serde_json = { version = "1.0.132", default-features = false, features = [
-    "std",
-] }
-tiny_http = { version = "0.12.0", default-features = false }
-wgpu = { version = "23.0.0", default-features = false }
+indexmap = { version = "2", default-features = false, features = ["serde"] }
+env_logger = { version = "0.11", default-features = false }
+glam = { version = "0.29", default-features = false, features = ["std"] }
+gltf = { version = "1", default-features = false, features = ["utils"] }
+log = { version = "0.4", default-features = false }
+rand = { version = "0.8", default-features = false }
+rustpython = { version = "0.4", default-features = false }
+rustpython-vm = { version = "0.4", default-features = false }
+serde = { version = "1", default-features = false }
+serde_json = { version = "1", default-features = false, features = ["std"] }
+tiny_http = { version = "0.12", default-features = false }
+wgpu = { version = "23", default-features = false }
 winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a9452b72e749a4890db23b92d65abc2", default-features = false }
 
 # wgpu = { version = "23.0.0", default-features = false, features = [
@@ -98,12 +86,12 @@ winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a
 #     "default",
 # ] }
 # wgpu = { version = "23.0.0", features = ["webgl"] }
-image = { version = "0.25.0", default-features = false, features = ["png"] }
-tracing = { version = "0.1.40", default-features = false, features = ["log"] }
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
-wasm-bindgen = "*"
-web-sys = "*"
-pollster = "*"
+image = { version = "0.25", default-features = false, features = ["png"] }
+tracing = { version = "0.1", default-features = false, features = ["log"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+wasm-bindgen = "0.2"
+web-sys = "0.3"
+pollster = "0.4.0"
 
 console_error_panic_hook = "0.1"
 tracing-web = "0.1"

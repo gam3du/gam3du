@@ -6,16 +6,16 @@ publish = false
 
 [dependencies]
 # The dependencies in this config have no transitive dependencies.
-anyhow = "1.0.92"
-env_logger = { version = "0.11.5", default-features = false }
-regex-lite = "0.1.6"
-log = "0.4.22"
-pico-args = { version = "0.5.0", features = [
+anyhow = "1"
+env_logger = { version = "0.11", default-features = false }
+regex-lite = "0.1"
+log = "0.4"
+pico-args = { version = "0.5", features = [
     "eq-separator",
     "short-space-opt",
     "combined-flags",
 ] }
-xshell = "0.2.6"
-reqwest = { version = "0.12.9", features = ["blocking"] }
+xshell = "0.2"
+reqwest = { version = "0.12", features = ["blocking"] }
 
 [workspace]
