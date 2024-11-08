@@ -1,13 +1,24 @@
 //! Provides commands to assist with more complex builds and deployments
+#![cfg_attr(
+    target_arch = "wasm32",
+    allow(unused_crate_dependencies, reason = "no implementation for wasm")
+)]
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    #![allow(clippy::panic, reason = "wasm is not supported")]
+    panic!("WASM is not supported for xtask");
+}
 
-use anyhow::Context;
-use pico_args::Arguments;
-use std::process::ExitCode;
-
+#[cfg(not(target_arch = "wasm32"))]
 mod run_wasm;
+#[cfg(not(target_arch = "wasm32"))]
 mod util;
 
+#[cfg(not(target_arch = "wasm32"))]
 fn main() -> anyhow::Result<ExitCode> {
+    use anyhow::Context;
+    use pico_args::Arguments;
+    use std::process::ExitCode;
     env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .parse_default_env()
