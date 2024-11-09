@@ -3,6 +3,8 @@
 use std::process::ExitCode;
 
 #[cfg(not(target_arch = "wasm32"))]
+mod run_python_wasm;
+#[cfg(not(target_arch = "wasm32"))]
 mod run_wasm;
 #[cfg(not(target_arch = "wasm32"))]
 mod util;
@@ -21,6 +23,6 @@ fn main() -> anyhow::Result<ExitCode> {
     let root_dir = format!("{}/..", env!("CARGO_MANIFEST_DIR"));
     shell.change_dir(root_dir);
 
-    run_wasm::run_wasm(&shell, args)?;
+    run_python_wasm::run_wasm(&shell, args)?;
     Ok(ExitCode::SUCCESS)
 }

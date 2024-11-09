@@ -2874,6 +2874,10 @@ dependencies = [
 [[package]]
 name = "runtime-python-wasm"
 version = "0.1.0"
+dependencies = [
+ "wasm-bindgen",
+ "web-time",
+]
 
 [[package]]
 name = "rustc-demangle"

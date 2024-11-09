@@ -46,7 +46,7 @@ regex-lite = { version = "0.1", default-features = false }
 web-time = { version = "1", default-features = false }
 pico-args = { version = "0.5", default-features = false }
 xshell = { version = "0.2", default-features = false }
-reqwest = { version = "*", default-features = false }
+reqwest = { version = "0.12", default-features = false }
 anyhow = { version = "1", default-features = false }
 bytemuck = { version = "1", default-features = false }
 ctrlc = { version = "3", default-features = false }

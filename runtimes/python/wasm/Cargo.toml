@@ -10,8 +10,9 @@ license-file.workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+web-time.workspace = true
 # runtime-python.workspace = true
-# wasm-bindgen.workspace = true
+wasm-bindgen.workspace = true
 # rustpython = { workspace = true, features = [] }
 # rustpython-vm.workspace = true
 # runtime-python-bindgen.workspace = true
