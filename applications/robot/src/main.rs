@@ -78,7 +78,7 @@ async fn async_main() -> ApplicationResult<()> {
     let (window_event_sender, window_event_receiver) = channel();
     // register_ctrlc(&event_sender);
 
-    let game_state = GameState::new((10, 10));
+    let game_state = GameState::new((15, 15));
     let shared_game_state = game_state.into_shared();
 
     let (main_window_task, window_proxy) = open_main_window(
