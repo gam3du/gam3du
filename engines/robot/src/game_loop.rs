@@ -1,13 +1,10 @@
 use crate::{plugin, SharedGameState};
 use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
-use log::{debug, warn};
-use std::{
-    sync::{
-        mpsc::{Receiver, TryRecvError},
-        Arc,
-    },
-    thread,
+use std::sync::{
+    mpsc::{Receiver, TryRecvError},
+    Arc,
 };
+use tracing::{debug, warn};
 use web_time::{Duration, Instant};
 
 /// Number of game loop iterations per second.

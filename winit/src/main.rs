@@ -2,6 +2,7 @@
 //! Simple winit application.
 
 use ::tracing::{debug, info};
+use gam3du_framework::init_logger;
 use std::error::Error;
 use std::sync::Arc;
 use winit::application::ApplicationHandler;
@@ -21,10 +22,8 @@ use winit::platform::startup_notify::{
 use winit::platform::web::{ActiveEventLoopExtWeb, WindowAttributesExtWeb};
 use winit::window::{Icon, Window, WindowAttributes, WindowId};
 
-mod tracing;
-
 fn main() -> Result<(), Box<dyn Error>> {
-    tracing::init();
+    init_logger();
     info!("Logging start");
 
     debug!("Creating new event loop");

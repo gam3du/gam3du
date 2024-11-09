@@ -3,12 +3,12 @@ use gam3du_framework_common::{
     api::{ApiClientEndpoint, ApiDescriptor, Identifier, TypeDescriptor, Value},
     message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
 };
-use log::{error, trace};
 use rustpython_vm::{builtins::PyBaseExceptionRef, convert::IntoObject};
 use rustpython_vm::{
     builtins::PyStr, convert::ToPyObject, function::PosArgs, pyclass, pymodule, PyObject,
     PyObjectRef, PyPayload, PyRef, PyResult, TryFromBorrowedObject, VirtualMachine,
 };
+use tracing::{error, trace};
 
 pub(crate) fn insert_api_client(vm: &VirtualMachine, api_module: &str, api: ApiClientEndpoint) {
     let api_module = vm.ctx.intern_str(api_module);

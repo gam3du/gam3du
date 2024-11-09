@@ -1,7 +1,7 @@
 use crate::{render_surface::RenderSurface, renderer};
 use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
-use log::{debug, info, trace};
 use std::sync::mpsc::{Receiver, Sender};
+use tracing::{debug, info, trace};
 use web_time::{Duration, Instant};
 
 // #[cfg(not(target_arch = "wasm32"))]

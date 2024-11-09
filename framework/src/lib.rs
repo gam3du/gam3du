@@ -13,13 +13,15 @@
 )]
 
 // use gam3du_framework_common::event::{ApplicationEvent, FrameworkEvent};
-// use log::debug;
+// use tracing::debug;
 // use std::sync::mpsc::Sender;
 
 pub mod application;
-pub mod logging;
+mod logging;
 mod render_surface;
 pub mod renderer;
+
+pub use logging::init_logger;
 
 // /// notify a connected receiver if CTRL+C was pressed
 // ///

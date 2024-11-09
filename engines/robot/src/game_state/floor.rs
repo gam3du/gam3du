@@ -1,8 +1,8 @@
 use super::Tick;
 use crate::tile::{tile, LinePattern, Tile};
 use glam::{IVec2, UVec2};
-use log::trace;
 use rand::{thread_rng, Rng};
+use tracing::trace;
 
 pub struct Floor {
     pub(crate) tiles: Vec<Tile>,

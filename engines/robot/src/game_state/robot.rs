@@ -1,5 +1,5 @@
 use glam::{IVec3, Vec3};
-use log::debug;
+use tracing::debug;
 
 use crate::events::EventRegistries;
 

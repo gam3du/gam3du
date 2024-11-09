@@ -2,7 +2,7 @@ use crate::{
     game_state::{GameState, Tick},
     tile::Tile,
 };
-use glam::{UVec2, UVec4, Vec3, Vec4};
+use glam::{UVec4, Vec3, Vec4};
 use lib_geometry::Camera;
 use web_time::Instant;
 

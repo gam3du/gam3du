@@ -18,10 +18,10 @@ web-time.workspace = true
 # tokio = { workspace = true, features = ["rt", "macros", "time"] }
 # tokio-util = { workspace = true }
 rustpython-vm.workspace = true
-log.workspace = true
-serde_json.workspace = true
+tracing.workspace = true
+serde_json = { workspace = true, features = ["std"] }
 winit = { workspace = true, default-features = true }
-tracing-subscriber = { workspace = true, features = ["env-filter"] }
+# tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 # [target.'cfg(not(target_os = "wasm32"))'.features]
 # default = ["general_feature"]
@@ -32,14 +32,11 @@ tracing-subscriber = { workspace = true, features = ["env-filter"] }
 
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-console_error_panic_hook.workspace = true
-tracing-web.workspace = true
 
 [build-dependencies]
 gam3du-framework-common.workspace = true
 runtime-python-bindgen.workspace = true
-
-serde_json.workspace = true
+serde_json = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

@@ -7,24 +7,24 @@ rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]
+tracing-subscriber = { workspace = true, default-features = true }
 gam3du-framework-common.workspace = true
 
+tracing.workspace = true
 # ctrlc.workspace = true
-env_logger.workspace = true
-log.workspace = true
+wgpu.workspace = true
 winit = { workspace = true, default-features = true }
 pollster.workspace = true
 web-time.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 wgpu.workspace = true
-# env_logger.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wgpu = { workspace = true, features = ["webgl"] }
+tracing-web.workspace = true
+console_error_panic_hook.workspace = true
 # winit = { workspace = true, features = ["wasm"] }
-# console_error_panic_hook.workspace = true
-# console_log.workspace = true
 # fern.workspace = true
 wasm-bindgen.workspace = true
 # wasm-bindgen-futures.workspace = true

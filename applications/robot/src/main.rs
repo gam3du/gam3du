@@ -6,22 +6,16 @@
     reason = "TODO remove before release"
 )]
 
-mod tracing;
-
-use core::time;
-use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder, SharedGameState};
-use gam3du_framework::{application::Application, logging::init_logger};
+use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder};
+use gam3du_framework::{application::Application, init_logger};
 use gam3du_framework_common::{
     api::{self, ApiClientEndpoint, ApiDescriptor, ApiServerEndpoint},
     event::{ApplicationEvent, FrameworkEvent},
 };
 use lib_file_storage::{FileStorage, StaticStorage};
-use log::{debug, error, info, trace, warn};
 use runtime_python::PythonRuntimeBuilder;
-use rustpython_vm::signal::{UserSignal, UserSignalSender};
 use std::{
     fmt::{self, Display},
-    fs::read_to_string,
     path::Path,
     process::ExitCode,
     sync::{self, mpsc::channel, Arc},
@@ -29,8 +23,9 @@ use std::{
 };
 // use tokio::join;
 // use tokio_util::sync::CancellationToken;
-use web_time::{Duration, Instant};
-use winit::event_loop::{ControlFlow, EventLoop, EventLoopProxy};
+use tracing::{debug, error, info};
+use web_time::Instant;
+use winit::event_loop::{ControlFlow, EventLoop};
 
 const WINDOW_TITLE: &str = "Robot";
 
@@ -45,8 +40,7 @@ fn main() -> ExitCode {
 }
 
 fn guarded_main() -> ApplicationResult<()> {
-    tracing::init();
-    // init_logger();
+    init_logger();
 
     // let local_set = tokio::task::LocalSet::new();
 
@@ -180,10 +174,10 @@ fn async_main() -> ApplicationResult<()> {
         },
     );
 
-    log::info!("main: Entering event loop...");
+    info!("main: Entering event loop...");
     window_event_loop.run_app(&mut application).unwrap(); // BLOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOCKING
     drop(application);
-    log::debug!("main: window event loop exited");
+    debug!("main: window event loop exited");
 
     // info!("Normal operation. Waiting for any task to terminate …");
     // let mut debug_timer = Instant::now();

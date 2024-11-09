@@ -11,10 +11,10 @@ lib-geometry.workspace = true
 lib-time.workspace = true
 
 anyhow.workspace = true
-log.workspace = true
+tracing.workspace = true
 bytemuck.workspace = true
 glam.workspace = true
-gltf.workspace = true
+gltf = { workspace = true, features = ["utils"] }
 wgpu = { workspace = true, features = ["wgsl"] }
 web-time.workspace = true
 

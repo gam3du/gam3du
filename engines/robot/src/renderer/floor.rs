@@ -1,9 +1,7 @@
 use crate::{game_state::Tick, renderer::DepthTexture, tile::Tile, RenderState};
 use bytemuck::offset_of;
-use glam::{Vec3, Vec4};
-use lib_geometry::{
-    Camera, Projection, SIZE_OF_MAT4, SIZE_OF_UVEC2, SIZE_OF_UVEC4, SIZE_OF_VEC3, SIZE_OF_VEC4,
-};
+use glam::Vec4;
+use lib_geometry::{Camera, Projection, SIZE_OF_MAT4, SIZE_OF_UVEC4, SIZE_OF_VEC4};
 use lib_time::elapsed_as_vec;
 use std::{borrow::Cow, mem::size_of};
 use web_time::Instant;

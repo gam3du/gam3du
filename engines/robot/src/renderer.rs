@@ -8,11 +8,10 @@ use gam3du_framework::renderer;
 use glam::{Mat4, Quat, Vec3};
 use lib_geometry::Projection;
 use lib_gltf_model::GltfModelRenderer;
-use log::{debug, trace};
+use tracing::{debug, trace};
 // use robot::RobotRenderer;
 use std::{
     borrow::Cow,
-    fs::read_to_string,
     path::PathBuf,
     sync::{Arc, TryLockError},
 };
@@ -57,8 +56,12 @@ impl renderer::RendererBuilder for RendererBuilder {
         );
 
         trace!("creating depth texture with config: {surface:?}");
-        let depth_map =
-            DepthTexture::create_depth_texture(device, surface.width.max(1), surface.height.max(1), "depth_map");
+        let depth_map = DepthTexture::create_depth_texture(
+            device,
+            surface.width.max(1),
+            surface.height.max(1),
+            "depth_map",
+        );
 
         // let robot_renderer = RobotRenderer::new(device, queue, surface.view_formats[0]);
         let floor_renderer = FloorRenderer::new(device, queue, surface.format, &state);

@@ -9,7 +9,7 @@ use std::{
 use bytemuck::{Pod, Zeroable};
 use glam::{Vec2, Vec3, Vec4};
 use gltf::{buffer, mesh::util::ReadTexCoords, Gltf};
-use log::debug;
+use tracing::debug;
 use wgpu::util::DeviceExt;
 
 pub(crate) struct Mesh {

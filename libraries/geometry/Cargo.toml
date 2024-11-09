@@ -7,7 +7,7 @@ license-file.workspace = true
 readme.workspace = true
 
 [dependencies]
-glam.workspace = true
+glam = { workspace = true, features = ["std"] }
 
 [lints]
 workspace = true

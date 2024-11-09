@@ -8,10 +8,10 @@ use std::{
 use super::Plugin;
 use crate::{events::GameEvent, GameState};
 use gam3du_framework_common::module::Module;
-use log::debug;
 use rand::{thread_rng, Rng};
 use runtime_python::{PythonRuntime, PythonRuntimeBuilder};
 use rustpython_vm::pymodule;
+use tracing::debug;
 
 thread_local! {
     pub(crate) static VM_GAME_STATE: RefCell<GameState> = RefCell::new(GameState::bogus());
@@ -113,8 +113,8 @@ mod plugin_api {
 
     use super::VM_GAME_STATE;
     use crate::api::EngineApi;
-    use log::{debug, error, info, trace, warn};
     use rustpython_vm::VirtualMachine;
+    use tracing::{debug, error, info, trace, warn};
 
     #[pyfunction]
     fn set_height(height: f32, _vm: &VirtualMachine) {

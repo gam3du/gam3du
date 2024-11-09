@@ -7,7 +7,6 @@ use gam3du_framework_common::{
     message::{ClientToServerMessage, RequestMessage},
     module::Module,
 };
-use log::{debug, error, info};
 use runtime_python_bindgen::PyIdentifier;
 use rustpython_vm::{
     builtins::PyStrInterned,
@@ -25,6 +24,7 @@ use std::{
     },
     thread::{self, JoinHandle},
 };
+use tracing::{debug, error, info};
 
 /// This indirection is necessary because we can't pass `rustpython_vm::stdlib::StdlibInitFunc`
 /// to a new thread (`std::thread::spawn` requires `Send`).

@@ -1,13 +1,15 @@
 //! Provides commands to assist with more complex builds and deployments
 
-use anyhow::Context;
-use pico_args::Arguments;
 use std::process::ExitCode;
 
+#[cfg(not(target_arch = "wasm32"))]
 mod run_wasm;
+#[cfg(not(target_arch = "wasm32"))]
 mod util;
 
 fn main() -> anyhow::Result<ExitCode> {
+    use anyhow::Context;
+    use pico_args::Arguments;
     env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .parse_default_env()

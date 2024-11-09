@@ -1,6 +1,6 @@
 use crate::renderer::{self, RendererBuilder};
-use log::{debug, info, trace};
 use std::sync::Arc;
+use tracing::{debug, info, trace};
 use wgpu::PresentMode;
 use winit::{dpi::PhysicalSize, window::Window};
 
