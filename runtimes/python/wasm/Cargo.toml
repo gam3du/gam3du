@@ -13,10 +13,12 @@ crate-type = ["cdylib"]
 web-time.workspace = true
 # runtime-python.workspace = true
 wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
 # rustpython = { workspace = true, features = [] }
 # rustpython-vm.workspace = true
 # runtime-python-bindgen.workspace = true
 # either.workspace = true
+web-sys = { workspace = true, features = ["Window", "console"] }
 
 [lints]
 workspace = true

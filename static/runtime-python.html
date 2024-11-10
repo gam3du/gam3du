@@ -63,7 +63,7 @@
             // modes
             await init();
 
-            greet("world");
+            greet("world").then(() => console.log("after future"));
             console.log("returned from WASM");
 
             // // And afterwards we can use all the functionality defined in wasm.
