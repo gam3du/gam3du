@@ -34,6 +34,19 @@
         // eventually the manual initialization won't be required!
         import init, { greet } from './runtime_python_wasm.js';
 
+        async function await_rust_future(rustFuture) {
+            function executor(resolve, reject) {
+                let {done, value} = rustFuture.poll();
+                if (done) {
+                    resolve(value);
+                } else {
+                    setTimeout(() => executor(resolve, reject));
+                }
+            }
+
+            return new Promise(executor);
+        }
+
         async function run() {
             // First up we need to actually load the Wasm file, so we use the
             // default export to inform it where the Wasm file is located on the
@@ -63,8 +76,9 @@
             // modes
             await init();
 
-            greet("world").then(() => console.log("after future"));
+            await_rust_future(greet("world")).then(() => console.log("after future"));
             console.log("returned from WASM");
+            document.body.style = 'background-color: chocolate;'
 
             // // And afterwards we can use all the functionality defined in wasm.
             // const result = add(1, 2);
@@ -90,7 +104,7 @@
 </head>
 
 <body>
-    nothing
+it does not look like chocolate
 </body>
 
 </html>
