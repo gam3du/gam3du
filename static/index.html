@@ -6,30 +6,111 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
     <link rel="stylesheet" href="style.css" />
+
+    <!-- <script>
+
+        // var counter = 0;
+
+        // const channel = new MessageChannel();
+        // const port1 = channel.port1;
+        // port1.onmessage = function () {
+        //     counter += 1;
+        // }
+
+        // function callback() {
+        //     console.info("sending self-message", counter);
+        //     channel.port2.postMessage("test");
+        //     return counter;
+        // }
+    </script> -->
+
+    <!-- <script src="./bootstrap.js"></script> -->
+
     <script type="module">
-        import(`./application-robot.js`).then((module) => module.default());
+        // Use ES module import syntax to import functionality from the module
+        // that we have compiled.
+        //
+        // Note that the `default` import is an initialization function which
+        // will "boot" the module and make it ready to use. Currently browsers
+        // don't support natively imported WebAssembly as an ES module, but
+        // eventually the manual initialization won't be required!
+        import init, { Channel } from './runtime_python_wasm.js';
+
+        // from bootstrap.js
+        // from index.js
+        // from worker.js
+
+        async function run() {
+            // First up we need to actually load the Wasm file, so we use the
+            // default export to inform it where the Wasm file is located on the
+            // server, and then we wait on the returned promise to wait for the
+            // Wasm to be loaded.
+            //
+            // It may look like this: `await init('./pkg/without_a_bundler_bg.wasm');`,
+            // but there is also a handy default inside `init` function, which uses
+            // `import.meta` to locate the Wasm file relatively to js file.
+            //
+            // Note that instead of a string you can also pass in any of the
+            // following things:
+            //
+            // * `WebAssembly.Module`
+            //
+            // * `ArrayBuffer`
+            //
+            // * `Response`
+            //
+            // * `Promise` which returns any of the above, e.g. `fetch("./path/to/wasm")`
+            //
+            // This gives you complete control over how the module is loaded
+            // and compiled.
+            //
+            // Also note that the promise, when resolved, yields the Wasm module's
+            // exports which is the same as importing the `*_bg` module in other
+            // modes
+            await init();
+
+            // import * as pkg from "pkg";
+            // import Worker from "./worker.js";
+            let channel = new Channel();
+            console.log("channel created");
+
+            let sender = channel.run();
+
+            // let worker = new Worker("worker.js");
+            // worker.onmessage = () => {
+            //     worker.postMessage(channel.replica());
+            //     window.sender = channel.sender();
+            //     console.log("Now, you can use methods on `sender`. Try `sender.init()");
+            // }
+
+            // greet("world");
+            // console.log("returned from WASM");
+
+            // // And afterwards we can use all the functionality defined in wasm.
+            // const result = add(1, 2);
+            // console.log(`1 + 2 = ${result}`);
+            // if (result !== 3)
+            //     throw new Error("wasm addition doesn't work!");
+        }
+
+        run();
+    </script>
+    <!-- 
+    <script type="module">
+        import(`./runtime_python_wasm.js`).then((module) => module.default());
     </script>
 
+    <script>
+        import { greet } from './runtime_python_wasm';
+        document.addEventListener("DOMContentLoaded", function () {
+            console.info("start");
+            greet('World');
+        });
+    </script> -->
 </head>
 
 <body>
-    <main>
-        <div id="controls">
-            <button>⏵⏸⏹⏯🗘🗙↺↻⟲⟳🚀 Run</button>
-        </div>
-
-        <div id="editor">Python code goes here</div>
-
-        <canvas id="canvas"></canvas>
-
-        <ul id="log">
-            <li class="info">Something good</li>
-            <li class="warn">Something bad</li>
-            <li class="error">Something ugly</li>
-            <li class="debug">Something curious</li>
-            <li class="trace">Something noisy</li>
-        </ul>
-    </main>
+    nothing
 </body>
 
 </html>

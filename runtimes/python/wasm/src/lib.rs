@@ -3,6 +3,8 @@
 #![expect(
     clippy::print_stdout,
     clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::unwrap_in_result,
     unsafe_code,
     reason = "just a demo"
 )]
@@ -54,11 +56,15 @@ impl Channel {
 
     pub fn run(&mut self) -> Result<(), JsValue> {
         console_error_panic_hook::set_once();
+
+        let sender = self.sender()?;
+        sender.init()?;
+
         loop {
             dbg!("waiting for messages for 10 seconds");
             match self
                 .receiver
-                .recv(Some(std::time::Duration::from_secs(10)))?
+                .recv(Some(std::time::Duration::from_secs(1)))?
             {
                 None => {}
                 Some(request) => {
@@ -69,6 +75,7 @@ impl Channel {
                     }
                 }
             }
+            sender.done(3)?;
         }
         Ok(())
     }
