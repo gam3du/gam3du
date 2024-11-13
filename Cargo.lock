@@ -234,6 +234,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bit-set"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2875,7 +2884,13 @@ dependencies = [
 name = "runtime-python-wasm"
 version = "0.1.0"
 dependencies = [
+ "bincode",
+ "console_error_panic_hook",
+ "js-sys",
+ "serde",
  "wasm-bindgen",
+ "wasm-rs-dbg",
+ "wasm-rs-shared-channel",
  "web-time",
 ]
 
@@ -4359,6 +4374,28 @@ name = "wasm-bindgen-shared"
 version = "0.2.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "65fc09f10666a9f147042251e0dda9c18f166ff7de300607007e96bdebc1068d"
+
+[[package]]
+name = "wasm-rs-dbg"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61e5fe4ac478ca5cf1db842029f41a5881da39e70320deb0006912f226ea63f4"
+dependencies = [
+ "web-sys",
+]
+
+[[package]]
+name = "wasm-rs-shared-channel"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c555c35b5c51f5f134fb470b103435880fd7a9def4e830dc0081d8af5b09378b"
+dependencies = [
+ "bincode",
+ "js-sys",
+ "serde",
+ "thiserror",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "wayland-backend"

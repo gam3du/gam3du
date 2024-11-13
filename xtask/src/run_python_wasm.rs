@@ -73,7 +73,7 @@ pub(crate) fn run_wasm(shell: &Shell, mut args: Arguments) -> anyhow::Result<()>
         // running WebGPU!
         xshell::cmd!(
             shell,
-            "simple-http-server target/generated -c wasm,html,js --coep --coop --ip 127.0.0.1 --nocache"
+            "simple-http-server target/generated --compress wasm,html,js --coep --coop --ip 127.0.0.1 --index --nocache"
         )
         .quiet()
         .run()

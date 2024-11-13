@@ -29,6 +29,7 @@
         "rpass",
         "runtimes",
         "rustpython",
+        "spsc",
         "srgb",
         "struct",
         "subsec",
