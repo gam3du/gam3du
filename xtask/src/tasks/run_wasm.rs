@@ -1,10 +1,13 @@
-use crate::util::{check_all_programs, Program};
+use crate::{
+    ace,
+    util::{check_all_programs, Program},
+};
 use anyhow::Context;
 use pico_args::Arguments;
-use std::{fs, io::Write};
+use std::path::Path;
 use xshell::Shell;
 
-pub(crate) fn run_wasm(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
+pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
     let no_serve = args.contains("--no-serve");
     let release = args.contains("--release");
 
@@ -66,27 +69,7 @@ pub(crate) fn run_wasm(shell: &Shell, mut args: Arguments) -> anyhow::Result<()>
             .with_context(|| format!("Failed to copy static file \"{}\"", file.display()))?;
     }
 
-    log::info!("downloading ACE editor");
-
-    let files = [
-        ("https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/ace.js", "target/generated/ace.js"),
-        ("https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/theme-monokai.js", "target/generated/theme-monokai.js"),
-        ("https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/mode-python.js", "target/generated/mode-python.js"),
-    ];
-
-    for (url, target) in files {
-        if fs::exists(target).context(format!("failed to test {target} for existence"))? {
-            log::info!("skipping download for existing file: {target}");
-            continue;
-        }
-        log::info!("downloading {url} → {target}");
-
-        let resp = reqwest::blocking::get(url).context("request failed")?;
-        let body = resp.bytes().context("body invalid")?;
-        let mut out = fs::File::create(target).context("failed to create file")?;
-        out.write_all(&body).context("failed to copy content")?;
-        out.flush().context("failed to copy content")?;
-    }
+    ace::download(Path::new("target/generated"))?;
 
     if !no_serve {
         log::info!("serving on port 8000");

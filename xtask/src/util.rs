@@ -1,4 +1,7 @@
-use std::{io, process::Command};
+use std::{io, path::Path, process::Command};
+
+use anyhow::Context;
+use xshell::Shell;
 
 pub(crate) struct Program {
     pub crate_name: &'static str,
@@ -37,6 +40,98 @@ pub(crate) fn check_all_programs(programs: &[Program]) -> anyhow::Result<()> {
         );
 
         anyhow::bail!("Missing required programs");
+    }
+
+    Ok(())
+}
+
+// pub(crate) fn copy_static_files(
+//     shell: &Shell,
+//     source_dir: &Path,
+//     destination_dir: &Path,
+// ) -> anyhow::Result<()> {
+//     let static_files = shell.read_dir(source_dir).context(format!(
+//         "Failed to enumerate files in {}",
+//         source_dir.display()
+//     ))?;
+
+//     for file in static_files {
+//         log::info!("copying static file \"{}\"", file.canonicalize()?.display());
+
+//         shell.copy_file(&file, destination_dir).with_context(|| {
+//             format!(
+//                 "Failed to copy file \"{}\" → \"{}\"",
+//                 file.display(),
+//                 destination_dir.display()
+//             )
+//         })?;
+//     }
+
+//     Ok(())
+// }
+
+pub(crate) fn copy(
+    shell: &Shell,
+    source_path: &Path,
+    destination_path: &Path,
+) -> anyhow::Result<()> {
+    if source_path.is_file() {
+        log::info!(
+            "copying file \"{}\" → \"{}\"",
+            source_path.canonicalize()?.display(),
+            destination_path.display()
+        );
+        shell
+            .copy_file(source_path, destination_path)
+            .with_context(|| {
+                format!(
+                    "Failed to copy file \"{}\" → \"{}\"",
+                    source_path.display(),
+                    destination_path.display()
+                )
+            })?;
+    } else if source_path.is_dir() {
+        let static_files = shell.read_dir(source_path).context(format!(
+            "Failed to enumerate files in {}",
+            source_path.display()
+        ))?;
+
+        let destination_path = &destination_path.join(
+            source_path
+                .file_name()
+                .context(format!("invalid source path: {}", source_path.display()))?,
+        );
+        shell.create_dir(destination_path).context(format!(
+            "failed to create destination path: {}",
+            destination_path.display(),
+        ))?;
+
+        for file in static_files {
+            copy(shell, &file, destination_path)?;
+        }
+    } else {
+        todo!();
+    }
+
+    Ok(())
+}
+
+pub(crate) fn copy_content(
+    shell: &Shell,
+    source_path: &Path,
+    destination_path: &Path,
+) -> anyhow::Result<()> {
+    if source_path.is_dir() {
+        let static_files = shell.read_dir(source_path).context(format!(
+            "Failed to enumerate files in {}",
+            source_path.display()
+        ))?;
+
+        for file in static_files {
+            copy(shell, &file, destination_path)?;
+        }
+    } else {
+        todo!();
     }
 
     Ok(())

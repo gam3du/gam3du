@@ -1,5 +1,5 @@
 import * as pkg from "pkg";
-import Worker from "./worker.js";
+import Worker from "./runtime-python/worker.js";
 let channel = new pkg.Channel();
 let worker = new Worker();
 worker.onmessage = () => {
