@@ -18,6 +18,15 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
     copy_content(shell, Path::new("static"), target_dir)?;
 
     let cargo_args = args.finish();
+
+    build_wasm(
+        shell,
+        "lib-wasm-tools",
+        is_release,
+        &target_dir.join("wasm-tools/wasm"),
+        &cargo_args,
+    )?;
+
     build_wasm(
         shell,
         "runtime-python-wasm",

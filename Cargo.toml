@@ -28,7 +28,9 @@ license-file = "LICENSE-MIT"
 readme = "README.md"
 
 [workspace.dependencies]
+
 # workspace-internal crates
+
 engine-robot = { path = "engines/robot" }
 gam3du-framework = { path = "framework" }
 gam3du-framework-common = { path = "framework/common" }
@@ -36,6 +38,7 @@ lib-file-storage = { path = "libraries/file-storage" }
 lib-geometry = { path = "libraries/geometry" }
 lib-gltf-model = { path = "libraries/gltf-model" }
 lib-time = { path = "libraries/time" }
+lib-wasm-tools = { path = "libraries/wasm-tools" }
 runtime-python = { path = "runtimes/python" }
 runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 runtime-python-wasm = { path = "runtimes/python/wasm" }
@@ -51,6 +54,8 @@ anyhow = { version = "1", default-features = false }
 bytemuck = { version = "1", default-features = false }
 ctrlc = { version = "3", default-features = false }
 async-std = { version = "1", default-features = false }
+wasm-rs-shared-channel = { version = "0.1", default-features = false }
+getrandom = { version = "0.2", default-features = false }
 
 # Used to maintain the order of elements in JSON objects.
 # This makes the JSON deserialization of the `serde_json` crate deterministic
@@ -69,6 +74,8 @@ tiny_http = { version = "0.12", default-features = false }
 wgpu = { version = "23", default-features = false }
 winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a9452b72e749a4890db23b92d65abc2", default-features = false }
 image = { version = "0.25", default-features = false }
+js-sys = { version = "0.3", default-features = false }
+bincode = { version = "1", default-features = false }
 
 # Logging macros to be used by all applications and libraries
 tracing = { version = "0.1", default-features = false }

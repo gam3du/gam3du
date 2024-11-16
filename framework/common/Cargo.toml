@@ -7,10 +7,11 @@ rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]
+getrandom = { workspace = true, features = ["js"] }
+indexmap = { workspace = true, features = ["serde", "std"] }
+rand = { workspace = true, features = ["getrandom", "std", "std_rng"] }
 serde = { workspace = true, features = ["std", "derive"] }
 winit = { workspace = true, default-features = true }
-rand.workspace = true
-indexmap = { workspace = true, features = ["serde"] }
 
 [lints]
 workspace = true

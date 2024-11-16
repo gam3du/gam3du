@@ -12,6 +12,7 @@
         "consts",
         "cranelift",
         "fract",
+        "getrandom",
         "gles",
         "gltf",
         "lerp",

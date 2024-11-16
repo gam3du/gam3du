@@ -1,9 +1,9 @@
 //! Contains the types of messages that can be sent between endpoints.
 //! Each endpoint creates a single mpsc channel in order to receive commands or events from a single endpoints.
 
-use rand::{thread_rng, Rng};
-
 use crate::api::{Identifier, Value};
+use rand::{thread_rng, Rng};
+use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
     num::{NonZeroU128, TryFromIntError},
@@ -12,18 +12,20 @@ use std::{
 /// Any message that can be sent from a client to a server
 ///
 /// This might be extended in the future in order to query or cancel a pending request
+#[derive(Serialize, Deserialize)]
 pub enum ClientToServerMessage {
     Request(RequestMessage),
 }
 
 /// Any message that can be sent from a server to a client
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ServerToClientMessage {
     Response(ResponseMessage),
     ErrorResponse(ErrorResponseMessage),
 }
 
 /// UUID to associate all messages with the initial request
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct RequestId(pub NonZeroU128);
 
 impl RequestId {
@@ -48,6 +50,7 @@ impl Display for RequestId {
 }
 
 /// Asks the receiver to perform an operation and return a response containing the result.
+#[derive(Serialize, Deserialize)]
 pub struct RequestMessage {
     /// UUID used to track corresponding messages
     pub id: RequestId,
@@ -70,6 +73,7 @@ impl RequestMessage {
 
 /// Contains the result of a requested operation
 // TODO find a better name to reflect a positive result value (e.g. `OkResultMessage` or `OkResponseMessage`)
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ResponseMessage {
     /// this shall match the id of the corresponding request
     pub id: RequestId,
@@ -84,6 +88,7 @@ pub struct ResponseMessage {
 /// Possible causes are: unknown recipient, unknown command, wrong argument configuration
 /// This message type exists to not overload framework-related errors with actual application errors.
 // TODO deserves a better name
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ErrorResponseMessage {
     /// this shall match the id of the corresponding request
     pub id: RequestId,

@@ -7,30 +7,26 @@ rust-version.workspace = true
 license-file.workspace = true
 
 [lib]
-# crate-type = ["cdylib"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm-bindgen = "0.2.70"
-# wasm-rs-shared-channel = { path = ".." }
-wasm-rs-dbg = { version = "0.1", default-features = false, features = [
-    "console-log",
+gam3du-framework-common.workspace = true
+gam3du-framework.workspace = true
+tracing.workspace = true
+wasm-bindgen.workspace = true
+wasm-rs-shared-channel = { workspace = true, features = [
+    "serde",
+    "serde-bincode",
 ] }
-serde = { version = "1.0.123", features = ["derive"] }
-bincode = "1.3.1"
-js-sys = "0.3.47"
-console_error_panic_hook = "0.1.6"
 
-web-time.workspace = true
+# web-time.workspace = true
 # runtime-python.workspace = true
-# wasm-bindgen.workspace = true
 # rustpython = { workspace = true, features = [] }
 # rustpython-vm.workspace = true
 # runtime-python-bindgen.workspace = true
 # either.workspace = true
 # shared_channel = "0.2"
 # wasm-rs-dbg = "0.1"
-wasm-rs-shared-channel = "0.1"
 # serde.workspace = true
 # console_error_panic_hook.workspace = true
 

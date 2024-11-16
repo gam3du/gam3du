@@ -4,34 +4,31 @@
 // by a SharedArrayBuffer which is created upon initialization.
 // see https://github.com/RustPython/RustPython/issues/5435
 // and https://users.rust-lang.org/t/using-async-in-a-call-back-of-a-blocking-library/121089
-import * as Python from './wasm.js';
+import * as PythonRuntime from './wasm.js';
 
 console.info("Python Worker is loading");
 
-await Python.default();
-
+await PythonRuntime.default();
 console.info("Python Worker WASM initialized");
 
-let channel = new Python.Channel();
-console.info("Python Worker Channel created");
+PythonRuntime.init();
+console.info("PythonRuntime initialized");
 
-let sender = channel.run();
-console.info("Python Worker end of blocking");
-
-
-// // worker = self;
-// // import("./runtime_python_wasm_bg.wasm")
-// //     .then(wasm => {
-// //         import("./runtime_python_wasm.js").then(module => {
-// //             postMessage("started");
-// //             worker.onmessage = (msg) => {
-// //                 let channel = module.Channel.from(msg.data);
-// //                 while (true) {
-// //                     channel.run();
-// //                     console.debug("worker: runner terminated, restarting");
-// //                 }
-// //             }
-// //         })
-// //     });
+self.onmessage = (message_event) => {
+    let message = message_event.data;
+    console.info("message received", message);
+    switch (message.type) {
+        case "set_channel_buffers":
+            console.info("sending to WASM", message.buffers);
+            PythonRuntime.set_channel_buffers(message.buffers);
+            console.info("gone?", message.buffers);
+            break;
+        case "run":
+            PythonRuntime.run();
+            break;
+        default:
+            console.error("unknown message type: ", message.type);
+    }
+}
 
 console.info("Python Worker main terminated");

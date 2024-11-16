@@ -1,126 +1,75 @@
 //! TODO
 #![allow(missing_docs, reason = "TODO")]
-#![expect(
-    clippy::print_stdout,
-    clippy::missing_errors_doc,
-    clippy::missing_panics_doc,
-    clippy::unwrap_in_result,
-    unsafe_code,
-    reason = "just a demo"
-)]
+#![expect(clippy::panic, clippy::missing_panics_doc, reason = "just a demo")]
 
+use std::{cell::RefCell, time::Duration};
+
+use gam3du_framework::init_logger;
+use gam3du_framework_common::message::ServerToClientMessage;
+use tracing::{error, info};
 use wasm_bindgen::prelude::*;
 
-use serde::{Deserialize, Serialize};
-// use wasm_bindgen::prelude::*;
-use wasm_rs_dbg::dbg;
-use wasm_rs_shared_channel::spsc;
+use wasm_rs_shared_channel::spsc::{self, SharedChannel};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Request {
-    Init,
-    Done { count: u32 },
+struct ApplicationState {
+    receiver: Option<spsc::Receiver<ServerToClientMessage>>,
+}
+
+impl ApplicationState {
+    const fn new() -> Self {
+        Self { receiver: None }
+    }
+}
+
+thread_local! {
+    static APPLICATION_STATE: RefCell<ApplicationState> = const { RefCell::new(ApplicationState::new()) };
 }
 
 #[wasm_bindgen]
-pub struct Channel {
-    sender: Option<spsc::Sender<Request>>,
-    receiver: spsc::Receiver<Request>,
+pub fn init() {
+    init_logger();
+    info!("PythonRuntime init");
 }
 
 #[wasm_bindgen]
-impl Channel {
-    #[wasm_bindgen(constructor)]
-    #[allow(clippy::new_without_default, reason = "TODO")]
-    #[must_use]
-    pub fn new() -> Channel {
-        let (sender, receiver) = spsc::channel::<Request>(1024).split();
-        Channel {
-            sender: Some(sender),
-            receiver,
-        }
-    }
-    #[must_use]
-    pub fn from(val: JsValue) -> Self {
-        let (sender, receiver) = spsc::SharedChannel::from(val).split();
-        Channel {
-            sender: Some(sender),
-            receiver,
-        }
-    }
+pub fn set_channel_buffers(buffers: JsValue) {
+    info!("PythonRuntime set_channel_buffers");
 
-    #[must_use]
-    pub fn replica(&self) -> JsValue {
-        self.receiver.0.clone().into()
-    }
+    let channel = SharedChannel::from(buffers);
+    let (_sender, receiver) = channel.split();
 
-    pub fn run(&mut self) -> Result<(), JsValue> {
-        console_error_panic_hook::set_once();
+    APPLICATION_STATE.with_borrow_mut(|state| {
+        assert!(
+            state.receiver.replace(receiver).is_none(),
+            "receiver has already been set"
+        );
+    });
+}
 
-        let sender = self.sender()?;
-        sender.init()?;
+#[wasm_bindgen]
+pub fn run() {
+    info!("PythonRuntime run");
+    APPLICATION_STATE.with_borrow_mut(|state| {
+        let Some(receiver) = &mut state.receiver else {
+            panic!("cannot run without a receiver");
+        };
 
+        info!("waiting for message");
         loop {
-            dbg!("waiting for messages for 10 seconds");
-            match self
-                .receiver
-                .recv(Some(std::time::Duration::from_secs(1)))?
-            {
-                None => {}
-                Some(request) => {
-                    dbg!(&request);
-                    if let Request::Done { .. } = request {
-                        dbg!("received `Done`, terminating the runner");
-                        break;
-                    }
+            match receiver.recv(Some(Duration::from_millis(100))) {
+                Ok(None) => {
+                    info!("… still waiting for message …");
+                }
+                Ok(Some(response)) => {
+                    info!("received message: {response:?}");
+                    break;
+                }
+                Err(err) => {
+                    error!("Error while waiting for message: {err:?}");
+                    break;
                 }
             }
-            sender.done(3)?;
         }
-        Ok(())
-    }
-
-    pub fn sender(&mut self) -> Result<Sender, JsValue> {
-        match self.sender.take() {
-            Some(sender) => Ok(Sender(sender)),
-            None => Err("sender is already taken".to_owned().into()),
-        }
-    }
+    });
+    info!("PythonRuntime run terminated");
 }
-
-#[wasm_bindgen]
-pub struct Sender(spsc::Sender<Request>);
-
-#[wasm_bindgen]
-impl Sender {
-    pub fn init(&self) -> Result<(), JsValue> {
-        self.0.send(&Request::Init)
-    }
-
-    pub fn done(&self, count: u32) -> Result<(), JsValue> {
-        self.0.send(&Request::Done { count })
-    }
-}
-
-// #[wasm_bindgen]
-// extern "C" {
-//     // #[wasm_bindgen(js_namespace = window)]
-//     fn callback(s: &str) -> u32;
-// }
-
-// #[wasm_bindgen]
-// pub fn greet(name: &str) {
-//     let mut i = 0;
-//     loop {
-//         let callback = callback(&format!("Hello, {name}!"));
-//         println!("{i} callback returned {callback}");
-//         if callback > 0 {
-//             return;
-//         }
-//         let time = web_time::Instant::now();
-//         while time.elapsed() < web_time::Duration::from_secs(1) {
-//             // burn cycles
-//         }
-//         i += 1;
-//     }
-// }
