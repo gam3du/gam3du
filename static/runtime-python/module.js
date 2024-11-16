@@ -4,27 +4,58 @@
 const LOG_SRC = "[main:runtime-python/module.js]";
 console.info(LOG_SRC, "/--- initializing Python Module ---\\");
 
-console.info(LOG_SRC, "starting Python Worker");
-let worker = new Worker("./runtime-python/worker.js", { type: "module" });
-console.info(LOG_SRC, "Python Worker started", worker);
+let worker;
 
-worker.onmessage = (message_event) => {
-    console.info(LOG_SRC, "message from RuntimePython worker → main", message_event.data);
+export function start_worker(channel_buffers) {
+    console.info(LOG_SRC, "start_worker", channel_buffers);
+
+    console.info(LOG_SRC, "starting Python Worker");
+    worker = new Worker("./runtime-python/worker.js", { type: "module" });
+
+    let init_promise = new Promise((resolve, reject) => {
+        worker.addEventListener("message", function init_event_handler(message_event) {
+            worker.removeEventListener("message", init_event_handler);
+
+            let message = message_event.data;
+            console.info(LOG_SRC, "message from RuntimePython worker → main", message_event.data);
+            switch (message.type) {
+                case "init":
+                    console.info(LOG_SRC, "worker successfully initialized");
+
+                    console.info(LOG_SRC, "sending the channel buffers to the PythonRuntime");
+                    set_channel_buffers(channel_buffers);
+
+                    console.info(LOG_SRC, "starting PythonRuntime (this will block the containing WebWorker until the script completes)");
+                    run();
+
+                    console.info(LOG_SRC, "resolving init promise");
+                    resolve();
+                    break;
+
+                default:
+                    console.info(LOG_SRC, "unknown message type from worker", message.type);
+                    reject()
+                    break;
+            }
+
+        });
+    });
+
+    console.info(LOG_SRC, "Python Worker started, waiting for initialization", worker);
+    return init_promise;
 }
 
-export function set_channel_buffers(buffers) {
-    console.info(LOG_SRC, "set_channel_buffers", buffers);
-
+function set_channel_buffers(channel_buffers) {
     let message = {
         type: "set_channel_buffers",
-        buffers: buffers,
+        buffers: channel_buffers,
     };
 
-    console.info(LOG_SRC, "sending channel buffers to PythonModule WASM", message);
+    console.info(LOG_SRC, "sending channel buffers to PythonWorker", message);
     worker.postMessage(message);
 }
 
-export function run() {
+function run() {
     console.info(LOG_SRC, "run");
     let message = {
         type: "run",

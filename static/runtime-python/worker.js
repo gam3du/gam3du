@@ -31,4 +31,7 @@ self.onmessage = (message_event) => {
     }
 }
 
+console.info(LOG_SRC, "notifying module about completion");
+self.postMessage({ type: "init" });
+
 console.info(LOG_SRC, "\\--- Python Worker initialized ---/");
