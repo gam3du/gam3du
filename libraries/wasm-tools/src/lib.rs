@@ -6,13 +6,11 @@
     reason = "TODO"
 )]
 
-use std::{cell::RefCell, num::NonZeroU128};
-
 use gam3du_framework::init_logger;
 use gam3du_framework_common::message::{ErrorResponseMessage, RequestId, ServerToClientMessage};
+use std::{cell::RefCell, num::NonZeroU128};
 use tracing::info;
 use wasm_bindgen::prelude::*;
-
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
 
 struct ApplicationState {
@@ -28,16 +26,15 @@ impl ApplicationState {
 thread_local! {
     static APPLICATION_STATE: RefCell<ApplicationState> = const { RefCell::new(ApplicationState::new()) };
 }
-
 #[wasm_bindgen]
 pub fn init() {
     init_logger();
-    info!("PythonRuntime init");
+    info!("initialized");
 }
 
 #[wasm_bindgen]
 pub fn set_channel_buffers(buffers: JsValue) {
-    info!("PythonRuntime set_channel_buffers");
+    info!("set_channel_buffers");
 
     let channel = SharedChannel::from(buffers);
     let (sender, _receiver) = channel.split();
@@ -48,13 +45,14 @@ pub fn set_channel_buffers(buffers: JsValue) {
             "sender has already been set"
         );
     });
+    info!("channel buffers successfully set");
 }
 
 #[wasm_bindgen]
 pub fn send() -> Result<(), JsValue> {
-    info!("PythonRuntime send");
+    info!("send");
 
-    let reponse = ServerToClientMessage::ErrorResponse(ErrorResponseMessage {
+    let response = ServerToClientMessage::ErrorResponse(ErrorResponseMessage {
         id: RequestId(NonZeroU128::new(123).ok_or("impossible")?),
         message: "bla".to_owned(),
     });
@@ -64,9 +62,9 @@ pub fn send() -> Result<(), JsValue> {
             return Err(JsValue::from_str("cannot run without a sender"));
         };
 
-        sender.send(&reponse)
+        sender.send(&response)
     })?;
-    info!("PythonRuntime run terminated");
+    info!("message successfully sent");
 
     Ok(())
 }

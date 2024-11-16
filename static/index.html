@@ -12,41 +12,45 @@
     <link rel="modulepreload" href="wasm-tools/wasm.js" />
 
     <script type="module">
-        const LOG_SRC = "[main]";
         import * as WasmTools from "./wasm-tools/wasm.js";
         import * as PythonRuntime from "./runtime-python/module.js";
 
+        // Logging prefix to identify this thread and module
+        const LOG_SRC = "[main:index.html]";
+        console.info(LOG_SRC, "/--- initializing Main Module ---\\");
+
+        // Capacity of the buffer backing the message channel between the PythonRuntime and the engine
+        const CHANNEL_CAPACITY = 65536;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            console.info(LOG_SRC, "DOMContentLoaded");
+        });
+
+        console.info(LOG_SRC, "initializing WasmTools");
         await WasmTools.default();
+        console.debug(LOG_SRC, "initialized WasmTools", WasmTools);
 
-        console.info(WasmTools);
-        console.info(WasmTools.Channel);
-
-        const BUFFER_SIZE = 65536;
-        let channel_buffers = [new SharedArrayBuffer(4 * 4), new SharedArrayBuffer(BUFFER_SIZE)];
+        console.info(LOG_SRC, "creating buffers backing the message channel");
+        let channel_buffers = [new SharedArrayBuffer(4 * 4), new SharedArrayBuffer(CHANNEL_CAPACITY)];
+        console.debug(LOG_SRC, "buffers", channel_buffers);
 
         // FIXME the message receiver in worker.js should be ready at this point, but without the delay it misses the messages somehow
         window.setTimeout(() => {
-            console.info(LOG_SRC, "setting up channel");
+            console.info(LOG_SRC, "sending the channel buffers to the PythonRuntime");
             PythonRuntime.set_channel_buffers(channel_buffers);
+            console.info(LOG_SRC, "sending the channel buffers to WasmTools");
             WasmTools.set_channel_buffers(channel_buffers);
-            console.info(LOG_SRC, "starting python runtime");
+            console.info(LOG_SRC, "starting PythonRuntime (this will block the containing WebWorker until the script completes)");
             PythonRuntime.run();
         }, 2000);
 
         window.setTimeout(() => {
-            console.log(LOG_SRC, "sending message to python runtime");
+            console.log(LOG_SRC, "sending a message to python runtime which should stop the interpreter and unblock the thread");
             WasmTools.send();
         }, 5000);
 
-        // async function run() {
+        console.info(LOG_SRC, "\\--- Main Module initialized ---/");
     </script>
-    <!-- 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            console.info("start");
-            greet('World');
-        });
-    </script> -->
 </head>
 
 <body>

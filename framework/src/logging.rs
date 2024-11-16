@@ -36,18 +36,21 @@ pub fn init_logger() {
 
 #[cfg(target_arch = "wasm32")]
 pub fn init_logger() {
+    use tracing_subscriber::fmt::format::Pretty;
+
     console_error_panic_hook::set_once();
 
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false) // Only partially supported across browsers
         .without_time() // std::time is not available in browsers, see note below
         .with_writer(tracing_web::MakeWebConsoleWriter::new()); // write events to the console
-    let perf_layer = tracing_web::performance_layer()
-        .with_details_from_fields(tracing_subscriber::fmt::format::Pretty::default());
+    let perf_layer = tracing_web::performance_layer().with_details_from_fields(Pretty::default());
 
     tracing_subscriber::registry()
         .with(fmt_layer)
         .with(perf_layer)
+        .with(target_filter())
+        .with(LevelFilter::from_level(DEFAULT_LEVEL))
         .init(); // Install these as subscribers to tracing events
 
     // let console_writer = tracing_web::MakeWebConsoleWriter::new().with_pretty_level();

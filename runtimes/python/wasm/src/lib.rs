@@ -1,14 +1,16 @@
 //! TODO
 #![allow(missing_docs, reason = "TODO")]
-#![expect(clippy::panic, clippy::missing_panics_doc, reason = "just a demo")]
-
-use std::{cell::RefCell, time::Duration};
+#![expect(
+    clippy::missing_panics_doc,
+    clippy::missing_errors_doc,
+    reason = "just a demo"
+)]
 
 use gam3du_framework::init_logger;
 use gam3du_framework_common::message::ServerToClientMessage;
-use tracing::{error, info};
+use std::{cell::RefCell, time::Duration};
+use tracing::info;
 use wasm_bindgen::prelude::*;
-
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
 
 struct ApplicationState {
@@ -28,12 +30,12 @@ thread_local! {
 #[wasm_bindgen]
 pub fn init() {
     init_logger();
-    info!("PythonRuntime init");
+    info!("initialized");
 }
 
 #[wasm_bindgen]
 pub fn set_channel_buffers(buffers: JsValue) {
-    info!("PythonRuntime set_channel_buffers");
+    info!("set_channel_buffers");
 
     let channel = SharedChannel::from(buffers);
     let (_sender, receiver) = channel.split();
@@ -44,14 +46,15 @@ pub fn set_channel_buffers(buffers: JsValue) {
             "receiver has already been set"
         );
     });
+    info!("channel buffers successfully set");
 }
 
 #[wasm_bindgen]
-pub fn run() {
-    info!("PythonRuntime run");
+pub fn run() -> Result<(), JsValue> {
+    info!("run");
     APPLICATION_STATE.with_borrow_mut(|state| {
         let Some(receiver) = &mut state.receiver else {
-            panic!("cannot run without a receiver");
+            return Err(JsValue::from_str("cannot run without a receiver"));
         };
 
         info!("waiting for message");
@@ -62,14 +65,17 @@ pub fn run() {
                 }
                 Ok(Some(response)) => {
                     info!("received message: {response:?}");
-                    break;
+                    break Ok(());
                 }
                 Err(err) => {
-                    error!("Error while waiting for message: {err:?}");
-                    break;
+                    break Err(JsValue::from(format!(
+                        "Error while waiting for message: {err:?}"
+                    )));
                 }
             }
         }
-    });
+    })?;
+
     info!("PythonRuntime run terminated");
+    Ok(())
 }
