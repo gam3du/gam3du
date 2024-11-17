@@ -21,15 +21,6 @@ rustpython-vm.workspace = true
 tracing.workspace = true
 serde_json = { workspace = true, features = ["std"] }
 winit = { workspace = true, default-features = true }
-# tracing-subscriber = { workspace = true, features = ["env-filter"] }
-
-# [target.'cfg(not(target_os = "wasm32"))'.features]
-# default = ["general_feature"]
-
-# [target.'cfg(target_arch = "wasm32")'.features]
-# gam3du-framework.workspace = { workspace = true, features = ["wasm32"] }
-# default = ["winonly_replacement"]
-
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 

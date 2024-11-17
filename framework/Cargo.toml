@@ -17,10 +17,10 @@ winit = { workspace = true, default-features = true }
 pollster.workspace = true
 web-time.workspace = true
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
 wgpu.workspace = true
 
-[target.'cfg(target_arch = "wasm32")'.dependencies]
+[target.'cfg(target_family = "wasm")'.dependencies]
 wgpu = { workspace = true, features = ["webgl"] }
 tracing-web.workspace = true
 console_error_panic_hook.workspace = true

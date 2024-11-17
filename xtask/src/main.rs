@@ -1,21 +1,34 @@
 //! Provides commands to assist with more complex builds and deployments
+#![cfg_attr(
+    target_family = "wasm",
+    allow(
+        unused_crate_dependencies,
+        reason = "this crate is not supposed to be built on wasm"
+    )
+)]
 
-use std::process::ExitCode;
+#[cfg(target_family = "wasm")]
+fn main() {}
 
+#[cfg(not(target_family = "wasm"))]
 mod ace;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
+mod util;
+#[cfg(not(target_family = "wasm"))]
+mod wasm;
+
+#[cfg(not(target_family = "wasm"))]
 #[path = "tasks/run_wasm.rs"]
 mod run_wasm;
-#[cfg(not(target_arch = "wasm32"))]
-mod util;
-mod wasm;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 #[path = "tasks/web.rs"]
 mod web;
 
-fn main() -> anyhow::Result<ExitCode> {
+#[cfg(not(target_family = "wasm"))]
+fn main() -> anyhow::Result<std::process::ExitCode> {
     use anyhow::Context;
     use pico_args::Arguments;
+    use std::process::ExitCode;
     env_logger::builder()
         .filter_level(log::LevelFilter::Info)
         .parse_default_env()

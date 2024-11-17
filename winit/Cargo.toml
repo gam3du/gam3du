@@ -8,13 +8,14 @@ readme = "README.md"
 
 [dependencies]
 gam3du-framework.workspace = true
-winit = { workspace = true, features = ["default"] }
+winit = { workspace = true, default-features = true }
 wgpu = { workspace = true, features = ["webgl"] }
-image = { workspace = true, default-features = false, features = ["png"] }
-tracing = { workspace = true, default-features = false, features = ["log"] }
+image = { workspace = true, features = ["png"] }
+tracing = { workspace = true, features = ["log"] }
 pollster.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
+# winit = { workspace = true, features = ["web-platform"] }
 web-sys.workspace = true
 wasm-bindgen.workspace = true
 

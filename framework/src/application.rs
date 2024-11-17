@@ -4,7 +4,7 @@ use std::sync::mpsc::{Receiver, Sender};
 use tracing::{debug, info, trace};
 use web_time::{Duration, Instant};
 
-// #[cfg(not(target_arch = "wasm32"))]
+// #[cfg(not(target_family = "wasm"))]
 // use winit::platform::x11::WindowAttributesExtX11;
 use winit::{
     application::ApplicationHandler,
@@ -72,14 +72,14 @@ impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()> ApplicationHa
             .with_title(&self.title)
             .with_surface_size(PhysicalSize::new(1600, 900));
 
-        #[cfg(any(x11_platform, wayland_platform))]
-        if let Some(token) = event_loop.read_token_from_env() {
-            startup_notify::reset_activation_token_env();
-            info!("Using token {:?} to activate a window", token);
-            window_attributes = window_attributes.with_activation_token(token);
-        }
+        // #[cfg(any(x11_platform, wayland_platform))]
+        // if let Some(token) = event_loop.read_token_from_env() {
+        //     startup_notify::reset_activation_token_env();
+        //     info!("Using token {:?} to activate a window", token);
+        //     window_attributes = window_attributes.with_activation_token(token);
+        // }
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(target_family = "wasm")]
         {
             use wasm_bindgen::JsCast;
             use winit::platform::web::WindowAttributesExtWeb;

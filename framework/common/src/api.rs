@@ -102,6 +102,7 @@ pub struct ParameterDescriptor {
 
 /// Describes the set of valid values for a parameter or variable.
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[allow(variant_size_differences, reason = "still small enough")]
 pub enum TypeDescriptor {
     /// Any integer value within the defined range. Unsigned values will typically have a lower bound of `0`
     /// Both bounds are required to fit into `i48` or `u48`.

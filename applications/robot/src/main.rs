@@ -2,6 +2,7 @@
 #![expect(
     clippy::unwrap_used,
     // clippy::expect_used,
+    clippy::todo,
 
     reason = "TODO remove before release"
 )]
@@ -138,7 +139,7 @@ fn async_main() -> ApplicationResult<()> {
     // );
 
     // let (python_thread, python_signal_handler, robot_api_engine_endpoint) = start_python_robot(
-    let (keep_me_around, robot_api_engine_endpoint) = start_python_robot(
+    let (_keep_me_around, robot_api_engine_endpoint) = start_python_robot(
         &storage,
         Path::new("applications/robot/control.api.json"),
         Path::new("applications/robot/python/control"),
@@ -175,7 +176,7 @@ fn async_main() -> ApplicationResult<()> {
     );
 
     info!("main: Entering event loop...");
-    window_event_loop.run_app(&mut application).unwrap(); // BLOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOCKING
+    window_event_loop.run_app(&mut application).unwrap(); // blocking!
     drop(application);
     debug!("main: window event loop exited");
 

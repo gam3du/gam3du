@@ -10,16 +10,17 @@ use winit::dpi::PhysicalSize;
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{Key, NamedKey};
-#[cfg(macos_platform)]
-use winit::platform::macos::{
-    ApplicationHandlerExtMacOS, OptionAsAlt, WindowAttributesExtMacOS, WindowExtMacOS,
-};
-#[cfg(any(x11_platform, wayland_platform))]
-use winit::platform::startup_notify::{
-    self, EventLoopExtStartupNotify, WindowAttributesExtStartupNotify, WindowExtStartupNotify,
-};
-#[cfg(target_arch = "wasm32")]
-use winit::platform::web::{ActiveEventLoopExtWeb, WindowAttributesExtWeb};
+// #[cfg(macos_platform)]
+// use winit::platform::macos::{
+//     ApplicationHandlerExtMacOS, OptionAsAlt, WindowAttributesExtMacOS, WindowExtMacOS,
+// };
+// #[cfg(any(x11_platform, wayland_platform))]
+// use winit::platform::startup_notify::{
+//     self, EventLoopExtStartupNotify, WindowAttributesExtStartupNotify, WindowExtStartupNotify,
+// };
+#[cfg(target_family = "wasm")]
+use winit::platform::web::WindowAttributesExtWeb;
+// use winit::platform::web::{ActiveEventLoopExtWeb, WindowAttributesExtWeb};
 use winit::window::{Icon, Window, WindowAttributes, WindowId};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -68,13 +69,13 @@ impl ApplicationHandler for Application {
 
         match event {
             WindowEvent::ActivationTokenDone { token: _token, .. } => {
-                #[cfg(any(x11_platform, wayland_platform))]
-                {
-                    startup_notify::set_activation_token_env(_token);
-                    if let Err(err) = self.create_window(event_loop, None) {
-                        error!("Error creating new window: {err}");
-                    }
-                }
+                // #[cfg(any(x11_platform, wayland_platform))]
+                // {
+                //     startup_notify::set_activation_token_env(_token);
+                //     if let Err(err) = self.create_window(event_loop, None) {
+                //         error!("Error creating new window: {err}");
+                //     }
+                // }
             }
             WindowEvent::SurfaceResized(size) => {
                 window_state.resize(size);
@@ -131,14 +132,14 @@ impl ApplicationHandler for Application {
             .with_surface_size(PhysicalSize::new(800, 600))
             .with_window_icon(Some(self.icon.clone()));
 
-        #[cfg(any(x11_platform, wayland_platform))]
-        if let Some(token) = event_loop.read_token_from_env() {
-            startup_notify::reset_activation_token_env();
-            info!("Using token {:?} to activate a window", token);
-            window_attributes = window_attributes.with_activation_token(token);
-        }
+        // #[cfg(any(x11_platform, wayland_platform))]
+        // if let Some(token) = event_loop.read_token_from_env() {
+        //     startup_notify::reset_activation_token_env();
+        //     info!("Using token {:?} to activate a window", token);
+        //     window_attributes = window_attributes.with_activation_token(token);
+        // }
 
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(target_family = "wasm")]
         {
             use wasm_bindgen::JsCast;
             // use winit::platform::web::WindowBuilderExtWebSys;

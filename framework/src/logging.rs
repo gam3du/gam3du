@@ -22,7 +22,7 @@ fn target_filter() -> filter::Targets {
         .with_target("engine_robot::model", Level::INFO)
 }
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(target_family = "wasm"))]
 pub fn init_logger() {
     // A layer that logs events to stdout using the human-readable "pretty" format.
     let logger = tracing_subscriber::fmt::layer().pretty();
@@ -34,7 +34,7 @@ pub fn init_logger() {
         .init();
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(target_family = "wasm")]
 pub fn init_logger() {
     use tracing_subscriber::fmt::format::Pretty;
 
