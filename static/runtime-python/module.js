@@ -1,5 +1,5 @@
 // this module is responsible for starting and managing a WebWorker running a PythonRuntime
-// it is supposed to be loaded by the main thread within the index.html
+// it is supposed to be loaded by the main thread within the index.html/index.js
 
 const LOG_SRC = "[main:runtime-python/module.js]";
 console.info(LOG_SRC, "/--- initializing Python Module ---\\");

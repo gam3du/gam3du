@@ -8,17 +8,52 @@
     <title>Gam3du - Educational programming platform</title>
 
     <link rel="stylesheet" href="style.css" />
+
+    <link rel="modulepreload" href="ace/ace.js" />
+    <link rel="modulepreload" href="application/module.js" />
+    <link rel="modulepreload" href="application/wasm.js" />
     <link rel="modulepreload" href="index.js" />
     <link rel="modulepreload" href="runtime-python/module.js" />
-    <link rel="modulepreload" href="runtime-python/worker.js" />
     <link rel="modulepreload" href="runtime-python/wasm.js" />
+    <link rel="modulepreload" href="runtime-python/worker.js" />
     <link rel="modulepreload" href="wasm-tools/wasm.js" />
 
     <script type="module" src="index.js"></script>
+
+    <script src="ace/ace.js"></script>
+    <script>
+        const LOG_SRC = "main:index.html";
+
+        document.addEventListener("DOMContentLoaded", function () {
+            console.info(LOG_SRC, "DOMContentLoaded");
+
+            console.info(LOG_SRC, "initialize ACE editor", ace);
+            ace.config.set("basePath", "ace");
+            var editor = ace.edit("editor");
+            editor.setTheme("ace/theme/monokai");
+            editor.session.setMode("ace/mode/python");
+        });
+    </script>
 </head>
 
 <body>
-    nothing
+    <main>
+        <div id="controls">
+            <button>⏵⏸⏹⏯🗘🗙↺↻⟲⟳🚀 Run</button>
+        </div>
+
+        <div id="editor">Python code goes here</div>
+
+        <canvas id="canvas"></canvas>
+
+        <ul id="log">
+            <li class="info">Something good</li>
+            <li class="warn">Something bad</li>
+            <li class="error">Something ugly</li>
+            <li class="debug">Something curious</li>
+            <li class="trace">Something noisy</li>
+        </ul>
+    </main>
 </body>
 
 </html>

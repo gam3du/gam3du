@@ -1,5 +1,9 @@
+// This is the main entry point of the web-application coordinating the
+// loading, initialization and start of all components
+
 import * as WasmTools from "./wasm-tools/wasm.js";
 import * as PythonRuntime from "./runtime-python/module.js";
+import * as Engine from "./application/module.js";
 
 // Logging prefix to identify this thread and module
 const LOG_SRC = "[main:index.html]";
@@ -7,10 +11,6 @@ console.info(LOG_SRC, "/--- initializing Main Module ---\\");
 
 // Capacity of the buffer backing the message channel between the PythonRuntime and the engine
 const CHANNEL_CAPACITY = 65536;
-
-document.addEventListener("DOMContentLoaded", function () {
-    console.info(LOG_SRC, "DOMContentLoaded");
-});
 
 console.info(LOG_SRC, "initializing WasmTools");
 await WasmTools.default();

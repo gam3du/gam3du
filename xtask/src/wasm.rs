@@ -28,6 +28,7 @@ pub(crate) fn check_wasm_programs(no_serve: bool) -> anyhow::Result<()> {
 pub(crate) fn build_wasm(
     shell: &Shell,
     package_name: &str,
+    binary_name: &str,
     is_release: bool,
     target_path: &Path,
     cargo_args: &[OsString],
@@ -46,7 +47,8 @@ pub(crate) fn build_wasm(
     .run()
     .context("Failed to build {package_name} as wasm32")?;
 
-    let mangled_name = package_name.replace('-', "_");
+    // TODO figure out why applications have no name mangling while libs have
+    let mangled_name = binary_name; // package_name.replace('-', "_");
     let target_dir = target_path
         .parent()
         .ok_or_else(|| anyhow::format_err!("cannot get directory of {}", target_path.display()))?;
