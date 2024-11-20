@@ -1,10 +1,11 @@
-use tracing::{level_filters::LevelFilter, Level};
+use tracing::Level;
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
 
 const DEFAULT_LEVEL: Level = Level::TRACE;
 
 fn target_filter() -> filter::Targets {
     filter::Targets::new()
+        .with_default(DEFAULT_LEVEL)
         .with_target("cranelift_codegen", Level::INFO)
         .with_target("wasmtime_cranelift", Level::INFO)
         .with_target("wasmtime", Level::INFO)
@@ -30,7 +31,6 @@ pub fn init_logger() {
     tracing_subscriber::registry()
         .with(logger)
         .with(target_filter())
-        .with(LevelFilter::from_level(DEFAULT_LEVEL))
         .init();
 }
 
@@ -50,7 +50,6 @@ pub fn init_logger() {
         .with(fmt_layer)
         .with(perf_layer)
         .with(target_filter())
-        .with(LevelFilter::from_level(DEFAULT_LEVEL))
         .init(); // Install these as subscribers to tracing events
 
     // let console_writer = tracing_web::MakeWebConsoleWriter::new().with_pretty_level();
