@@ -134,9 +134,9 @@ dependencies = [
  "lib-file-storage",
  "runtime-python",
  "runtime-python-bindgen",
- "rustpython-vm",
  "serde_json",
  "tracing",
+ "wasm-bindgen",
  "web-time",
  "winit 0.30.5",
 ]

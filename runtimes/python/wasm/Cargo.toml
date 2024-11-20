@@ -13,11 +13,6 @@ crate-type = ["cdylib", "rlib"]
 gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
 tracing.workspace = true
-wasm-bindgen.workspace = true
-wasm-rs-shared-channel = { workspace = true, features = [
-    "serde",
-    "serde-bincode",
-] }
 
 # web-time.workspace = true
 # runtime-python.workspace = true
@@ -29,6 +24,13 @@ wasm-rs-shared-channel = { workspace = true, features = [
 # wasm-rs-dbg = "0.1"
 # serde.workspace = true
 # console_error_panic_hook.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+wasm-bindgen.workspace = true
+wasm-rs-shared-channel = { workspace = true, features = [
+    "serde",
+    "serde-bincode",
+] }
 
 [lints]
 workspace = true

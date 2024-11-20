@@ -41,7 +41,7 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
     build_wasm(
         shell,
         "application-robot",
-        "application-robot",
+        "application_robot",
         is_release,
         &target_dir.join("application/wasm"),
         &cargo_args,

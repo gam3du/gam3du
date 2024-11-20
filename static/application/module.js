@@ -6,8 +6,12 @@ import * as Application from "./wasm.js";
 const LOG_SRC = "[main:application/module.js]";
 console.info(LOG_SRC, "/--- initializing Application Module ---\\");
 
-// console.info(LOG_SRC, "initializing Application");
-// await Application.default();
-// console.debug(LOG_SRC, "initialized Application", Application);
+console.info(LOG_SRC, "initializing Application");
+await Application.default();
+console.debug(LOG_SRC, "initialized Application", Application);
+
+console.info(LOG_SRC, "starting application");
+Application.start();
+console.debug(LOG_SRC, "application completed");
 
 console.info(LOG_SRC, "\\--- Application Module initialized ---/");

@@ -26,6 +26,7 @@ impl ApplicationState {
 thread_local! {
     static APPLICATION_STATE: RefCell<ApplicationState> = const { RefCell::new(ApplicationState::new()) };
 }
+
 #[wasm_bindgen]
 pub fn init() {
     init_logger();

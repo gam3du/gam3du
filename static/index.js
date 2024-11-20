@@ -15,6 +15,7 @@ const CHANNEL_CAPACITY = 65536;
 console.info(LOG_SRC, "initializing WasmTools");
 await WasmTools.default();
 console.debug(LOG_SRC, "initialized WasmTools", WasmTools);
+await WasmTools.init();
 
 console.info(LOG_SRC, "creating buffers backing the message channel");
 let channel_buffers = [new SharedArrayBuffer(4 * 4), new SharedArrayBuffer(CHANNEL_CAPACITY)];
