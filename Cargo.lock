@@ -128,6 +128,7 @@ checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
 name = "application-robot"
 version = "0.1.0"
 dependencies = [
+ "bincode",
  "engine-robot",
  "gam3du-framework",
  "gam3du-framework-common",
@@ -137,6 +138,7 @@ dependencies = [
  "serde_json",
  "tracing",
  "wasm-bindgen",
+ "wasm-rs-shared-channel",
  "web-time",
  "winit 0.30.5",
 ]

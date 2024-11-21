@@ -2,6 +2,7 @@
     "rust-analyzer.check.command": "clippy",
     "cSpell.words": [
         "ansi",
+        "bincode",
         "bindgen",
         "bitor",
         "builtins",

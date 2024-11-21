@@ -16,6 +16,14 @@ pub trait FileStorage {
     fn get_content(&self, path: &Path) -> Result<Cow<'_, [u8]>, String>;
 }
 
+// pub struct NullStorage;
+
+// impl FileStorage for NullStorage {
+//     fn get_content(&self, _path: &Path) -> Result<Cow<'_, [u8]>, String> {
+//         Err("cannot retrieve anything from a NullStorage".into())
+//     }
+// }
+
 #[derive(Default)]
 pub struct StaticStorage {
     files: HashMap<PathBuf, Vec<u8>>,

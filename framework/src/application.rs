@@ -15,7 +15,12 @@ use winit::{
     window::{WindowAttributes, WindowId},
 };
 
-pub struct Application<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()> {
+pub trait GameLoopRunner {
+    fn init(&mut self);
+    fn update(&mut self);
+}
+
+pub struct Application<RendererBuilder: renderer::RendererBuilder, Runner: GameLoopRunner> {
     renderer_builder: Option<RendererBuilder>,
     title: String,
     frame_counter: u32,
@@ -23,18 +28,18 @@ pub struct Application<RendererBuilder: renderer::RendererBuilder, Updater: FnMu
     event_sink: Sender<FrameworkEvent>,
     framework_events: Receiver<FrameworkEvent>,
     render_surface: Option<RenderSurface<RendererBuilder::Renderer>>,
-    game_loop_updater: Updater,
+    runner: Runner,
 }
 
-impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()>
-    Application<RendererBuilder, Updater>
+impl<RendererBuilder: renderer::RendererBuilder, Runner: GameLoopRunner>
+    Application<RendererBuilder, Runner>
 {
     pub fn new(
         title: impl Into<String>,
         event_sender: Sender<FrameworkEvent>,
         renderer_builder: RendererBuilder,
         framework_events: Receiver<FrameworkEvent>,
-        game_loop_updater: Updater,
+        runner: Runner,
     ) -> Self {
         Self {
             title: title.into(),
@@ -44,7 +49,7 @@ impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()>
             renderer_builder: Some(renderer_builder),
             framework_events,
             render_surface: None,
-            game_loop_updater,
+            runner,
         }
     }
 
@@ -62,8 +67,8 @@ impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()>
     }
 }
 
-impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()> ApplicationHandler
-    for Application<RendererBuilder, Updater>
+impl<RendererBuilder: renderer::RendererBuilder, Runner: GameLoopRunner> ApplicationHandler
+    for Application<RendererBuilder, Runner>
 {
     fn can_create_surfaces(&mut self, event_loop: &dyn ActiveEventLoop) {
         // Create initial window.
@@ -110,6 +115,9 @@ impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()> ApplicationHa
             self.render_surface.replace(render_surface).is_none(),
             "Double initialization of the main window"
         );
+
+        info!("initializing game loop");
+        self.runner.init();
     }
 
     fn proxy_wake_up(&mut self, event_loop: &dyn ActiveEventLoop) {
@@ -149,7 +157,7 @@ impl<RendererBuilder: renderer::RendererBuilder, Updater: FnMut()> ApplicationHa
                     trace!("cannot redraw a not (yet?) existing surface");
                     return;
                 };
-                (self.game_loop_updater)();
+                self.runner.update();
                 render_surface.redraw();
                 self.update_fps();
             }

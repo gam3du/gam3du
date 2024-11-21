@@ -6,8 +6,10 @@ console.info(LOG_SRC, "/--- initializing Python Module ---\\");
 
 let worker;
 
-export function start_worker(channel_buffers) {
+export function start_worker(channel_buffers, on_python_message) {
     console.info(LOG_SRC, "start_worker", channel_buffers);
+
+    // TODO use `on_python_message`
 
     console.info(LOG_SRC, "starting Python Worker");
     worker = new Worker("./runtime-python/worker.js", { type: "module" });
@@ -19,8 +21,8 @@ export function start_worker(channel_buffers) {
             let message = message_event.data;
             console.info(LOG_SRC, "message from RuntimePython worker → main", message_event.data);
             switch (message.type) {
-                case "init":
-                    console.info(LOG_SRC, "worker successfully initialized");
+                case "loaded":
+                    console.info(LOG_SRC, "worker successfully loaded");
 
                     console.info(LOG_SRC, "sending the channel buffers to the PythonRuntime");
                     set_channel_buffers(channel_buffers);

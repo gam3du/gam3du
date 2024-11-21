@@ -14,25 +14,28 @@ gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
 engine-robot.workspace = true
 runtime-python.workspace = true
-lib-file-storage.workspace = true
 
+winit = { workspace = true, default-features = true }
+serde_json = { workspace = true, features = ["std"] }
+# rustpython-vm.workspace = true
 # web-time.workspace = true
 # "signal", 
+tracing.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+lib-file-storage.workspace = true
 # tokio = { workspace = true, features = ["rt", "macros", "time"] }
 # tokio-util = { workspace = true }
-# rustpython-vm.workspace = true
-tracing.workspace = true
-serde_json = { workspace = true, features = ["std"] }
-winit = { workspace = true, default-features = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen.workspace = true
 web-time.workspace = true
 # js-sys.workspace = true
-# wasm-rs-shared-channel = { workspace = true, features = [
-#     "serde",
-#     "serde-bincode",
-# ] }
+bincode.workspace = true
+wasm-rs-shared-channel = { workspace = true, features = [
+    "serde",
+    "serde-bincode",
+] }
 
 [build-dependencies]
 gam3du-framework-common.workspace = true

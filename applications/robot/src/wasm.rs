@@ -1,88 +1,141 @@
+use crate::error::ApplicationError;
 use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder};
-use gam3du_framework::{application::Application, init_logger};
-use gam3du_framework_common::{
-    api::{self, ApiClientEndpoint, ApiDescriptor, ApiServerEndpoint},
-    event::{ApplicationEvent, FrameworkEvent},
+use gam3du_framework::{
+    application::{Application, GameLoopRunner},
+    init_logger,
 };
-use lib_file_storage::{FileStorage, StaticStorage};
+use gam3du_framework_common::{
+    api::{self, ApiClientEndpoint, ApiDescriptor},
+    event::FrameworkEvent,
+    message::{ClientToServerMessage, ServerToClientMessage},
+};
 use runtime_python::PythonRuntimeBuilder;
 use std::{
+    cell::RefCell,
     path::Path,
     sync::{self, mpsc::channel, Arc},
-    // thread,
 };
-// use tokio::join;
-// use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, info};
+use tracing::{info, trace};
 use wasm_bindgen::prelude::*;
+use wasm_rs_shared_channel::spsc;
 use web_time::Instant;
-use winit::event_loop::{ControlFlow, EventLoop};
+use winit::event_loop::EventLoop;
 use winit::platform::web::EventLoopExtWeb;
 
-use crate::error::ApplicationResult;
-
 const WINDOW_TITLE: &str = "Robot";
+
+// const CONTROL_API_PATH: &str = "applications/robot/control.api.json";
+const API_JSON: &str = include_str!("../control.api.json");
+
+#[wasm_bindgen(raw_module = "./module.js")]
+extern "C" {
+    /// queries for new api requests from a remote controller (e.g. a Python Script)
+    fn poll_api_client_request() -> Option<Vec<u8>>;
+}
+
+struct ApplicationState {
+    api_client_sender: Option<spsc::Sender<ServerToClientMessage>>,
+}
+
+impl ApplicationState {
+    const INIT: Self = Self {
+        api_client_sender: None,
+    };
+}
+
+thread_local! {
+    static APPLICATION_STATE: RefCell<ApplicationState> = const { RefCell::new(ApplicationState::INIT) };
+}
+
+// fn create_storage() -> StaticStorage {
+//     let mut storage = StaticStorage::default();
+
+//     storage.store(
+//         Path::new(CONTROL_API_PATH),
+//         include_bytes!("../control.api.json").into(),
+//     );
+
+//     storage
+// }
 
 #[wasm_bindgen]
 pub fn init() -> Result<(), JsValue> {
     init_logger();
     info!("initialized");
+
     Ok(())
 }
 
+/// connect an api client to this instance by sending its underlying share buffers
 #[wasm_bindgen]
-pub fn start() -> Result<(), JsValue> {
-    match guarded_main() {
-        Ok(()) => {
-            info!("init successful");
-            Ok(())
-        }
-        Err(err) => {
-            error!("init exited with error: {err}");
-            Err(err.into())
-        }
-    }
+pub fn connect_api_client(channel_buffers: JsValue) {
+    info!("connect_api_client");
+
+    let channel = spsc::SharedChannel::from(channel_buffers);
+    let (sender, _receiver) = channel.split();
+
+    APPLICATION_STATE.with_borrow_mut(|state| {
+        assert!(
+            state.api_client_sender.replace(sender).is_none(),
+            "sender has already been set"
+        );
+    });
+    info!("channel buffers successfully set");
 }
 
-struct GameLoopRunner {
+struct Runner {
     timestamp: Instant,
     game_loop: GameLoop<PythonPlugin>,
     event_source: sync::mpsc::Receiver<FrameworkEvent>,
+    api_client_endpoint: ApiClientEndpoint,
+    api_client_sender: spsc::Sender<ServerToClientMessage>,
 }
 
-impl GameLoopRunner {
+impl Runner {
     fn new(
-        // robot_api_engine_endpoint: ApiServerEndpoint,
-        game_state: Arc<sync::RwLock<Box<GameState>>>,
+        game_loop: GameLoop<PythonPlugin>,
         event_receiver: sync::mpsc::Receiver<FrameworkEvent>,
+        api_client_endpoint: ApiClientEndpoint,
+        api_client_sender: spsc::Sender<ServerToClientMessage>,
     ) -> Self {
-        // let mut python_runtime_builder = PythonRuntimeBuilder::new(
-        // Path::new("applications/robot/python/plugin"),
-        // "robot_plugin",
-        // );
-        // python_runtime_builder.add_api_server(robot_api_engine_endpoint);
-        // let plugin = PythonPlugin::new(python_runtime_builder);
-
-        // the game loop might not be `Send`, so we need to create it from within the thread
-        let mut game_loop = GameLoop::new(game_state);
-
-        // let mut plugin = NativePlugin::new();
-        // plugin.add_robot_controller(robot_api_engine_endpoint);
-        // game_loop.add_plugin(plugin);
-
-        // debug!("thread[game loop]: starting game loop");
-        // game_loop.run(&event_receiver);
-        // debug!("thread[game loop]: game loop returned");
-
-        game_loop.init();
         Self {
             timestamp: Instant::now(),
             game_loop,
             event_source: event_receiver,
+            api_client_endpoint,
+            api_client_sender,
         }
+    }
+}
+
+impl GameLoopRunner for Runner {
+    fn init(&mut self) {
+        self.timestamp = Instant::now();
+        self.game_loop.init();
     }
 
     fn update(&mut self) {
+        // TODO rather than forwarding all messages between the WASM channels and the Plugin-Endpoints, it would make more sense to implement "WASM-aware" endpoints and send those to the Plugin
+        // this requires the Endpoint types to be abstracted as traits and more generics (or dyn) within the Engine/Plugin
+
+        // forward outgoing messages from the plugin to the control script running in a web worker
+        while let Some(response) = self.api_client_endpoint.poll_response() {
+            trace!("received response from the plugin: {response:#?}");
+
+            trace!("forwarding message to Python Worker");
+            self.api_client_sender.send(&response).unwrap();
+        }
+
+        // forward incoming messages from the control script running in a web worker to the plugin
+        while let Some(request_bytes) = poll_api_client_request() {
+            let request = bincode::deserialize(&request_bytes).unwrap();
+            trace!("received request from PythonWorker: {request:#?}");
+
+            trace!("forwarding message to plugin");
+            let message = ClientToServerMessage::Request(request);
+            self.api_client_endpoint.send_to_server(message);
+        }
+
         if let Some(timestamp) = self.game_loop.progress(&self.event_source, self.timestamp) {
             self.timestamp = timestamp;
         } else {
@@ -91,277 +144,95 @@ impl GameLoopRunner {
     }
 }
 
-// #[expect(clippy::too_many_lines, reason = "TODO split this up later")]
-#[expect(clippy::unnecessary_wraps, reason = "TODO")]
-fn guarded_main() -> ApplicationResult<()> {
-    // return ApplicationResult::Ok(());
-    // let mut storage = StaticStorage::default();
-
-    // storage.store(
-    //     Path::new("applications/robot/control.api.json"),
-    //     include_bytes!("../control.api.json").into(),
-    // );
-
-    let window_event_loop = EventLoop::new().unwrap();
-    // window_event_loop.set_control_flow(ControlFlow::Poll);
-    let window_proxy = window_event_loop.create_proxy();
-
-    // let cancellation_token = CancellationToken::new();
-
-    // let ctrl_c_task = ctrl_c_task(cancellation_token.clone());
-
+#[wasm_bindgen]
+pub fn start() -> Result<(), JsValue> {
+    info!("creating framework event channel");
     let (event_sender, event_receiver) = channel();
-    let (window_event_sender, window_event_receiver) = channel();
-    // register_ctrlc(&event_sender);
 
-    let game_state = GameState::new((10, 10));
-    let shared_game_state = game_state.into_shared();
+    info!("creating framework event channel");
+    // this is used to send framework messages to the event loop
+    // at the moment only `Exit` will be handled and no one ever issues this event
+    // remember to trigger a window proxy to make sure this event will be polled
+    let (_window_event_sender, framework_event_receiver) = channel();
 
-    // let (main_window_task, window_proxy) = open_main_window(
-    //     Arc::clone(&shared_game_state),
-    //     event_sender.clone(),
-    //     window_event_receiver,
-    // );
+    // info!("creating static file storage");
+    // let storage = create_storage();
 
-    // let (python_thread, python_signal_handler, robot_api_engine_endpoint) = start_python_robot(
-    // let (_keep_me_around, robot_api_engine_endpoint) = start_python_robot(
-    //     &storage,
-    //     Path::new("applications/robot/control.api.json"),
+    info!("creating python runtime builder for engine plugin");
+    let mut python_runtime_builder = PythonRuntimeBuilder::new(
+        Path::new("applications/robot/python/plugin"),
+        "robot_plugin",
+    );
+
+    info!("creating channel for a control script to communicate with the plugin");
+    // let (robot_control_api_client_endpoint, robot_control_api_engine_endpoint) = start_python_robot(
     //     Path::new("applications/robot/python/control"),
     //     "robot",
     // );
 
-    // let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);
+    // fn start_python_robot(
+    //     _python_sys_path: &Path, = Path::new("applications/robot/python/control"),
+    //     _python_main_module: &str, = "robot",
+    // ) -> (ApiClientEndpoint, ApiServerEndpoint) {
+    // let api_json = storage.get_content(Path::new(CONTROL_API_PATH)).unwrap();
+    let robot_api: ApiDescriptor = serde_json::from_str(API_JSON).unwrap();
 
-    // let game_loop_thread = {
-    //     let game_state = Arc::clone(&shared_game_state);
-    //     thread::spawn(move || {})
-    // };
-
-    let mut game_loop_runner = GameLoopRunner::new(
-        // robot_api_engine_endpoint,
-        Arc::clone(&shared_game_state),
-        event_receiver,
-    );
-
-    let application = Application::new(
-        WINDOW_TITLE,
-        event_sender,
-        RendererBuilder::new(
-            shared_game_state,
-            include_str!("../../../engines/robot/shaders/robot.wgsl").into(),
-        ),
-        window_event_receiver,
-        move || {
-            game_loop_runner.update();
-        },
-    );
-
-    info!("main: Entering event loop...");
-    window_event_loop.spawn_app(application); // blocking!
-    debug!("main: window event loop exited");
-
-    // info!("Normal operation. Waiting for any task to terminate …");
-    // let mut debug_timer = Instant::now();
-    // loop {
-    //     // if ctrl_c_task.is_finished() {
-    //     //     info!("CTRL+C task completed first");
-    //     //     break;
-    //     // }
-    //     // if main_window_task.is_finished() {
-    //     //     info!("main window task completed first");
-    //     //     break;
-    //     // }
-    //     // if python_thread.is_finished() {
-    //     //     info!("python thread completed first");
-    //     //     break;
-    //     // }
-    //     if game_loop_thread.is_finished() {
-    //         info!("game loop thread completed first");
-    //         break;
-    //     }
-
-    //     thread::sleep(Duration::from_millis(50));
-    //     // tokio::time::sleep(Duration::from_millis(50)).await;
-    //     if debug_timer.elapsed() > Duration::from_secs(1) {
-    //         debug!("waiting for any task to terminate …");
-    //         debug_timer = Instant::now();
-    //     }
-    // }
-
-    // if cancellation_token.is_cancelled() {
-    //     debug!("cancellation via token is already in progress");
-    // } else {
-    //     debug!("cancelling all tasks via token");
-    //     cancellation_token.cancel();
-    // }
-
-    // match window_event_sender.send(ApplicationEvent::Exit.into()) {
-    //     Ok(()) => {
-    //         window_proxy.wake_up();
-    //         debug!("exit event successfully sent to main window");
-    //     }
-    //     Err(error) => {
-    //         debug!("failed to send exit event to main window: {error}");
-    //     }
-    // }
-
-    // {
-    //     debug!("cancelling python runtime via interrupt");
-    //     // todo move this back into some helper (see PythonRunnerThread::stop)
-    //     let make_interrupt: UserSignal = Box::new(|vm| {
-    //         // Copied from rustpython_vm::stdlib::signal::_signal::default_int_handler
-    //         let exec_type = vm.ctx.exceptions.keyboard_interrupt.to_owned();
-    //         Err(vm.new_exception_empty(exec_type))
-    //     });
-    //     match python_signal_handler.send(make_interrupt) {
-    //         Ok(()) => {
-    //             debug!("interrupt successfully sent to python runtime");
-    //         }
-    //         Err(error) => {
-    //             error!("failed to send interrupt to python runtime: {error}");
-    //         }
-    //     }
-    // }
-
-    // {
-    //     match event_sender.send(FrameworkEvent::Application {
-    //         event: ApplicationEvent::Exit,
-    //     }) {
-    //         Ok(()) => {
-    //             debug!("exit event successfully sent to game loop");
-    //         }
-    //         Err(error) => {
-    //             error!("failed to send exit event to game loop: {error}");
-    //         }
-    //     }
-    // }
-
-    // info!("waiting for all remaining tasks to complete …");
-    // let (ctrl_c_task_result, main_window_task_result) = join!(ctrl_c_task, main_window_task);
-    // debug!("all tasks completed");
-
-    // match main_window_task_result {
-    //     Ok(Ok(())) => {
-    //         info!("main window task terminated normally");
-    //     }
-    //     Ok(Err(application_error)) => {
-    //         error!("main window task terminated with application error: {application_error}");
-    //     }
-    //     Err(join_error) => {
-    //         error!("main window task terminated with join error: {join_error}");
-    //     }
-    // }
-
-    // match ctrl_c_task_result {
-    //     Ok(()) => {
-    //         info!("CTRL+C task terminated normally");
-    //     }
-    //     Err(join_error) => {
-    //         error!("CTRL+C task terminated with join error: {join_error}");
-    //     }
-    // }
-
-    // debug!("Waiting for game loop to exit …");
-    // match game_loop_thread.join() {
-    //     Ok(()) => {
-    //         info!("game loop thread terminated normally");
-    //     }
-    //     Err(error) => {
-    //         error!("game loop thread terminated with error: {error:?}");
-    //     }
-    // }
-
-    // debug!("Waiting for python vm to exit …");
-    // match python_thread.join() {
-    //     Ok(()) => {
-    //         info!("python thread terminated normally");
-    //     }
-    //     Err(error) => {
-    //         error!("python thread terminated with error: {error:?}");
-    //     }
-    // }
-
-    Ok(())
-}
-
-// fn ctrl_c_task(cancellation_token: CancellationToken) -> tokio::task::JoinHandle<()> {
-//     tokio::task::spawn_local(async move {
-//         tokio::select! {
-//             // TODO not supported on WASM
-//             // result = tokio::signal::ctrl_c() => {
-//             //     match result {
-//             //         Ok(()) => {
-//             //             info!("CTRL+C pressed");
-//             //         },
-//             //         Err(error) => {
-//             //             warn!("cannot wait for CTRL+C: {error}");
-//             //             // wait for regular external cancellation instead
-//             //             cancellation_token.cancelled().await;
-//             //         }
-//             //     }
-//             // }
-//             () = cancellation_token.cancelled() => {
-//                 debug!("CTRL+C-task has been cancelled by token");
-//             }
-//         }
-//     })
-// }
-
-// fn open_main_window(
-//     shared_game_state: SharedGameState,
-//     event_sender: sync::mpsc::Sender<FrameworkEvent>,
-//     framework_events: sync::mpsc::Receiver<FrameworkEvent>,
-// ) -> (
-//     // tokio::task::JoinHandle<ApplicationResult<()>>,
-//     EventLoopProxy,
-// ) {
-//     let window_event_loop = EventLoop::new().unwrap();
-//     window_event_loop.set_control_flow(ControlFlow::Poll);
-//     let window_proxy = window_event_loop.create_proxy();
-
-//     let main_window_task = tokio::task::spawn_local(async move {
-//         let mut application = Application::new(
-//             WINDOW_TITLE,
-//             event_sender,
-//             RendererBuilder::new(shared_game_state),
-//             framework_events,
-//         );
-
-//         log::info!("main: Entering event loop...");
-//         window_event_loop.run_app(&mut application).unwrap();
-//         drop(application);
-//         log::debug!("main: window event loop exited");
-
-//         Ok(())
-//     });
-
-//     (main_window_task, window_proxy)
-// }
-
-fn start_python_robot(
-    storage: &dyn FileStorage,
-    robot_api_descriptor_path: &Path,
-    _python_sys_path: &Path,
-    _python_main_module: &str,
-) -> (ApiClientEndpoint, ApiServerEndpoint) {
-    let api_json = storage
-        .get_content(Path::new(robot_api_descriptor_path))
-        .unwrap();
-    let robot_api: ApiDescriptor = serde_json::from_slice(&api_json).unwrap();
-
-    let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);
+    let (robot_control_api_client_endpoint, robot_control_api_engine_endpoint) =
+        api::channel(robot_api);
 
     // let mut python_builder = PythonRuntimeBuilder::new(python_sys_path, python_main_module);
 
     // let user_signal_sender = python_builder.enable_user_signals();
-    // python_builder.add_api_client(robot_api_script_endpoint);
+    // python_builder.add_api_client(robot_control_api_client_endpoint);
     // let python_runner_thread = python_builder.build_runner_thread();
 
-    (
-        // python_runner_thread,
-        // user_signal_sender,
-        robot_api_script_endpoint,
-        robot_api_engine_endpoint,
-    )
+    info!("connecting control channel to plugin");
+    python_runtime_builder.add_api_server(robot_control_api_engine_endpoint);
+
+    info!("creating engine plugin");
+    let plugin = PythonPlugin::new(python_runtime_builder);
+
+    info!("creating initial game state");
+    let game_state = GameState::new((10, 10));
+    let shared_game_state = game_state.into_shared();
+    let mut game_loop = GameLoop::new(Arc::clone(&shared_game_state));
+    game_loop.add_plugin(plugin);
+
+    let api_client_sender = APPLICATION_STATE
+        .with_borrow_mut(|state| state.api_client_sender.take())
+        .ok_or("api client sender not initialized")?;
+
+    info!("creating game loop runner");
+    let game_loop_runner = Runner::new(
+        game_loop,
+        event_receiver,
+        robot_control_api_client_endpoint,
+        api_client_sender,
+    );
+
+    info!("creating renderer builder");
+    let renderer_builder = RendererBuilder::new(
+        shared_game_state,
+        include_str!("../../../engines/robot/shaders/robot.wgsl").into(),
+    );
+
+    info!("creating application");
+    let application = Application::new(
+        WINDOW_TITLE,
+        event_sender,
+        renderer_builder,
+        framework_event_receiver,
+        game_loop_runner,
+    );
+
+    info!("creating event loop");
+    let event_loop = EventLoop::new().map_err(ApplicationError::from)?;
+    // event_loop.set_control_flow(ControlFlow::Poll); // this causes too much load in the browser
+    // let event_loop_proxy = event_loop.create_proxy(); // currently unused
+
+    info!("starting application event loop...");
+    event_loop.spawn_app(application);
+
+    info!("application started successfully");
+    Ok(())
 }

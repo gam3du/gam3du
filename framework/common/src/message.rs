@@ -50,7 +50,7 @@ impl Display for RequestId {
 }
 
 /// Asks the receiver to perform an operation and return a response containing the result.
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RequestMessage {
     /// UUID used to track corresponding messages
     pub id: RequestId,
