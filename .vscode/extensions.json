@@ -4,6 +4,8 @@
         "hediet.vscode-drawio",
         "tamasfe.even-better-toml",
         "davidanson.vscode-markdownlint",
-        "rust-lang.rust-analyzer"
+        "rust-lang.rust-analyzer",
+        "streetsidesoftware.code-spell-checker",
+        "gruntfuggly.todo-tree"
     ]
 }
