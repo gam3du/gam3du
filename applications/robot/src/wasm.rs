@@ -5,7 +5,8 @@ use gam3du_framework::{
     init_logger,
 };
 use gam3du_framework_common::{
-    api::{self, ApiClientEndpoint, ApiDescriptor},
+    api::ApiDescriptor,
+    api_channel::{self, ApiClientEndpoint, NativeApiClientEndpoint},
     event::FrameworkEvent,
     message::{ClientToServerMessage, ServerToClientMessage},
 };
@@ -87,7 +88,7 @@ struct Runner {
     timestamp: Instant,
     game_loop: GameLoop<PythonPlugin>,
     event_source: sync::mpsc::Receiver<FrameworkEvent>,
-    api_client_endpoint: ApiClientEndpoint,
+    api_client_endpoint: NativeApiClientEndpoint,
     api_client_sender: spsc::Sender<ServerToClientMessage>,
 }
 
@@ -95,7 +96,7 @@ impl Runner {
     fn new(
         game_loop: GameLoop<PythonPlugin>,
         event_receiver: sync::mpsc::Receiver<FrameworkEvent>,
-        api_client_endpoint: ApiClientEndpoint,
+        api_client_endpoint: NativeApiClientEndpoint,
         api_client_sender: spsc::Sender<ServerToClientMessage>,
     ) -> Self {
         Self {
@@ -178,7 +179,7 @@ pub fn start() -> Result<(), JsValue> {
     let robot_api: ApiDescriptor = serde_json::from_str(API_JSON).unwrap();
 
     let (robot_control_api_client_endpoint, robot_control_api_engine_endpoint) =
-        api::channel(robot_api);
+        api_channel::channel(robot_api);
 
     // let mut python_builder = PythonRuntimeBuilder::new(python_sys_path, python_main_module);
 

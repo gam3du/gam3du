@@ -3,7 +3,10 @@ use crate::{
     api_server::{insert_api_server, py_api_server},
 };
 use gam3du_framework_common::{
-    api::{ApiClientEndpoint, ApiServerEndpoint, Identifier, Value},
+    api::{Identifier, Value},
+    api_channel::{
+        ApiClientEndpoint, ApiServerEndpoint, NativeApiClientEndpoint, NativeApiServerEndpoint,
+    },
     message::{ClientToServerMessage, RequestMessage},
     module::Module,
 };
@@ -39,8 +42,8 @@ pub struct PythonRuntimeBuilder {
     main_module_name: String,
     user_signal_receiver: Option<UserSignalReceiver>,
 
-    api_clients: HashMap<Identifier, ApiClientEndpoint>,
-    api_servers: HashMap<Identifier, Arc<Mutex<ApiServerEndpoint>>>,
+    api_clients: HashMap<Identifier, NativeApiClientEndpoint>,
+    api_servers: HashMap<Identifier, Arc<Mutex<NativeApiServerEndpoint>>>,
     native_modules: HashMap<String, StdlibInitFunc>,
 }
 
@@ -57,7 +60,7 @@ impl PythonRuntimeBuilder {
         }
     }
 
-    pub fn add_api_client(&mut self, api_client: ApiClientEndpoint) {
+    pub fn add_api_client(&mut self, api_client: NativeApiClientEndpoint) {
         assert!(
             self.api_clients
                 .insert(api_client.api().name.clone(), api_client)
@@ -66,7 +69,7 @@ impl PythonRuntimeBuilder {
         );
     }
 
-    pub fn add_api_server(&mut self, api_server: ApiServerEndpoint) {
+    pub fn add_api_server(&mut self, api_server: NativeApiServerEndpoint) {
         assert!(
             self.api_servers
                 .insert(
@@ -212,7 +215,7 @@ impl PythonRuntimeBuilder {
 pub struct PythonRuntime {
     main_module_name: &'static PyStrInterned,
     pub interpreter: Interpreter,
-    api_server_endpoints: Vec<Arc<Mutex<ApiServerEndpoint>>>,
+    api_server_endpoints: Vec<Arc<Mutex<NativeApiServerEndpoint>>>,
     pub module: Option<PyObjectRef>,
 }
 

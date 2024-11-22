@@ -1,5 +1,6 @@
 use gam3du_framework_common::{
-    api::{ApiServerEndpoint, Identifier, Value},
+    api::{Identifier, Value},
+    api_channel::{ApiServerEndpoint, NativeApiServerEndpoint},
     message::RequestId,
 };
 use runtime_python_bindgen::PyIdentifier;
@@ -12,7 +13,7 @@ use std::{
 pub(crate) fn insert_api_server(
     vm: &VirtualMachine,
     api_module: &str,
-    api: Arc<Mutex<ApiServerEndpoint>>,
+    api: Arc<Mutex<NativeApiServerEndpoint>>,
 ) {
     let api_module = vm.ctx.intern_str(api_module);
     let module = vm.import(api_module, 0).unwrap_or_else(|exception| {
@@ -46,11 +47,11 @@ fn get_api_server(vm: &VirtualMachine, api_module: &str) -> PyRef<PrivateApiServ
 
 #[pyclass(name = "PrivateApiServer", module = false)]
 struct PrivateApiServer {
-    api: Arc<Mutex<ApiServerEndpoint>>,
+    api: Arc<Mutex<NativeApiServerEndpoint>>,
 }
 
 impl PrivateApiServer {
-    fn wrap(api: Arc<Mutex<ApiServerEndpoint>>) -> Self {
+    fn wrap(api: Arc<Mutex<NativeApiServerEndpoint>>) -> Self {
         Self { api }
     }
 
