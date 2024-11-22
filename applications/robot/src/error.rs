@@ -5,7 +5,7 @@ use std::{
 
 use winit::error::EventLoopError;
 
-pub(crate) type ApplicationResult<T> = Result<T, ApplicationError>;
+// pub(crate) type ApplicationResult<T> = Result<T, ApplicationError>;
 
 #[derive(Debug)]
 pub(crate) enum ApplicationError {
@@ -14,7 +14,7 @@ pub(crate) enum ApplicationError {
         reason = "This is a placeholder for errors that still need to be categorized"
     )]
     Todo(String),
-    BuildRuntime(std::io::Error),
+    // BuildRuntime(std::io::Error),
     EventLoop(EventLoopError),
 }
 
@@ -22,9 +22,9 @@ impl Display for ApplicationError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ApplicationError::Todo(message) => write!(formatter, "other error: {message}"),
-            ApplicationError::BuildRuntime(error) => {
-                write!(formatter, "failed to build async runtime: {error}")
-            }
+            // ApplicationError::BuildRuntime(error) => {
+            //     write!(formatter, "failed to build async runtime: {error}")
+            // }
             ApplicationError::EventLoop(message) => {
                 write!(formatter, "event loop error: {message}")
             }
@@ -36,7 +36,7 @@ impl From<ApplicationError> for ExitCode {
     fn from(value: ApplicationError) -> Self {
         match value {
             ApplicationError::Todo(_) => ExitCode::FAILURE,
-            ApplicationError::BuildRuntime(_) => ExitCode::from(2),
+            // ApplicationError::BuildRuntime(_) => ExitCode::from(2),
             ApplicationError::EventLoop(_) => ExitCode::from(3),
         }
     }
