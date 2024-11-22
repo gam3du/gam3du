@@ -1,17 +1,6 @@
 [workspace]
 resolver = "2"
-members = [
-    "engines/*",
-    "framework",
-    "framework/common",
-    "applications/*",
-    "runtimes/*",
-    "runtimes/python/bindgen",
-    "runtimes/python/wasm",
-    "libraries/*",
-    "xtask",
-    "winit",
-]
+members = ["engines/*", "framework", "framework/common", "applications/*", "runtimes/*", "runtimes/python/bindgen", "runtimes/python/wasm", "libraries/*", "xtask", "winit"]
 exclude = ["libraries/ecs"]
 
 # [workspace.target.'cfg(not(target_os = "windows"))'.features]
@@ -38,63 +27,51 @@ lib-file-storage = { path = "libraries/file-storage" }
 lib-geometry = { path = "libraries/geometry" }
 lib-gltf-model = { path = "libraries/gltf-model" }
 lib-time = { path = "libraries/time" }
-lib-wasm-tools = { path = "libraries/wasm-tools" }
 runtime-python = { path = "runtimes/python" }
 runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 runtime-python-wasm = { path = "runtimes/python/wasm" }
 
 # from crates.io
 
-regex-lite = { version = "0.1", default-features = false }
-web-time = { version = "1", default-features = false }
-pico-args = { version = "0.5", default-features = false }
-xshell = { version = "0.2", default-features = false }
-reqwest = { version = "0.12", default-features = false }
 anyhow = { version = "1", default-features = false }
-bytemuck = { version = "1", default-features = false }
-ctrlc = { version = "3", default-features = false }
 async-std = { version = "1", default-features = false }
-wasm-rs-shared-channel = { version = "0.1", default-features = false }
+bincode = { version = "1", default-features = false }
+bytemuck = { version = "1", default-features = false }
+console_error_panic_hook = { version = "0.1", default-features = false }
+ctrlc = { version = "3", default-features = false }
+env_logger = { version = "0.11", default-features = false }
 getrandom = { version = "0.2", default-features = false }
-
-# Used to maintain the order of elements in JSON objects.
-# This makes the JSON deserialization of the `serde_json` crate deterministic
-# which is useful when generating code from the api.json file.
-indexmap = { version = "2", default-features = false }
 glam = { version = "0.29", default-features = false }
 gltf = { version = "1", default-features = false }
+image = { version = "0.25", default-features = false }
+indexmap = { version = "2", default-features = false }
+js-sys = { version = "0.3", default-features = false }
 log = { version = "0.4", default-features = false }
-env_logger = { version = "0.11", default-features = false }
+pico-args = { version = "0.5", default-features = false }
+pollster = { version = "0.4.0", default-features = false }
 rand = { version = "0.8", default-features = false }
+regex-lite = { version = "0.1", default-features = false }
+reqwest = { version = "0.12", default-features = false }
 rustpython = { version = "0.4", default-features = false }
 rustpython-vm = { version = "0.4", default-features = false }
 serde = { version = "1", default-features = false }
 serde_json = { version = "1", default-features = false }
 tiny_http = { version = "0.12", default-features = false }
+tracing = { version = "0.1", default-features = false }
+tracing-subscriber = { version = "0.3", default-features = false }
+tracing-web = { version = "0.1", default-features = false }
+wasm-bindgen = { version = "0.2", default-features = false }
+wasm-rs-shared-channel = { version = "0.1", default-features = false }
+web-sys = { version = "0.3", default-features = false }
+web-time = { version = "1", default-features = false }
 wgpu = { version = "23", default-features = false }
 winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a9452b72e749a4890db23b92d65abc2", default-features = false }
-image = { version = "0.25", default-features = false }
-js-sys = { version = "0.3", default-features = false }
-bincode = { version = "1", default-features = false }
-
-# Logging macros to be used by all applications and libraries
-tracing = { version = "0.1", default-features = false }
-
-# Contains the logging implementation
-tracing-subscriber = { version = "0.3", default-features = false }
-
-# Contains the logging implementation for the web (WASM)
-tracing-web = { version = "0.1", default-features = false }
-
-wasm-bindgen = { version = "0.2", default-features = false }
-web-sys = { version = "0.3", default-features = false }
-pollster = { version = "0.4.0", default-features = false }
-console_error_panic_hook = { version = "0.1", default-features = false }
-
+xshell = { version = "0.2", default-features = false }
 
 # Compile all (non-workspace) dependencies with optimizations.
 # https://doc.rust-lang.org/cargo/reference/profiles.html#overrides
 [profile.dev.package."*"]
+# This is required to prevent a stack-overflow in the Python parser which relies on tail-call optimizations 
 opt-level = 1
 
 [workspace.lints.rust]

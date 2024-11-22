@@ -3,6 +3,7 @@
     "cSpell.words": [
         "actuals",
         "ansi",
+        "ascii",
         "bincode",
         "bindgen",
         "bitor",
@@ -14,12 +15,14 @@
         "coep",
         "consts",
         "cranelift",
+        "datatypes",
         "externref",
         "Externref",
         "fract",
         "getrandom",
         "gles",
         "gltf",
+        "idents",
         "indexmap",
         "kwargs",
         "lerp",
@@ -54,12 +57,15 @@
         "struct",
         "subsec",
         "subseconds",
+        "supertrait",
         "swapchain",
         "texels",
         "tokio",
         "Touchpad",
         "Uninit",
         "unpark",
+        "unseparated",
+        "upcastable",
         "UVEC",
         "Vsync",
         "wasmtime",
@@ -69,8 +75,10 @@
         "wgpu",
         "wgsl",
         "winit",
+        "winonly",
         "wireframe",
         "xshell",
+        "xtask",
         "Zeroable"
     ],
     "cSpell.ignorePaths": [
@@ -82,5 +90,9 @@
         ".vscode",
         ".vscode-insiders",
         "/target"
+    ],
+    "editor.rulers": [
+        100,
+        120
     ],
 }
