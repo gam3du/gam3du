@@ -1,7 +1,7 @@
 use crate::api_client::py_api_client::{MaybeFulfilled, RequestHandle};
 use gam3du_framework_common::{
     api::{ApiDescriptor, Identifier, TypeDescriptor, Value},
-    api_channel::{ApiClientEndpoint, NativeApiClientEndpoint},
+    api_channel::ApiClientEndpoint,
     message::{ErrorResponseMessage, ResponseMessage, ServerToClientMessage},
 };
 use rustpython_vm::{builtins::PyBaseExceptionRef, convert::IntoObject};
@@ -14,7 +14,7 @@ use tracing::{error, trace};
 pub(crate) fn insert_api_client(
     vm: &VirtualMachine,
     api_module: &str,
-    api: NativeApiClientEndpoint,
+    api: Box<dyn ApiClientEndpoint>,
 ) {
     let api_module = vm.ctx.intern_str(api_module);
     let module = vm
@@ -51,11 +51,11 @@ fn get_api_client(vm: &VirtualMachine, api_module: &str) -> PyRef<PrivateApi> {
 
 #[pyclass(name = "PrivateApi", module = false)]
 struct PrivateApi {
-    api: NativeApiClientEndpoint,
+    api: Box<dyn ApiClientEndpoint>,
 }
 
 impl PrivateApi {
-    fn wrap(api: NativeApiClientEndpoint) -> Self {
+    fn wrap(api: Box<dyn ApiClientEndpoint>) -> Self {
         Self { api }
     }
 

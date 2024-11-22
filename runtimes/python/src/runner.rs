@@ -4,9 +4,7 @@ use crate::{
 };
 use gam3du_framework_common::{
     api::{Identifier, Value},
-    api_channel::{
-        ApiClientEndpoint, ApiServerEndpoint, NativeApiClientEndpoint, NativeApiServerEndpoint,
-    },
+    api_channel::{ApiClientEndpoint, ApiServerEndpoint, NativeApiServerEndpoint},
     message::{ClientToServerMessage, RequestMessage},
     module::Module,
 };
@@ -42,8 +40,8 @@ pub struct PythonRuntimeBuilder {
     main_module_name: String,
     user_signal_receiver: Option<UserSignalReceiver>,
 
-    api_clients: HashMap<Identifier, NativeApiClientEndpoint>,
-    api_servers: HashMap<Identifier, Arc<Mutex<NativeApiServerEndpoint>>>,
+    api_clients: HashMap<Identifier, Box<dyn ApiClientEndpoint + Send>>,
+    api_servers: HashMap<Identifier, Arc<Mutex<dyn ApiServerEndpoint + Send>>>,
     native_modules: HashMap<String, StdlibInitFunc>,
 }
 
@@ -60,7 +58,7 @@ impl PythonRuntimeBuilder {
         }
     }
 
-    pub fn add_api_client(&mut self, api_client: NativeApiClientEndpoint) {
+    pub fn add_api_client(&mut self, api_client: Box<dyn ApiClientEndpoint + Send>) {
         assert!(
             self.api_clients
                 .insert(api_client.api().name.clone(), api_client)
@@ -215,7 +213,7 @@ impl PythonRuntimeBuilder {
 pub struct PythonRuntime {
     main_module_name: &'static PyStrInterned,
     pub interpreter: Interpreter,
-    api_server_endpoints: Vec<Arc<Mutex<NativeApiServerEndpoint>>>,
+    api_server_endpoints: Vec<Arc<Mutex<dyn ApiServerEndpoint + Send>>>,
     pub module: Option<PyObjectRef>,
 }
 

@@ -12,7 +12,7 @@ use crate::{
 
 /// Handles transmission of commands to [`ApiServerEndpoint`]s and provides methods for polling responses.
 pub trait ApiClientEndpoint {
-    fn send_to_server(&self, message: impl Into<ClientToServerMessage>);
+    fn send_to_server(&self, message: ClientToServerMessage);
 
     #[must_use]
     fn api(&self) -> &ApiDescriptor;
@@ -26,19 +26,16 @@ pub trait ApiClientEndpoint {
 
 /// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
 pub trait ApiServerEndpoint {
-    fn send_to_client(&self, message: impl Into<ServerToClientMessage>);
+    fn send_to_client(&self, message: ServerToClientMessage);
 
-    fn send_error(&mut self, id: RequestId, message: impl Into<String>) {
-        let response = ErrorResponseMessage {
-            id,
-            message: message.into(),
-        };
-        self.send_to_client(response);
+    fn send_error(&mut self, id: RequestId, message: String) {
+        let response = ErrorResponseMessage { id, message };
+        self.send_to_client(response.into());
     }
 
     fn send_response(&self, id: RequestId, result: Value) {
         let response = ResponseMessage { id, result };
-        self.send_to_client(response);
+        self.send_to_client(response.into());
     }
 
     #[must_use]

@@ -56,8 +56,8 @@ impl NativeApiClientEndpoint {
 }
 
 impl ApiClientEndpoint for NativeApiClientEndpoint {
-    fn send_to_server(&self, message: impl Into<ClientToServerMessage>) {
-        self.sender.send(message.into()).unwrap_or_else(|_| {
+    fn send_to_server(&self, message: ClientToServerMessage) {
+        self.sender.send(message).unwrap_or_else(|_| {
             panic!(
                 "failed to send message to disconnected api server endpoint: `{}`",
                 self.api.name
@@ -74,7 +74,7 @@ impl ApiClientEndpoint for NativeApiClientEndpoint {
     fn send_command(&self, command: Identifier, arguments: Vec<Value>) -> RequestId {
         let request = RequestMessage::new(command, arguments);
         let id = request.id;
-        self.send_to_server(request);
+        self.send_to_server(request.into());
         id
     }
 
@@ -113,8 +113,8 @@ impl NativeApiServerEndpoint {
 }
 
 impl ApiServerEndpoint for NativeApiServerEndpoint {
-    fn send_to_client(&self, message: impl Into<ServerToClientMessage>) {
-        self.sender.send(message.into()).unwrap();
+    fn send_to_client(&self, message: ServerToClientMessage) {
+        self.sender.send(message).unwrap();
     }
 
     #[must_use]
