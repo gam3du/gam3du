@@ -15,7 +15,7 @@ use super::{ApiClientEndpoint, ApiServerEndpoint};
 
 /// creates a connected pair of endpoints
 #[must_use]
-pub fn channel(api: ApiDescriptor) -> (NativeApiClientEndpoint, NativeApiServerEndpoint) {
+pub fn native_channel(api: ApiDescriptor) -> (NativeApiClientEndpoint, NativeApiServerEndpoint) {
     let (script_to_engine_sender, script_to_engine_receiver) = mpsc::channel();
     let (engine_to_script_sender, engine_to_script_receiver) = mpsc::channel();
 

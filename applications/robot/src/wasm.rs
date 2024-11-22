@@ -6,7 +6,7 @@ use gam3du_framework::{
 };
 use gam3du_framework_common::{
     api::ApiDescriptor,
-    api_channel::{self, ApiClientEndpoint, NativeApiClientEndpoint},
+    api_channel::ApiServerEndpoint,
     event::FrameworkEvent,
     message::{ClientToServerMessage, ServerToClientMessage},
 };
@@ -14,7 +14,7 @@ use runtime_python::PythonRuntimeBuilder;
 use std::{
     cell::RefCell,
     path::Path,
-    sync::{self, mpsc::channel, Arc},
+    sync::{mpsc, Arc},
 };
 use tracing::{info, trace};
 use wasm_bindgen::prelude::*;
@@ -87,24 +87,18 @@ pub fn connect_api_client(channel_buffers: JsValue) {
 struct Runner {
     timestamp: Instant,
     game_loop: GameLoop<PythonPlugin>,
-    event_source: sync::mpsc::Receiver<FrameworkEvent>,
-    api_client_endpoint: NativeApiClientEndpoint,
-    api_client_sender: spsc::Sender<ServerToClientMessage>,
+    event_source: mpsc::Receiver<FrameworkEvent>,
 }
 
 impl Runner {
     fn new(
         game_loop: GameLoop<PythonPlugin>,
-        event_receiver: sync::mpsc::Receiver<FrameworkEvent>,
-        api_client_endpoint: NativeApiClientEndpoint,
-        api_client_sender: spsc::Sender<ServerToClientMessage>,
+        event_receiver: mpsc::Receiver<FrameworkEvent>,
     ) -> Self {
         Self {
             timestamp: Instant::now(),
             game_loop,
             event_source: event_receiver,
-            api_client_endpoint,
-            api_client_sender,
         }
     }
 }
@@ -116,27 +110,6 @@ impl GameLoopRunner for Runner {
     }
 
     fn update(&mut self) {
-        // TODO rather than forwarding all messages between the WASM channels and the Plugin-Endpoints, it would make more sense to implement "WASM-aware" endpoints and send those to the Plugin
-        // this requires the Endpoint types to be abstracted as traits and more generics (or dyn) within the Engine/Plugin
-
-        // forward outgoing messages from the plugin to the control script running in a web worker
-        while let Some(response) = self.api_client_endpoint.poll_response() {
-            trace!("received response from the plugin: {response:#?}");
-
-            trace!("forwarding message to Python Worker");
-            self.api_client_sender.send(&response).unwrap();
-        }
-
-        // forward incoming messages from the control script running in a web worker to the plugin
-        while let Some(request_bytes) = poll_api_client_request() {
-            let request = bincode::deserialize(&request_bytes).unwrap();
-            trace!("received request from PythonWorker: {request:#?}");
-
-            trace!("forwarding message to plugin");
-            let message = ClientToServerMessage::Request(request);
-            self.api_client_endpoint.send_to_server(message);
-        }
-
         if let Some(timestamp) = self.game_loop.progress(&self.event_source, self.timestamp) {
             self.timestamp = timestamp;
         } else {
@@ -148,13 +121,13 @@ impl GameLoopRunner for Runner {
 #[wasm_bindgen]
 pub fn start() -> Result<(), JsValue> {
     info!("creating framework event channel");
-    let (event_sender, event_receiver) = channel();
+    let (event_sender, event_receiver) = mpsc::channel();
 
     info!("creating framework event channel");
     // this is used to send framework messages to the event loop
     // at the moment only `Exit` will be handled and no one ever issues this event
     // remember to trigger a window proxy to make sure this event will be polled
-    let (_window_event_sender, framework_event_receiver) = channel();
+    let (_window_event_sender, framework_event_receiver) = mpsc::channel();
 
     // info!("creating static file storage");
     // let storage = create_storage();
@@ -171,15 +144,14 @@ pub fn start() -> Result<(), JsValue> {
     //     "robot",
     // );
 
-    // fn start_python_robot(
-    //     _python_sys_path: &Path, = Path::new("applications/robot/python/control"),
-    //     _python_main_module: &str, = "robot",
-    // ) -> (ApiClientEndpoint, ApiServerEndpoint) {
     // let api_json = storage.get_content(Path::new(CONTROL_API_PATH)).unwrap();
     let robot_api: ApiDescriptor = serde_json::from_str(API_JSON).unwrap();
 
-    let (robot_control_api_client_endpoint, robot_control_api_engine_endpoint) =
-        api_channel::channel(robot_api);
+    let api_client_sender = APPLICATION_STATE
+        .with_borrow_mut(|state| state.api_client_sender.take())
+        .ok_or("api client sender not initialized")?;
+    let robot_control_api_engine_endpoint =
+        WasmApiServerEndpoint::new(robot_api, api_client_sender);
 
     // let mut python_builder = PythonRuntimeBuilder::new(python_sys_path, python_main_module);
 
@@ -199,17 +171,8 @@ pub fn start() -> Result<(), JsValue> {
     let mut game_loop = GameLoop::new(Arc::clone(&shared_game_state));
     game_loop.add_plugin(plugin);
 
-    let api_client_sender = APPLICATION_STATE
-        .with_borrow_mut(|state| state.api_client_sender.take())
-        .ok_or("api client sender not initialized")?;
-
     info!("creating game loop runner");
-    let game_loop_runner = Runner::new(
-        game_loop,
-        event_receiver,
-        robot_control_api_client_endpoint,
-        api_client_sender,
-    );
+    let game_loop_runner = Runner::new(game_loop, event_receiver);
 
     info!("creating renderer builder");
     let renderer_builder = RendererBuilder::new(
@@ -236,4 +199,43 @@ pub fn start() -> Result<(), JsValue> {
 
     info!("application started successfully");
     Ok(())
+}
+
+/// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
+struct WasmApiServerEndpoint {
+    api: ApiDescriptor,
+    /// Used to send responses to the connected [`ApiClientEndpoint`]
+    sender: spsc::Sender<ServerToClientMessage>,
+}
+
+impl WasmApiServerEndpoint {
+    #[must_use]
+    fn new(api: ApiDescriptor, sender: spsc::Sender<ServerToClientMessage>) -> Self {
+        Self { api, sender }
+    }
+}
+
+impl ApiServerEndpoint for WasmApiServerEndpoint {
+    fn send_to_client(&self, message: ServerToClientMessage) {
+        trace!("forwarding message to Python Worker");
+        self.sender.send(&message).unwrap();
+    }
+
+    #[must_use]
+    fn poll_request(&self) -> Option<ClientToServerMessage> {
+        if let Some(request_bytes) = poll_api_client_request() {
+            let request = bincode::deserialize(&request_bytes).unwrap();
+            trace!("received request from PythonWorker: {request:#?}");
+
+            trace!("forwarding message to plugin");
+            Some(ClientToServerMessage::Request(request))
+        } else {
+            None
+        }
+    }
+
+    #[must_use]
+    fn api(&self) -> &ApiDescriptor {
+        &self.api
+    }
 }

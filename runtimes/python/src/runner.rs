@@ -4,7 +4,7 @@ use crate::{
 };
 use gam3du_framework_common::{
     api::{Identifier, Value},
-    api_channel::{ApiClientEndpoint, ApiServerEndpoint, NativeApiServerEndpoint},
+    api_channel::{ApiClientEndpoint, ApiServerEndpoint},
     message::{ClientToServerMessage, RequestMessage},
     module::Module,
 };
@@ -41,7 +41,7 @@ pub struct PythonRuntimeBuilder {
     user_signal_receiver: Option<UserSignalReceiver>,
 
     api_clients: HashMap<Identifier, Box<dyn ApiClientEndpoint + Send>>,
-    api_servers: HashMap<Identifier, Arc<Mutex<dyn ApiServerEndpoint + Send>>>,
+    api_servers: HashMap<Identifier, Arc<Mutex<dyn ApiServerEndpoint>>>,
     native_modules: HashMap<String, StdlibInitFunc>,
 }
 
@@ -67,7 +67,7 @@ impl PythonRuntimeBuilder {
         );
     }
 
-    pub fn add_api_server(&mut self, api_server: NativeApiServerEndpoint) {
+    pub fn add_api_server(&mut self, api_server: impl ApiServerEndpoint + 'static) {
         assert!(
             self.api_servers
                 .insert(
@@ -197,23 +197,24 @@ impl PythonRuntimeBuilder {
         }
     }
 
-    #[must_use]
-    pub fn build_runner_thread(self) -> JoinHandle<()> {
-        thread::Builder::new()
-            // .stack_size(10 * 1024 * 1024)
-            .spawn(|| {
-                debug!("thread[python]: start interpreter");
-                let mut runtime = self.build();
-                runtime.enter_main();
-            })
-            .unwrap()
-    }
+    // FIXME requires the api servers to be `Send` which is not possible or necessary on WASM
+    // #[must_use]
+    // pub fn build_runner_thread(self) -> JoinHandle<()> {
+    //     thread::Builder::new()
+    //         // .stack_size(10 * 1024 * 1024)
+    //         .spawn(|| {
+    //             debug!("thread[python]: start interpreter");
+    //             let mut runtime = self.build();
+    //             runtime.enter_main();
+    //         })
+    //         .unwrap()
+    // }
 }
 
 pub struct PythonRuntime {
     main_module_name: &'static PyStrInterned,
     pub interpreter: Interpreter,
-    api_server_endpoints: Vec<Arc<Mutex<dyn ApiServerEndpoint + Send>>>,
+    api_server_endpoints: Vec<Arc<Mutex<dyn ApiServerEndpoint>>>,
     pub module: Option<PyObjectRef>,
 }
 

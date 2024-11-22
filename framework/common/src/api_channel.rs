@@ -1,6 +1,8 @@
 mod native;
 
-pub use native::{channel, NativeApiClientEndpoint, NativeApiServerEndpoint};
+// TODO maybe disable this for WASM or move into own platform specific crate?
+// TODO maybe the entire channel stuff should not be in the common crate as there's too much implementation in them
+pub use native::{native_channel, NativeApiClientEndpoint, NativeApiServerEndpoint};
 
 use crate::{
     api::{ApiDescriptor, Identifier, Value},

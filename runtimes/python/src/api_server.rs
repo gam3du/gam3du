@@ -13,7 +13,7 @@ use std::{
 pub(crate) fn insert_api_server(
     vm: &VirtualMachine,
     api_module: &str,
-    api: Arc<Mutex<dyn ApiServerEndpoint + Send>>,
+    api: Arc<Mutex<dyn ApiServerEndpoint>>,
 ) {
     let api_module = vm.ctx.intern_str(api_module);
     let module = vm.import(api_module, 0).unwrap_or_else(|exception| {
