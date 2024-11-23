@@ -27,10 +27,7 @@ tracing.workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen.workspace = true
-wasm-rs-shared-channel = { workspace = true, features = [
-    "serde",
-    "serde-bincode",
-] }
+wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
 
 [lints]
 workspace = true

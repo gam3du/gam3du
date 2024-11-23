@@ -5,7 +5,7 @@
     clippy::todo,
     clippy::missing_errors_doc,
     clippy::missing_panics_doc,
-    clippy::unwrap_in_result,
+    // clippy::unwrap_in_result,
 
     reason = "TODO remove before release"
 )]

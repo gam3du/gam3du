@@ -12,11 +12,7 @@ publish = false
 anyhow.workspace = true
 log.workspace = true
 env_logger.workspace = true
-pico-args = { workspace = true, features = [
-    "eq-separator",
-    "short-space-opt",
-    "combined-flags",
-] }
+pico-args = { workspace = true, features = ["eq-separator", "short-space-opt", "combined-flags"] }
 xshell.workspace = true
 reqwest = { workspace = true, features = ["blocking", "default-tls"] }
 

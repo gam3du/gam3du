@@ -31,11 +31,8 @@ lib-file-storage.workspace = true
 wasm-bindgen.workspace = true
 web-time.workspace = true
 # js-sys.workspace = true
-bincode.workspace = true
-wasm-rs-shared-channel = { workspace = true, features = [
-    "serde",
-    "serde-bincode",
-] }
+# bincode.workspace = true
+wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
 
 [build-dependencies]
 gam3du-framework-common.workspace = true

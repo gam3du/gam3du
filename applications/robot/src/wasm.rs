@@ -5,10 +5,8 @@ use gam3du_framework::{
     init_logger,
 };
 use gam3du_framework_common::{
-    api::ApiDescriptor,
-    api_channel::ApiServerEndpoint,
-    event::FrameworkEvent,
-    message::{ClientToServerMessage, ServerToClientMessage},
+    api::ApiDescriptor, api_channel::WasmApiServerEndpoint, event::FrameworkEvent,
+    message::ServerToClientMessage,
 };
 use runtime_python::PythonRuntimeBuilder;
 use std::{
@@ -16,7 +14,7 @@ use std::{
     path::Path,
     sync::{mpsc, Arc},
 };
-use tracing::{info, trace};
+use tracing::info;
 use wasm_bindgen::prelude::*;
 use wasm_rs_shared_channel::spsc;
 use web_time::Instant;
@@ -150,8 +148,11 @@ pub fn start() -> Result<(), JsValue> {
     let api_client_sender = APPLICATION_STATE
         .with_borrow_mut(|state| state.api_client_sender.take())
         .ok_or("api client sender not initialized")?;
-    let robot_control_api_engine_endpoint =
-        WasmApiServerEndpoint::new(robot_api, api_client_sender);
+    let robot_control_api_engine_endpoint = WasmApiServerEndpoint::new(
+        robot_api,
+        api_client_sender,
+        Box::new(poll_api_client_request),
+    );
 
     // let mut python_builder = PythonRuntimeBuilder::new(python_sys_path, python_main_module);
 
@@ -199,43 +200,4 @@ pub fn start() -> Result<(), JsValue> {
 
     info!("application started successfully");
     Ok(())
-}
-
-/// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
-struct WasmApiServerEndpoint {
-    api: ApiDescriptor,
-    /// Used to send responses to the connected [`ApiClientEndpoint`]
-    sender: spsc::Sender<ServerToClientMessage>,
-}
-
-impl WasmApiServerEndpoint {
-    #[must_use]
-    fn new(api: ApiDescriptor, sender: spsc::Sender<ServerToClientMessage>) -> Self {
-        Self { api, sender }
-    }
-}
-
-impl ApiServerEndpoint for WasmApiServerEndpoint {
-    fn send_to_client(&self, message: ServerToClientMessage) {
-        trace!("forwarding message to Python Worker");
-        self.sender.send(&message).unwrap();
-    }
-
-    #[must_use]
-    fn poll_request(&self) -> Option<ClientToServerMessage> {
-        if let Some(request_bytes) = poll_api_client_request() {
-            let request = bincode::deserialize(&request_bytes).unwrap();
-            trace!("received request from PythonWorker: {request:#?}");
-
-            trace!("forwarding message to plugin");
-            Some(ClientToServerMessage::Request(request))
-        } else {
-            None
-        }
-    }
-
-    #[must_use]
-    fn api(&self) -> &ApiDescriptor {
-        &self.api
-    }
 }

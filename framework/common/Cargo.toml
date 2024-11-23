@@ -13,5 +13,10 @@ rand = { workspace = true, features = ["getrandom", "std", "std_rng"] }
 serde = { workspace = true, features = ["std", "derive"] }
 winit = { workspace = true, default-features = true }
 
+[target.'cfg(target_family = "wasm")'.dependencies]
+bincode.workspace = true
+tracing.workspace = true
+wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
+
 [lints]
 workspace = true
