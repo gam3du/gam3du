@@ -3,7 +3,7 @@ mod native;
 #[cfg(target_family = "wasm")]
 mod wasm;
 #[cfg(target_family = "wasm")]
-pub use wasm::WasmApiServerEndpoint;
+pub use wasm::{WasmApiClientEndpoint, WasmApiServerEndpoint};
 
 // TODO maybe disable this for WASM or move into own platform specific crate?
 // TODO maybe the entire channel stuff should not be in the common crate as there's too much implementation in them
@@ -12,7 +12,7 @@ pub use native::{native_channel, NativeApiClientEndpoint, NativeApiServerEndpoin
 use crate::{
     api::{ApiDescriptor, Identifier, Value},
     message::{
-        ClientToServerMessage, ErrorResponseMessage, RequestId, ResponseMessage,
+        ClientToServerMessage, ErrorResponseMessage, RequestId, RequestMessage, ResponseMessage,
         ServerToClientMessage,
     },
 };
@@ -25,7 +25,12 @@ pub trait ApiClientEndpoint {
     fn api(&self) -> &ApiDescriptor;
 
     #[must_use]
-    fn send_command(&self, command: Identifier, arguments: Vec<Value>) -> RequestId;
+    fn send_command(&self, command: Identifier, arguments: Vec<Value>) -> RequestId {
+        let request = RequestMessage::new(command, arguments);
+        let id = request.id;
+        self.send_to_server(request.into());
+        id
+    }
 
     #[must_use]
     fn poll_response(&self) -> Option<ServerToClientMessage>;

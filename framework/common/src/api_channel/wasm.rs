@@ -6,9 +6,49 @@ use crate::{
     message::{ClientToServerMessage, ServerToClientMessage},
 };
 
-use super::ApiServerEndpoint;
+use super::{ApiClientEndpoint, ApiServerEndpoint};
+
+type SendHandler = Box<dyn for<'bytes> Fn(&'bytes [u8]) + Send>;
 
 /// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
+pub struct WasmApiClientEndpoint {
+    api: ApiDescriptor,
+    /// Used to send responses to the connected [`ApiClientEndpoint`]
+    receiver: spsc::Receiver<ServerToClientMessage>,
+    send: SendHandler,
+}
+
+impl WasmApiClientEndpoint {
+    #[must_use]
+    pub fn new(
+        api: ApiDescriptor,
+        receiver: spsc::Receiver<ServerToClientMessage>,
+        send: SendHandler,
+    ) -> Self {
+        Self {
+            api,
+            receiver,
+            send,
+        }
+    }
+}
+
+impl ApiClientEndpoint for WasmApiClientEndpoint {
+    #[must_use]
+    fn api(&self) -> &ApiDescriptor {
+        &self.api
+    }
+
+    fn send_to_server(&self, message: ClientToServerMessage) {
+        (self.send)(&bincode::serialize(&message).unwrap());
+    }
+
+    fn poll_response(&self) -> Option<ServerToClientMessage> {
+        self.receiver.recv(None).unwrap()
+    }
+}
+
+/// Provides methods for polling on requests from an [`ApiClientEndpoint`] and sending back responses.
 pub struct WasmApiServerEndpoint {
     api: ApiDescriptor,
     /// Used to send responses to the connected [`ApiClientEndpoint`]

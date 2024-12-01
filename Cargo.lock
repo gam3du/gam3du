@@ -2891,6 +2891,8 @@ version = "0.1.0"
 dependencies = [
  "gam3du-framework",
  "gam3du-framework-common",
+ "runtime-python",
+ "serde_json",
  "tracing",
  "wasm-bindgen",
  "wasm-rs-shared-channel",

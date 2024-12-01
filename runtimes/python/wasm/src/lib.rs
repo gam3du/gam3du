@@ -7,11 +7,23 @@
 )]
 
 use gam3du_framework::init_logger;
-use gam3du_framework_common::message::ServerToClientMessage;
-use std::{cell::RefCell, time::Duration};
+use gam3du_framework_common::module::Module;
+use gam3du_framework_common::{
+    api::ApiDescriptor, api_channel::WasmApiClientEndpoint, message::ServerToClientMessage,
+};
+use runtime_python::PythonRuntimeBuilder;
+use std::{cell::RefCell, path::Path, time::Duration};
 use tracing::info;
 use wasm_bindgen::prelude::*;
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
+
+const API_JSON: &str = include_str!("../../../../applications/robot/control.api.json");
+
+#[wasm_bindgen(raw_module = "./worker.js")]
+extern "C" {
+    /// sends requests to an api server (the game engine)
+    fn send_api_client_request(client_to_server_request: &[u8]);
+}
 
 struct ApplicationState {
     receiver: Option<spsc::Receiver<ServerToClientMessage>>,
@@ -52,28 +64,51 @@ pub fn set_channel_buffers(buffers: JsValue) {
 #[wasm_bindgen]
 pub fn run() -> Result<(), JsValue> {
     info!("run");
+
+    info!("creating python runtime builder for engine plugin");
+    let mut python_runtime_builder = PythonRuntimeBuilder::new(
+        Path::new("../../../../applications/robot/python/control"),
+        "robot",
+    );
+
+    let robot_api: ApiDescriptor = serde_json::from_str(API_JSON).unwrap();
+
     APPLICATION_STATE.with_borrow_mut(|state| {
-        let Some(receiver) = &mut state.receiver else {
+        let Some(receiver) = state.receiver.take() else {
             return Err(JsValue::from_str("cannot run without a receiver"));
         };
 
-        info!("waiting for message");
-        loop {
-            match receiver.recv(Some(Duration::from_millis(100))) {
-                Ok(None) => {
-                    info!("… still waiting for message …");
-                }
-                Ok(Some(response)) => {
-                    info!("received message: {response:?}");
-                    break Ok(());
-                }
-                Err(err) => {
-                    break Err(JsValue::from(format!(
-                        "Error while waiting for message: {err:?}"
-                    )));
-                }
-            }
-        }
+        let send = |request: &[u8]| {
+            send_api_client_request(request);
+        };
+
+        let api_client = WasmApiClientEndpoint::new(robot_api, receiver, Box::from(send));
+
+        python_runtime_builder.add_api_client(Box::from(api_client));
+
+        let mut runtime = python_runtime_builder.build();
+
+        info!("starting Python runtime for control script");
+        runtime.enter_main();
+
+        // info!("waiting for message");
+        // loop {
+        //     match receiver.recv(Some(Duration::from_millis(100))) {
+        //         Ok(None) => {
+        //             info!("… still waiting for message …");
+        //         }
+        //         Ok(Some(response)) => {
+        //             info!("received message: {response:?}");
+        //             break Ok(());
+        //         }
+        //         Err(err) => {
+        //             break Err(JsValue::from(format!(
+        //                 "Error while waiting for message: {err:?}"
+        //             )));
+        //         }
+        //     }
+        // }
+        Ok(())
     })?;
 
     info!("PythonRuntime run terminated");

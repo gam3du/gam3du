@@ -40,7 +40,7 @@ pub struct PythonRuntimeBuilder {
     main_module_name: String,
     user_signal_receiver: Option<UserSignalReceiver>,
 
-    api_clients: HashMap<Identifier, Box<dyn ApiClientEndpoint + Send>>,
+    api_clients: HashMap<Identifier, Box<dyn ApiClientEndpoint>>,
     api_servers: HashMap<Identifier, Arc<Mutex<dyn ApiServerEndpoint>>>,
     native_modules: HashMap<String, StdlibInitFunc>,
 }
@@ -58,7 +58,7 @@ impl PythonRuntimeBuilder {
         }
     }
 
-    pub fn add_api_client(&mut self, api_client: Box<dyn ApiClientEndpoint + Send>) {
+    pub fn add_api_client(&mut self, api_client: Box<dyn ApiClientEndpoint + 'static>) {
         assert!(
             self.api_clients
                 .insert(api_client.api().name.clone(), api_client)

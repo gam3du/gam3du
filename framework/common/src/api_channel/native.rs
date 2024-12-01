@@ -7,8 +7,8 @@
 use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
 
 use crate::{
-    api::{ApiDescriptor, Identifier, Value},
-    message::{ClientToServerMessage, RequestId, RequestMessage, ServerToClientMessage},
+    api::ApiDescriptor,
+    message::{ClientToServerMessage, ServerToClientMessage},
 };
 
 use super::{ApiClientEndpoint, ApiServerEndpoint};
@@ -68,14 +68,6 @@ impl ApiClientEndpoint for NativeApiClientEndpoint {
     #[must_use]
     fn api(&self) -> &ApiDescriptor {
         &self.api
-    }
-
-    #[must_use]
-    fn send_command(&self, command: Identifier, arguments: Vec<Value>) -> RequestId {
-        let request = RequestMessage::new(command, arguments);
-        let id = request.id;
-        self.send_to_server(request.into());
-        id
     }
 
     #[must_use]

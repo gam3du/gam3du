@@ -6,6 +6,10 @@
 // and https://users.rust-lang.org/t/using-async-in-a-call-back-of-a-blocking-library/121089
 import * as PythonRuntime from './wasm.js';
 
+export function send_api_client_request(request_bytes) {
+    self.postMessage(request_bytes);
+}
+
 const LOG_SRC = "[python-worker:runtime-python/worker.js]";
 console.info(LOG_SRC, "/--- initializing Python Worker ---\\");
 
