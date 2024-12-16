@@ -41,9 +41,9 @@ fn generate_module(
     let async_module_name = &format!("{}_api_async", api.name.file());
     if config.sync {
         writeln!(out, "import {async_module_name}")?;
-        writeln!(out, "import asyncio")?;
+        // writeln!(out, "import asyncio")?;
     } else {
-        writeln!(out, "import asyncio")?;
+        // writeln!(out, "import asyncio")?;
         writeln!(out, "import {internal_module_name}")?;
     }
     writeln!(out)?;
@@ -77,7 +77,7 @@ pub fn generate_function(
     // TODO add documentation comments for function and parameters
 
     if !config.sync {
-        write!(out, "async ")?;
+        // write!(out, "async ")?;
     }
     write!(out, "def {name}(", name = identifier(name))?;
 
@@ -110,7 +110,8 @@ pub fn generate_function(
             generate_parameter(out, parameter, true)?;
         }
         writeln!(out, ")")?;
-        writeln!(out, "\treturn asyncio.run(future)")?;
+        // writeln!(out, "\treturn asyncio.run(future)")?;
+        writeln!(out, "\treturn future")?;
     } else {
         write!(out, "\thandle = {internal_module_name}.message(\"{name}\"")?;
         for parameter in parameters {
@@ -124,7 +125,7 @@ pub fn generate_function(
 		result = {internal_module_name}.poll(handle)
 		if result.is_done():
 			return result.get_value()
-		await asyncio.sleep(0.01)
+		# await asyncio.sleep(0.01)
 "
         )?;
     }

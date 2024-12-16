@@ -10,13 +10,15 @@ use gam3du_framework_common::{
 };
 use runtime_python_bindgen::PyIdentifier;
 use rustpython_vm::{
-    builtins::PyStrInterned,
+    builtins::{PyModule, PyStrInterned},
     convert::IntoObject,
+    frozen::{self, FrozenCodeObject, FrozenLib, FrozenModule, FrozenModulesIter},
     function::FuncArgs,
     signal::{user_signal_channel, UserSignal, UserSignalReceiver, UserSignalSender},
     Interpreter, PyObjectRef, Settings,
 };
 use std::{
+    any::Any,
     collections::HashMap,
     path::Path,
     sync::{
@@ -43,6 +45,7 @@ pub struct PythonRuntimeBuilder {
     api_clients: HashMap<Identifier, Box<dyn ApiClientEndpoint>>,
     api_servers: HashMap<Identifier, Arc<Mutex<dyn ApiServerEndpoint>>>,
     native_modules: HashMap<String, StdlibInitFunc>,
+    frozen_modules: HashMap<String, FrozenModulesIter<'static>>,
 }
 
 impl PythonRuntimeBuilder {
@@ -55,6 +58,7 @@ impl PythonRuntimeBuilder {
             api_clients: HashMap::new(),
             api_servers: HashMap::new(),
             native_modules: HashMap::new(),
+            frozen_modules: HashMap::new(),
         }
     }
 
@@ -82,7 +86,18 @@ impl PythonRuntimeBuilder {
     pub fn add_native_module(&mut self, name: impl Into<String>, init_fn: StdlibInitFunc) {
         assert!(
             self.native_modules.insert(name.into(), init_fn).is_none(),
-            "duplicate module name"
+            "duplicate native module name"
+        );
+    }
+
+    pub fn add_frozen_module(
+        &mut self,
+        name: impl Into<String>,
+        module: FrozenModulesIter<'static>,
+    ) {
+        assert!(
+            self.frozen_modules.insert(name.into(), module).is_none(),
+            "duplicate frozen module name"
         );
     }
 
@@ -105,6 +120,7 @@ impl PythonRuntimeBuilder {
             api_clients,
             api_servers,
             native_modules,
+            frozen_modules,
         } = self;
 
         let id = VM_ID.fetch_add(1, Ordering::Relaxed).to_string();
@@ -130,6 +146,7 @@ impl PythonRuntimeBuilder {
                 }
 
                 if has_api_clients {
+                    // vm.add_frozen(frozen);
                     vm.add_native_module(
                         "api_client".to_owned(),
                         Box::new(py_api_client::make_module),
@@ -157,6 +174,11 @@ impl PythonRuntimeBuilder {
 
                 for (name, init) in native_modules {
                     vm.add_native_module(name, init());
+                }
+
+                // TODO convert frozen_modules into `Vec`
+                for code in frozen_modules.into_values() {
+                    vm.add_frozen(code);
                 }
             }))
             .interpreter();

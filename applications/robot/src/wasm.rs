@@ -136,7 +136,15 @@ pub fn start() -> Result<(), JsValue> {
         "robot_plugin",
     );
 
-    info!("creating channel for a control script to communicate with the plugin");
+    let robot_plugin_module = rustpython::vm::py_freeze!(
+        module_name = "robot_plugin",
+        file = "python/plugin/robot_plugin.py"
+    )
+    .decode();
+
+    python_runtime_builder.add_frozen_module("robot_api_async", robot_plugin_module);
+
+    // info!("creating channel for a control script to communicate with the plugin");
     // let (robot_control_api_client_endpoint, robot_control_api_engine_endpoint) = start_python_robot(
     //     Path::new("applications/robot/python/control"),
     //     "robot",

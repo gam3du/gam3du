@@ -17,7 +17,6 @@ runtime-python.workspace = true
 
 winit = { workspace = true, default-features = true }
 serde_json = { workspace = true, features = ["std"] }
-# rustpython-vm.workspace = true
 # web-time.workspace = true
 # "signal", 
 tracing.workspace = true
@@ -30,6 +29,8 @@ lib-file-storage.workspace = true
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen.workspace = true
 web-time.workspace = true
+rustpython.workspace = true
+rustpython-vm.workspace = true
 # js-sys.workspace = true
 # bincode.workspace = true
 wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }

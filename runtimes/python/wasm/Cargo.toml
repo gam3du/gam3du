@@ -17,8 +17,8 @@ runtime-python.workspace = true
 serde_json = { workspace = true, features = ["std"] }
 tracing.workspace = true
 # web-time.workspace = true
-# rustpython = { workspace = true, features = [] }
-# rustpython-vm.workspace = true
+rustpython = { workspace = true, features = ["freeze-stdlib", "stdlib"] }
+rustpython-vm = { workspace = true, features = ["compiler", "encodings", "serde"] }
 # runtime-python-bindgen.workspace = true
 # either.workspace = true
 # shared_channel = "0.2"

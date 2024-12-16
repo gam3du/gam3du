@@ -54,6 +54,7 @@
         "setunadjusted",
         "spsc",
         "srgb",
+        "stdlib",
         "struct",
         "subsec",
         "subseconds",

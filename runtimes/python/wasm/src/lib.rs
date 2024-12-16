@@ -12,8 +12,9 @@ use gam3du_framework_common::{
     api::ApiDescriptor, api_channel::WasmApiClientEndpoint, message::ServerToClientMessage,
 };
 use runtime_python::PythonRuntimeBuilder;
+use rustpython_vm::frozen;
 use std::{cell::RefCell, path::Path, time::Duration};
-use tracing::info;
+use tracing::{error, info};
 use wasm_bindgen::prelude::*;
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
 
@@ -71,6 +72,24 @@ pub fn run() -> Result<(), JsValue> {
         "robot",
     );
 
+    let robot_control_module = rustpython::vm::py_freeze!(
+        module_name = "robot",
+        file = "../../../applications/robot/python/control/robot.py"
+    )
+    .decode();
+
+    let robot_control_api_module = rustpython::vm::py_freeze!(
+        module_name = "robot_control_api",
+        file = "../../../applications/robot/python/control/robot_control_api.py"
+    )
+    .decode();
+
+    let robot_control_api_async_module = rustpython::vm::py_freeze!(
+        module_name = "robot_control_api_async",
+        file = "../../../applications/robot/python/control/robot_control_api_async.py"
+    )
+    .decode();
+
     let robot_api: ApiDescriptor = serde_json::from_str(API_JSON).unwrap();
 
     APPLICATION_STATE.with_borrow_mut(|state| {
@@ -85,6 +104,9 @@ pub fn run() -> Result<(), JsValue> {
         let api_client = WasmApiClientEndpoint::new(robot_api, receiver, Box::from(send));
 
         python_runtime_builder.add_api_client(Box::from(api_client));
+        python_runtime_builder.add_frozen_module("robot", robot_control_module);
+        python_runtime_builder.add_frozen_module("robot_api", robot_control_api_module);
+        python_runtime_builder.add_frozen_module("robot_api_async", robot_control_api_async_module);
 
         let mut runtime = python_runtime_builder.build();
 
