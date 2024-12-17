@@ -242,9 +242,15 @@ pub struct PythonRuntime {
 
 impl Module for PythonRuntime {
     fn enter_main(&mut self) {
+        debug!("entering module {}", self.main_module_name);
         self.interpreter.enter(|vm| {
+            debug!("entered module {}", self.main_module_name);
             match vm.import(self.main_module_name, 0) {
                 Ok(module) => {
+                    debug!(
+                        "completed module {} with {:?}",
+                        self.main_module_name, module
+                    );
                     self.module = Some(module);
                     info!("Python thread completed successfully");
                 }

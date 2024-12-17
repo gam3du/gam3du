@@ -14,12 +14,14 @@ let request_queue = new Array();
 
 /// This will be called by the Python Runtime for each request to the engine
 export function on_python_request(message) {
+    console.info(LOG_SRC, "on_python_message", message);
     request_queue.push(message);
 }
 
 /// This will be called by the engine to check for new requests sent by the Python Runtime
 export function poll_api_client_request() {
-    request_queue.shift()
+    // console.trace(LOG_SRC, "poll_api_client_request");
+    return request_queue.shift()
 }
 
 export function connect_api_client(channel_buffers) {

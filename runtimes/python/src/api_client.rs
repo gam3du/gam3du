@@ -206,6 +206,7 @@ pub(crate) mod py_api_client {
 }
 
 fn poll(request: RequestHandle, vm: &VirtualMachine) -> Result<MaybeFulfilled, PyBaseExceptionRef> {
+    // error!("native poll({})", request.inner());
     let api_module = "robot_control_api_internal";
     let private_api = get_api_client(vm, api_module);
     let message_id = request.inner();
@@ -254,6 +255,7 @@ fn message(
     // TODO move the api selection into the caller
     // let api_name = Identifier("robot".into());
     // let vm_id = vm.wasm_id.as_ref().unwrap();
+    error!("native message()");
 
     let api_module = "robot_control_api_internal";
     let private_api = get_api_client(vm, api_module);

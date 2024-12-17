@@ -7,6 +7,7 @@
 import * as PythonRuntime from './wasm.js';
 
 export function send_api_client_request(request_bytes) {
+    console.debug("forwarding", request_bytes.length, "bytes");
     self.postMessage(request_bytes);
 }
 
@@ -28,7 +29,9 @@ self.onmessage = (message_event) => {
             PythonRuntime.set_channel_buffers(message.buffers);
             break;
         case "run":
+            console.debug(LOG_SRC, "calling PythonRuntime.run()");
             PythonRuntime.run();
+            console.debug(LOG_SRC, "PythonRuntime.run() completed");
             break;
         default:
             console.error(LOG_SRC, "unknown message type: ", message.type);

@@ -12,7 +12,7 @@ use std::{
 /// Any message that can be sent from a client to a server
 ///
 /// This might be extended in the future in order to query or cancel a pending request
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ClientToServerMessage {
     Request(RequestMessage),
 }

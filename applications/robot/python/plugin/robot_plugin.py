@@ -6,6 +6,8 @@ from robot_plugin_api import (
     move_forward, paint_tile, robot_color_rgb, turn, log_trace, log_debug, log_error, log_info, log_warn, set_height, jump
 )
 
+log_info("robot_plugin.py loaded")
+
 current_command = 0
 
 def on_robot_stopped():

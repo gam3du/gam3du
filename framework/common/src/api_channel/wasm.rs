@@ -1,4 +1,4 @@
-use tracing::trace;
+use tracing::{debug, trace};
 use wasm_rs_shared_channel::spsc;
 
 use crate::{
@@ -40,7 +40,10 @@ impl ApiClientEndpoint for WasmApiClientEndpoint {
     }
 
     fn send_to_server(&self, message: ClientToServerMessage) {
-        (self.send)(&bincode::serialize(&message).unwrap());
+        debug!("send_to_server: {message:#?}");
+        let bytes = bincode::serialize(&message).unwrap();
+        debug!("send_to_server: {bytes:?}");
+        (self.send)(&bytes);
     }
 
     fn poll_response(&self) -> Option<ServerToClientMessage> {
@@ -76,11 +79,12 @@ impl ApiServerEndpoint for WasmApiServerEndpoint {
     #[must_use]
     fn poll_request(&self) -> Option<ClientToServerMessage> {
         if let Some(request_bytes) = (self.poll)() {
-            let request = bincode::deserialize(&request_bytes).unwrap();
+            trace!("received bytes from PythonWorker: {request_bytes:?}");
+            let request: ClientToServerMessage = bincode::deserialize(&request_bytes).unwrap();
             trace!("received request from PythonWorker: {request:#?}");
 
             trace!("forwarding message to plugin");
-            Some(ClientToServerMessage::Request(request))
+            Some(request)
         } else {
             None
         }

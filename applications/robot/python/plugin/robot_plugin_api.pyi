@@ -1,5 +1,8 @@
 # TODO this should be generated
 
+# print("robot_plugin_api.py loaded")
+
+
 def set_height(height: float) -> bool:
 	pass
 

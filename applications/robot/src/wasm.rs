@@ -142,7 +142,7 @@ pub fn start() -> Result<(), JsValue> {
     )
     .decode();
 
-    python_runtime_builder.add_frozen_module("robot_api_async", robot_plugin_module);
+    python_runtime_builder.add_frozen_module("robot_plugin", robot_plugin_module);
 
     // info!("creating channel for a control script to communicate with the plugin");
     // let (robot_control_api_client_endpoint, robot_control_api_engine_endpoint) = start_python_robot(

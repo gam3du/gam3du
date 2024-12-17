@@ -14,7 +14,7 @@ use gam3du_framework_common::{
 use runtime_python::PythonRuntimeBuilder;
 use rustpython_vm::frozen;
 use std::{cell::RefCell, path::Path, time::Duration};
-use tracing::{error, info};
+use tracing::{debug, error, info};
 use wasm_bindgen::prelude::*;
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
 
@@ -49,6 +49,8 @@ pub fn init() {
 #[wasm_bindgen]
 pub fn set_channel_buffers(buffers: JsValue) {
     info!("set_channel_buffers");
+
+    // assert_eq!(array.length(), 2);
 
     let channel = SharedChannel::from(buffers);
     let (_sender, receiver) = channel.split();
@@ -98,6 +100,7 @@ pub fn run() -> Result<(), JsValue> {
         };
 
         let send = |request: &[u8]| {
+            debug!("sender callback with {} bytes", request.len());
             send_api_client_request(request);
         };
 

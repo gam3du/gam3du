@@ -1,5 +1,6 @@
 from typing import Any, Union
 
+# print("api_client.py loaded")
 
 # A handle to an async operation.
 class Handle:
