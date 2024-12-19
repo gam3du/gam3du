@@ -1,7 +1,7 @@
 // this module is responsible for starting and managing a WebWorker running a PythonRuntime
-// it is supposed to be loaded by the main thread within the index.html/index.js
+// it is supposed to be loaded by the main thread within the index.html/index.mjs
 
-const LOG_SRC = "[main:runtime-python/module.js]";
+const LOG_SRC = "[main:runtime-python/module.mjs]";
 console.info(LOG_SRC, "/--- initializing Python Module ---\\");
 
 let worker;
@@ -10,7 +10,7 @@ export function start_worker(channel_buffers, on_python_message) {
     console.info(LOG_SRC, "start_worker", channel_buffers);
 
     console.info(LOG_SRC, "starting Python Worker");
-    worker = new Worker("./runtime-python/worker.js", { type: "module" });
+    worker = new Worker("./runtime-python/worker.mjs", { type: "module" });
 
 
     // message event handler forwarding all PythonRequests to the Application
@@ -76,12 +76,13 @@ function set_channel_buffers(channel_buffers) {
     worker.postMessage(message);
 }
 
-export function run() {
+export function run(source) {
     console.info(LOG_SRC, "starting PythonRuntime (this will block the containing WebWorker until the script completes)");
 
     console.info(LOG_SRC, "run");
     let message = {
         type: "run",
+        source: source,
     };
 
     console.info(LOG_SRC, "sending run-command to PythonModule WASM", message);

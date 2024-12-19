@@ -10,15 +10,14 @@ use gam3du_framework_common::{
 };
 use runtime_python_bindgen::PyIdentifier;
 use rustpython_vm::{
-    builtins::{PyModule, PyStrInterned},
+    builtins::{PyBaseException, PyStrInterned},
     convert::IntoObject,
-    frozen::{self, FrozenCodeObject, FrozenLib, FrozenModule, FrozenModulesIter},
+    frozen::FrozenModulesIter,
     function::FuncArgs,
     signal::{user_signal_channel, UserSignal, UserSignalReceiver, UserSignalSender},
-    Interpreter, PyObjectRef, Settings,
+    Interpreter, PyObjectRef, PyRef, Settings,
 };
 use std::{
-    any::Any,
     collections::HashMap,
     path::Path,
     sync::{
@@ -238,6 +237,23 @@ pub struct PythonRuntime {
     pub interpreter: Interpreter,
     api_server_endpoints: Vec<Arc<Mutex<dyn ApiServerEndpoint>>>,
     pub module: Option<PyObjectRef>,
+}
+
+impl PythonRuntime {
+    pub fn run_source(&mut self, source: &str) -> Result<PyObjectRef, PyRef<PyBaseException>> {
+        self.interpreter.enter(|vm| {
+            let scope = vm.new_scope_with_builtins();
+            let code_obj = vm
+                .compile(
+                    source,
+                    rustpython_vm::compiler::Mode::Exec,
+                    "<embedded>".to_owned(),
+                )
+                .map_err(|err| vm.new_syntax_error(&err, Some(source)))?;
+
+            vm.run_code_obj(code_obj, scope)
+        })
+    }
 }
 
 impl Module for PythonRuntime {

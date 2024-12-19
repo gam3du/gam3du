@@ -1,8 +1,8 @@
 // This is the main entry point of the web-application coordinating the
 // loading, initialization and start of all components
 
-import * as PythonRuntime from "./runtime-python/module.js";
-import * as Application from "./application/module.js";
+import * as PythonRuntime from "./runtime-python/module.mjs";
+import * as Application from "./application/module.mjs";
 
 // Logging prefix to identify this thread and module
 const LOG_SRC = "[main:index.html]";
@@ -24,11 +24,23 @@ console.info(LOG_SRC, "Starting Application");
 Application.start();
 console.info(LOG_SRC, "Application is running");
 
-console.info(LOG_SRC, "starting PythonRuntime worker");
-PythonRuntime.start_worker(channel_buffers_clone, Application.on_python_request).then(() => {
-    console.info(LOG_SRC, "PythonRuntime.run()");
-    PythonRuntime.run()
-});
-console.info(LOG_SRC, "PythonRuntime worker started");
+
+export function run(source) {
+    console.info(LOG_SRC, "starting PythonRuntime worker");
+    PythonRuntime.start_worker(channel_buffers_clone, Application.on_python_request).then(() => {
+        console.info(LOG_SRC, "PythonRuntime.run()");
+        PythonRuntime.run(source);
+    });
+    console.info(LOG_SRC, "PythonRuntime worker started");
+}
+
+window.run = run;
+
+// document.getElementById()
+
+// alert("index loaded");
+// window.document.addEventListener("DOMContentLoaded", function () {
+//     alert("DOM loaded");
+// });
 
 console.info(LOG_SRC, "\\--- Main Module initialized ---/");

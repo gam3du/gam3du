@@ -1,9 +1,9 @@
 // this module is responsible for starting and managing a WebWorker running the engine and application
-// it is supposed to be loaded by the main thread within the index.html/index.js
+// it is supposed to be loaded by the main thread within the index.html/index.mjs
 
 import * as Application from "./wasm.js";
 
-const LOG_SRC = "[main:application/module.js]";
+const LOG_SRC = "[main:application/module.mjs]";
 console.info(LOG_SRC, "/--- initializing Application Module ---\\");
 
 console.info(LOG_SRC, "initializing Application");

@@ -7,20 +7,18 @@
 )]
 
 use gam3du_framework::init_logger;
-use gam3du_framework_common::module::Module;
 use gam3du_framework_common::{
     api::ApiDescriptor, api_channel::WasmApiClientEndpoint, message::ServerToClientMessage,
 };
 use runtime_python::PythonRuntimeBuilder;
-use rustpython_vm::frozen;
-use std::{cell::RefCell, path::Path, time::Duration};
-use tracing::{debug, error, info};
+use std::{cell::RefCell, path::Path};
+use tracing::{debug, info};
 use wasm_bindgen::prelude::*;
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
 
 const API_JSON: &str = include_str!("../../../../applications/robot/control.api.json");
 
-#[wasm_bindgen(raw_module = "./worker.js")]
+#[wasm_bindgen(raw_module = "./worker.mjs")]
 extern "C" {
     /// sends requests to an api server (the game engine)
     fn send_api_client_request(client_to_server_request: &[u8]);
@@ -65,8 +63,10 @@ pub fn set_channel_buffers(buffers: JsValue) {
 }
 
 #[wasm_bindgen]
-pub fn run() -> Result<(), JsValue> {
+pub fn run(source: &str) -> Result<(), JsValue> {
     info!("run");
+
+    // let source = include_str!("../../../../applications/robot/python/control/robot.py");
 
     info!("creating python runtime builder for engine plugin");
     let mut python_runtime_builder = PythonRuntimeBuilder::new(
@@ -92,7 +92,7 @@ pub fn run() -> Result<(), JsValue> {
     )
     .decode();
 
-    let robot_api: ApiDescriptor = serde_json::from_str(API_JSON).unwrap();
+    let robot_api: ApiDescriptor = serde_json::from_str(API_JSON).map_err(|err| err.to_string())?;
 
     APPLICATION_STATE.with_borrow_mut(|state| {
         let Some(receiver) = state.receiver.take() else {
@@ -114,25 +114,11 @@ pub fn run() -> Result<(), JsValue> {
         let mut runtime = python_runtime_builder.build();
 
         info!("starting Python runtime for control script");
-        runtime.enter_main();
+        // runtime.enter_main();
+        runtime
+            .run_source(source)
+            .map_err(|err| format!("{err:#?}"))?;
 
-        // info!("waiting for message");
-        // loop {
-        //     match receiver.recv(Some(Duration::from_millis(100))) {
-        //         Ok(None) => {
-        //             info!("… still waiting for message …");
-        //         }
-        //         Ok(Some(response)) => {
-        //             info!("received message: {response:?}");
-        //             break Ok(());
-        //         }
-        //         Err(err) => {
-        //             break Err(JsValue::from(format!(
-        //                 "Error while waiting for message: {err:?}"
-        //             )));
-        //         }
-        //     }
-        // }
         Ok(())
     })?;
 

@@ -11,7 +11,7 @@ export function send_api_client_request(request_bytes) {
     self.postMessage(request_bytes);
 }
 
-const LOG_SRC = "[python-worker:runtime-python/worker.js]";
+const LOG_SRC = "[python-worker:runtime-python/worker.mjs]";
 console.info(LOG_SRC, "/--- initializing Python Worker ---\\");
 
 await PythonRuntime.default();
@@ -30,7 +30,7 @@ self.onmessage = (message_event) => {
             break;
         case "run":
             console.debug(LOG_SRC, "calling PythonRuntime.run()");
-            PythonRuntime.run();
+            PythonRuntime.run(message.source);
             console.debug(LOG_SRC, "PythonRuntime.run() completed");
             break;
         default:

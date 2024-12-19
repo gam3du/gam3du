@@ -26,7 +26,7 @@ const WINDOW_TITLE: &str = "Robot";
 // const CONTROL_API_PATH: &str = "applications/robot/control.api.json";
 const API_JSON: &str = include_str!("../control.api.json");
 
-#[wasm_bindgen(raw_module = "./module.js")]
+#[wasm_bindgen(raw_module = "./module.mjs")]
 extern "C" {
     /// queries for new api requests from a remote controller (e.g. a Python Script)
     fn poll_api_client_request() -> Option<Vec<u8>>;

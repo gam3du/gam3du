@@ -1,6 +1,7 @@
 :root {
     --foreground-color: #C0D1E0;
-    --background-color: #0C0D1E;
+    --c0d1e-back: #0C0D1E;
+    --background-color: #333;
     --log-trace-color: #666;
     --log-debug-color: #636;
     --log-info-color: #36f;

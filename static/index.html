@@ -10,14 +10,14 @@
     <link rel="stylesheet" href="style.css" />
 
     <link rel="modulepreload" href="ace/ace.js" />
-    <link rel="modulepreload" href="application/module.js" />
+    <link rel="modulepreload" href="application/module.mjs" />
     <link rel="modulepreload" href="application/wasm.js" />
-    <link rel="modulepreload" href="index.js" />
-    <link rel="modulepreload" href="runtime-python/module.js" />
+    <link rel="modulepreload" href="index.mjs" />
+    <link rel="modulepreload" href="runtime-python/module.mjs" />
     <link rel="modulepreload" href="runtime-python/wasm.js" />
-    <link rel="modulepreload" href="runtime-python/worker.js" />
+    <link rel="modulepreload" href="runtime-python/worker.mjs" />
 
-    <script type="module" src="index.js"></script>
+    <script type="module" src="index.mjs"></script>
 
     <script src="ace/ace.js"></script>
     <script>
@@ -31,7 +31,13 @@
             var editor = ace.edit("editor");
             editor.setTheme("ace/theme/monokai");
             editor.session.setMode("ace/mode/python");
+
+            document.getElementById("run").onclick = () => {
+                var editor = ace.edit("editor");
+                window.run(editor.getValue());
+            };
         });
+
     </script>
 </head>
 
@@ -39,9 +45,10 @@
     <main>
         <div id="controls">
             <button>⏵⏸⏹⏯🗘🗙↺↻⟲⟳🚀 Run</button>
+            <button id="run">⏵Start</button>
         </div>
 
-        <div id="editor">Python code goes here</div>
+        <div id="editor">{code}</div>
 
         <canvas id="canvas"></canvas>
 

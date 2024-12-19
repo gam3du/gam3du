@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{fs, path::Path};
 
 use crate::{
     ace,
@@ -39,6 +39,14 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
     )?;
 
     ace::download(&target_dir.join("ace"))?;
+
+    let index_html = target_dir.join("index.html");
+    let index_html_str = fs::read_to_string(&index_html)?;
+    let index_html_str = index_html_str.replace(
+        "{code}",
+        include_str!("../../../applications/robot/python/control/robot.py"),
+    );
+    fs::write(&index_html, index_html_str)?;
 
     if !no_serve {
         start_webserver(shell, target_dir)?;
