@@ -25,7 +25,7 @@ Application.start();
 console.info(LOG_SRC, "Application is running");
 
 
-export function run(source) {
+export function run_script(source) {
     console.info(LOG_SRC, "starting PythonRuntime worker");
     PythonRuntime.start_worker(channel_buffers_clone, Application.on_python_request).then(() => {
         console.info(LOG_SRC, "PythonRuntime.run()");
@@ -34,7 +34,12 @@ export function run(source) {
     console.info(LOG_SRC, "PythonRuntime worker started");
 }
 
-window.run = run;
+window.run_script = run_script;
+
+window.reset_game = () => {
+    console.info(LOG_SRC, "Resetting Application");
+    Application.reset();
+}
 
 // document.getElementById()
 

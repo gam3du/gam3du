@@ -12,7 +12,7 @@ use runtime_python::PythonRuntimeBuilder;
 use std::{
     cell::RefCell,
     path::Path,
-    sync::{mpsc, Arc},
+    sync::{mpsc, Arc, RwLock},
 };
 use tracing::info;
 use wasm_bindgen::prelude::*;
@@ -114,6 +114,17 @@ impl GameLoopRunner for Runner {
             todo!("do not crash on exit");
         }
     }
+}
+
+static GAME_STATE: Option<Arc<RwLock<Box<GameState>>>> = None;
+
+#[wasm_bindgen]
+pub fn reset() -> Result<(), JsValue> {
+    if let Some(state) = &GAME_STATE {
+        *state.write().unwrap() = Box::new(GameState::new((10, 10)));
+    }
+
+    Ok(())
 }
 
 #[wasm_bindgen]

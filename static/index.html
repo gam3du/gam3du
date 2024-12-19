@@ -32,9 +32,13 @@
             editor.setTheme("ace/theme/monokai");
             editor.session.setMode("ace/mode/python");
 
+            document.getElementById("reset").onclick = () => {
+                window.reset_game();
+            };
+
             document.getElementById("run").onclick = () => {
                 var editor = ace.edit("editor");
-                window.run(editor.getValue());
+                window.run_script(editor.getValue());
             };
         });
 
@@ -44,7 +48,8 @@
 <body>
     <main>
         <div id="controls">
-            <button>⏵⏸⏹⏯🗘🗙↺↻⟲⟳🚀 Run</button>
+            <!-- <button>⏵⏸⏹⏯🗘🗙↺↻⟲⟳🚀 Run</button> -->
+            <button id="reset">🗘Reset</button>
             <button id="run">⏵Start</button>
         </div>
 

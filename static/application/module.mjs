@@ -36,4 +36,10 @@ export function start() {
     console.debug(LOG_SRC, "application completed");
 }
 
+export function reset() {
+    console.info(LOG_SRC, "resetting application");
+    Application.reset();
+    console.debug(LOG_SRC, "resetting completed");
+}
+
 console.info(LOG_SRC, "\\--- Application Module initialized ---/");
