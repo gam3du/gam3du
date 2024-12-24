@@ -1,6 +1,7 @@
 // This is the main entry point of the web-application coordinating the
 // loading, initialization and start of all components
 
+import SharedChannel from "./shared-channel.mjs";
 import * as PythonRuntime from "./runtime-python/module.mjs";
 import * as Application from "./application/module.mjs";
 
@@ -10,14 +11,12 @@ console.info(LOG_SRC, "/--- initializing Main Module ---\\");
 
 // Capacity of the buffer backing the message channel between the PythonRuntime and the engine
 const CHANNEL_CAPACITY = 65536;
-
 console.info(LOG_SRC, "creating buffers backing the message channel");
-let channel_buffers = [new SharedArrayBuffer(4 * 4), new SharedArrayBuffer(CHANNEL_CAPACITY)];
-let channel_buffers_clone = Array.from(channel_buffers);
-console.debug(LOG_SRC, "buffers", channel_buffers);
+const channel = new SharedChannel(CHANNEL_CAPACITY, "[main:SharedChannel]");
+console.debug(LOG_SRC, "SharedChannel buffers", channel.buffers());
 
 console.info(LOG_SRC, "Setting channel buffers for application");
-Application.connect_api_client(channel_buffers);
+Application.connect_api_client(channel.buffers());
 console.info(LOG_SRC, "channel buffers for application were set");
 
 console.info(LOG_SRC, "Starting Application");
@@ -27,7 +26,7 @@ console.info(LOG_SRC, "Application is running");
 
 export function run_script(source) {
     console.info(LOG_SRC, "starting PythonRuntime worker");
-    PythonRuntime.start_worker(channel_buffers_clone, Application.on_python_request).then(() => {
+    PythonRuntime.start_worker(channel.buffers(), Application.on_python_request).then(() => {
         console.info(LOG_SRC, "PythonRuntime.run()");
         PythonRuntime.run(source);
     });
