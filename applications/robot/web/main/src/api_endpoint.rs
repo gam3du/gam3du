@@ -6,7 +6,7 @@ use gam3du_framework_common::{
 use tracing::debug;
 use web_sys::MessagePort;
 
-use crate::wasm::APPLICATION_STATE;
+use crate::APPLICATION_STATE;
 
 /// Provides methods for polling on requests from an [`ApiClientEndpoint`] and sending back responses.
 pub(crate) struct WasmApiServerEndpoint {

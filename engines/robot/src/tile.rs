@@ -1,7 +1,7 @@
-#![expect(
-    clippy::allow_attributes_without_reason,
-    reason = "false positives for Pod/Zeroable macros"
-)]
+// #![expect(
+//     clippy::allow_attributes_without_reason,
+//     reason = "false positives for Pod/Zeroable macros"
+// )]
 
 use bytemuck::{Pod, Zeroable};
 use glam::{Vec3, Vec4, Vec4Swizzles};

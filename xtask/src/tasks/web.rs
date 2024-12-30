@@ -16,7 +16,11 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
 
     let target_dir = Path::new("target/generated");
 
-    copy_content(shell, Path::new("static"), target_dir)?;
+    copy_content(
+        shell,
+        Path::new("applications/robot/web/static"),
+        target_dir,
+    )?;
 
     let cargo_args = args.finish();
 
@@ -29,19 +33,19 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
         &cargo_args,
     )?;
 
-    build_wasm(
-        shell,
-        "application-robot",
-        "application_robot",
-        is_release,
-        &target_dir.join("application/wasm"),
-        &cargo_args,
-    )?;
+    // build_wasm(
+    //     shell,
+    //     "application-robot",
+    //     "application_robot",
+    //     is_release,
+    //     &target_dir.join("application/wasm"),
+    //     &cargo_args,
+    // )?;
 
     build_wasm(
         shell,
-        "application-robot-wasm-main",
-        "application_robot_wasm_main",
+        "application-robot-web-main",
+        "application_robot_web_main",
         is_release,
         &target_dir.join("wasm"),
         &cargo_args,

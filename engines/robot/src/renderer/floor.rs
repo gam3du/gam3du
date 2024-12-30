@@ -143,7 +143,7 @@ impl FloorRenderer {
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!(
-                "../../shaders/floor.wgsl"
+                "../../../../applications/robot/shaders/floor.wgsl"
             ))),
         });
 

@@ -73,7 +73,7 @@ impl renderer::RendererBuilder for RendererBuilder {
             surface.format,
             self.shader_source,
             depth_stencil_state,
-            &PathBuf::from("engines/robot/assets/monkey.gltf"),
+            &PathBuf::from("applications/robot/assets/monkey.gltf"),
         );
 
         Renderer {

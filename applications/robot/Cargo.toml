@@ -10,31 +10,28 @@ license-file.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-gam3du-framework-common.workspace = true
-gam3du-framework.workspace = true
-engine-robot.workspace = true
-runtime-python.workspace = true
+# gam3du-framework-common.workspace = true
+# gam3du-framework.workspace = true
+# engine-robot.workspace = true
+# runtime-python.workspace = true
 
-winit = { workspace = true, default-features = true }
-serde_json = { workspace = true, features = ["std"] }
+# winit = { workspace = true, default-features = true }
+# serde_json = { workspace = true, features = ["std"] }
 # web-time.workspace = true
 # "signal", 
-tracing.workspace = true
+# tracing.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-lib-file-storage.workspace = true
+# lib-file-storage.workspace = true
 # tokio = { workspace = true, features = ["rt", "macros", "time"] }
 # tokio-util = { workspace = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-wasm-bindgen.workspace = true
-web-time.workspace = true
-rustpython.workspace = true
-rustpython-vm.workspace = true
-web-sys = { workspace = true, features = ["MessagePort", "MessageEvent"] }
-# bincode.workspace = true
-# wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
-bincode.workspace = true
+# wasm-bindgen.workspace = true
+# web-time.workspace = true
+# rustpython.workspace = true
+# rustpython-vm.workspace = true
+# web-sys = { workspace = true, features = ["MessagePort", "MessageEvent"] }
 
 [build-dependencies]
 gam3du-framework-common.workspace = true

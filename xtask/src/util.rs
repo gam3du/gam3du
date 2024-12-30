@@ -131,7 +131,7 @@ pub(crate) fn copy_content(
             copy(shell, &file, destination_path)?;
         }
     } else {
-        todo!();
+        todo!("{source_path:?}");
     }
 
     Ok(())

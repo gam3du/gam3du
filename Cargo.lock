@@ -122,34 +122,30 @@ checksum = "34ac096ce696dc2fcabef30516bb13c0a68a11d30131d3df6f04711467681b04"
 name = "application-robot"
 version = "0.1.0"
 dependencies = [
+ "gam3du-framework-common",
+ "runtime-python-bindgen",
+ "serde_json",
+]
+
+[[package]]
+name = "application-robot-web-main"
+version = "0.1.0"
+dependencies = [
+ "application-robot",
  "bincode",
  "engine-robot",
  "gam3du-framework",
  "gam3du-framework-common",
- "lib-file-storage",
  "runtime-python",
- "runtime-python-bindgen",
  "rustpython",
  "rustpython-vm",
  "serde_json",
  "tracing",
  "wasm-bindgen",
+ "wasm-rs-shared-channel",
  "web-sys",
  "web-time",
  "winit 0.30.5",
-]
-
-[[package]]
-name = "application-robot-wasm-main"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "gam3du-framework",
- "gam3du-framework-common",
- "tracing",
- "wasm-bindgen",
- "wasm-rs-shared-channel",
- "web-sys",
 ]
 
 [[package]]

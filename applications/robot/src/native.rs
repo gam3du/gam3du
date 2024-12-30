@@ -158,7 +158,7 @@ fn async_main() -> ApplicationResult<()> {
         event_sender,
         RendererBuilder::new(
             shared_game_state,
-            include_str!("../../../engines/robot/shaders/robot.wgsl").into(),
+            include_str!("../shaders/robot.wgsl").into(),
         ),
         window_event_receiver,
         move || {

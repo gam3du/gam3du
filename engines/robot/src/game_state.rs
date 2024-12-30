@@ -51,7 +51,7 @@ impl GameState {
         self.robot.update(&mut self.event_registries);
     }
 
-    fn _turn(&mut self, steps_ccw: i8, duration: Duration) {
+    fn turn_(&mut self, steps_ccw: i8, duration: Duration) {
         self.robot.complete_animation(&mut self.event_registries);
         #[expect(clippy::cast_sign_loss, reason = "TODO make this less cumbersome")]
         if steps_ccw < 0 {
@@ -67,11 +67,11 @@ impl GameState {
         });
     }
 
-    pub fn _robot_color_rgb(&mut self, color: Vec3) {
+    pub fn robot_color_rgb_(&mut self, color: Vec3) {
         self.robot.color = color;
     }
 
-    pub fn _set_height(&mut self, height: f32) {
+    pub fn set_height_(&mut self, height: f32) {
         self.robot.complete_animation(&mut self.event_registries);
 
         let start_pos = self.robot.position;
@@ -81,7 +81,7 @@ impl GameState {
         self.robot.animation_position[2] = height;
     }
 
-    pub fn _paint_tile(&mut self) {
+    pub fn paint_tile_(&mut self) {
         self.robot.complete_animation(&mut self.event_registries);
 
         let start_pos = self.robot.position;
@@ -90,7 +90,7 @@ impl GameState {
         self.floor.tainted = self.tick;
     }
 
-    fn _move_forward(&mut self, draw: bool, duration: Duration) -> Result<(), String> {
+    fn move_forward_(&mut self, draw: bool, duration: Duration) -> Result<(), String> {
         self.robot.complete_animation(&mut self.event_registries);
 
         let segment = LineSegment::from(self.robot.orientation);
@@ -142,7 +142,7 @@ impl GameState {
         Ok(())
     }
 
-    fn _jump(&mut self, duration: Duration) -> Result<(), String> {
+    fn jump_(&mut self, duration: Duration) -> Result<(), String> {
         self.robot.complete_animation(&mut self.event_registries);
 
         let offset = self.robot.orientation.as_ivec2();
@@ -192,27 +192,27 @@ impl GameState {
 
 impl EngineApi for GameState {
     fn set_height(&mut self, height: f32) {
-        self._set_height(height);
+        self.set_height_(height);
     }
 
     fn move_forward(&mut self, draw: bool, duration: u64) -> bool {
-        self._move_forward(draw, Duration::from_millis(duration))
+        self.move_forward_(draw, Duration::from_millis(duration))
             .is_ok()
     }
 
     fn jump(&mut self, duration: u64) -> bool {
-        self._jump(Duration::from_millis(duration)).is_ok()
+        self.jump_(Duration::from_millis(duration)).is_ok()
     }
 
     fn turn(&mut self, steps_ccw: i8, duration: u64) {
-        self._turn(steps_ccw, Duration::from_millis(duration));
+        self.turn_(steps_ccw, Duration::from_millis(duration));
     }
 
     fn robot_color_rgb(&mut self, red: f32, green: f32, blue: f32) {
-        self._robot_color_rgb(Vec3::new(red, green, blue));
+        self.robot_color_rgb_(Vec3::new(red, green, blue));
     }
 
     fn paint_tile(&mut self) {
-        self._paint_tile();
+        self.paint_tile_();
     }
 }
