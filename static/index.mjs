@@ -1,8 +1,6 @@
 // This is the main entry point of the web-application coordinating the
 // loading, initialization and start of all components
 
-// import SharedChannel from "./shared-channel.mjs";
-// import PythonRuntime from "./runtime-python/module.mjs";
 import * as Application from "./application/module.mjs";
 import * as Wasm from "./wasm.js";
 
