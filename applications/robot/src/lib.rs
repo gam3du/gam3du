@@ -10,9 +10,11 @@
     reason = "TODO remove before release"
 )]
 
-///////////////////////// native section /////////////////////////
+mod api_endpoint;
 mod error;
-///
+
+///////////////////////// native section /////////////////////////
+
 #[cfg(not(target_family = "wasm"))]
 mod native;
 
@@ -27,10 +29,12 @@ fn main() {
 mod wasm;
 
 #[cfg(target_family = "wasm")]
-pub use wasm::{connect_api_client, init, start};
+pub use wasm::{init, start};
 
 #[cfg(target_family = "wasm")]
 #[cfg_attr(target_family = "wasm", wasm_bindgen::prelude::wasm_bindgen(start))]
 fn main() -> Result<(), wasm_bindgen::JsValue> {
-    init()
+    gam3du_framework::init_logger();
+    tracing::info!("application loaded");
+    Ok(())
 }

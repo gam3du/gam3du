@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["engines/*", "framework", "framework/common", "applications/*", "runtimes/*", "runtimes/python/bindgen", "runtimes/python/wasm", "libraries/*", "xtask", "winit"]
+members = ["engines/*", "framework", "framework/common", "applications/*", "applications/robot/wasm/main", "runtimes/*", "runtimes/python/bindgen", "runtimes/python/wasm", "libraries/*", "xtask", "winit"]
 exclude = ["libraries/ecs"]
 
 # [workspace.target.'cfg(not(target_os = "windows"))'.features]
@@ -30,6 +30,8 @@ lib-time = { path = "libraries/time" }
 runtime-python = { path = "runtimes/python" }
 runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 runtime-python-wasm = { path = "runtimes/python/wasm" }
+application-robot = { path = "applications/robot" }
+application-robot-wasm-main = { path = "applications/robot/wasm/main" }
 
 # from crates.io
 

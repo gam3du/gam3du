@@ -6,13 +6,13 @@
 // and https://users.rust-lang.org/t/using-async-in-a-call-back-of-a-blocking-library/121089
 import * as PythonRuntime from './wasm.js';
 
-export function send_api_client_request(request_bytes) {
-    console.debug("forwarding", request_bytes.length, "bytes");
-    self.postMessage(request_bytes);
-}
-
 const LOG_SRC = "[python-worker:runtime-python/worker.mjs]";
 console.info(LOG_SRC, "/--- initializing Python Worker ---\\");
+
+export function send_api_client_request(request_bytes) {
+    console.debug(LOG_SRC, "forwarding", request_bytes.length, "bytes");
+    self.postMessage(request_bytes);
+}
 
 await PythonRuntime.default();
 console.info(LOG_SRC, "Python Worker WASM initialized");
@@ -24,17 +24,21 @@ self.onmessage = (message_event) => {
     let message = message_event.data;
     console.info(LOG_SRC, "message received", message);
     switch (message.type) {
-        case "set_channel_buffers":
-            console.info(LOG_SRC, "sending to WASM", message.buffers);
-            PythonRuntime.set_channel_buffers(message.buffers);
+        case "init":
+            console.info(LOG_SRC, "sending to WASM", message.receiver);
+            PythonRuntime.set_channel_buffers(message.receiver);
+            self.postMessage(null);
             break;
         case "run":
+            // report completion before blocking
+            self.postMessage(null);
             console.debug(LOG_SRC, "calling PythonRuntime.run()");
             PythonRuntime.run(message.source);
             console.debug(LOG_SRC, "PythonRuntime.run() completed");
             break;
         default:
             console.error(LOG_SRC, "unknown message type: ", message.type);
+            self.postMessage(null);
     }
 }
 

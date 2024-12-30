@@ -1,0 +1,35 @@
+[package]
+name = "application-robot-wasm-main"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+gam3du-framework-common.workspace = true
+gam3du-framework.workspace = true
+# engine-robot.workspace = true
+# runtime-python.workspace = true
+
+# winit = { workspace = true, default-features = true }
+# serde_json = { workspace = true, features = ["std"] }
+# web-time.workspace = true
+# "signal", 
+tracing.workspace = true
+
+wasm-bindgen = { workspace = true, features = ["serde"] }
+# web-time.workspace = true
+# rustpython.workspace = true
+# rustpython-vm.workspace = true
+web-sys = { workspace = true, features = ["MessagePort", "MessageEvent", "WorkerOptions", "WorkerType"] }
+# bincode.workspace = true
+wasm-rs-shared-channel = { workspace = true, features = ["serde-bincode"] }
+bincode.workspace = true
+# serde = { workspace = true, features = ["derive"] }
+# serde-wasm-bindgen = "0.6"
+# wasm-bindgen-futures = "0.4"

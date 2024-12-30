@@ -29,6 +29,7 @@ rustpython-vm = { workspace = true, features = ["compiler", "encodings", "serde"
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen.workspace = true
 wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
+web-sys = { workspace = true, features = ["MessagePort"] }
 
 [lints]
 workspace = true

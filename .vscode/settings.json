@@ -80,6 +80,7 @@
         "wireframe",
         "xshell",
         "xtask",
+        "Deque",
         "Zeroable"
     ],
     "cSpell.ignorePaths": [

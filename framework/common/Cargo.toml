@@ -17,6 +17,7 @@ winit = { workspace = true, default-features = true }
 bincode.workspace = true
 tracing.workspace = true
 wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
+web-sys = { workspace = true, features = ["MessagePort", "DedicatedWorkerGlobalScope"] }
 
 [lints]
 workspace = true

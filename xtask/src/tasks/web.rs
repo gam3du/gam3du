@@ -38,6 +38,15 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
         &cargo_args,
     )?;
 
+    build_wasm(
+        shell,
+        "application-robot-wasm-main",
+        "application_robot_wasm_main",
+        is_release,
+        &target_dir.join("wasm"),
+        &cargo_args,
+    )?;
+
     ace::download(&target_dir.join("ace"))?;
 
     let index_html = target_dir.join("index.html");

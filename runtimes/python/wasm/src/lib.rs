@@ -15,22 +15,27 @@ use std::{cell::RefCell, path::Path};
 use tracing::{debug, info};
 use wasm_bindgen::prelude::*;
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
+use web_sys::MessagePort;
 
 const API_JSON: &str = include_str!("../../../../applications/robot/control.api.json");
 
-#[wasm_bindgen(raw_module = "./worker.mjs")]
-extern "C" {
-    /// sends requests to an api server (the game engine)
-    fn send_api_client_request(client_to_server_request: &[u8]);
-}
+// #[wasm_bindgen(raw_module = "./worker.mjs")]
+// extern "C" {
+//     /// sends requests to an api server (the game engine)
+//     fn send_api_client_request(client_to_server_request: &[u8]);
+// }
 
 struct ApplicationState {
     receiver: Option<spsc::Receiver<ServerToClientMessage>>,
+    // sender: Option<MessagePort>,
 }
 
 impl ApplicationState {
     const fn new() -> Self {
-        Self { receiver: None }
+        Self {
+            receiver: None,
+            // sender: None,
+        }
     }
 }
 
@@ -38,15 +43,17 @@ thread_local! {
     static APPLICATION_STATE: RefCell<ApplicationState> = const { RefCell::new(ApplicationState::new()) };
 }
 
+// TODO make this a main method
 #[wasm_bindgen]
 pub fn init() {
     init_logger();
     info!("initialized");
 }
 
+// TODO rename this to `init`
 #[wasm_bindgen]
 pub fn set_channel_buffers(buffers: JsValue) {
-    info!("set_channel_buffers");
+    info!("init");
 
     // assert_eq!(array.length(), 2);
 
@@ -58,6 +65,10 @@ pub fn set_channel_buffers(buffers: JsValue) {
             state.receiver.replace(receiver).is_none(),
             "receiver has already been set"
         );
+        // assert!(
+        //     state.sender.replace(sender).is_none(),
+        //     "receiver has already been set"
+        // );
     });
     info!("channel buffers successfully set");
 }
@@ -99,12 +110,16 @@ pub fn run(source: &str) -> Result<(), JsValue> {
             return Err(JsValue::from_str("cannot run without a receiver"));
         };
 
-        let send = |request: &[u8]| {
-            debug!("sender callback with {} bytes", request.len());
-            send_api_client_request(request);
-        };
+        // let Some(sender) = state.sender.take() else {
+        //     return Err(JsValue::from_str("cannot run without a sender"));
+        // };
 
-        let api_client = WasmApiClientEndpoint::new(robot_api, receiver, Box::from(send));
+        // let send = |request: &[u8]| {
+        //     debug!("sender callback with {} bytes", request.len());
+        //     send_api_client_request(request);
+        // };
+
+        let api_client = WasmApiClientEndpoint::new(robot_api, receiver);
 
         python_runtime_builder.add_api_client(Box::from(api_client));
         python_runtime_builder.add_frozen_module("robot", robot_control_module);

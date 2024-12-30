@@ -9,7 +9,7 @@ use rustpython_vm::{
     builtins::PyStr, convert::ToPyObject, function::PosArgs, pyclass, pymodule, PyObject,
     PyObjectRef, PyPayload, PyRef, PyResult, TryFromBorrowedObject, VirtualMachine,
 };
-use tracing::{error, trace};
+use tracing::{debug, error, trace};
 
 pub(crate) fn insert_api_client(
     vm: &VirtualMachine,
@@ -255,7 +255,7 @@ fn message(
     // TODO move the api selection into the caller
     // let api_name = Identifier("robot".into());
     // let vm_id = vm.wasm_id.as_ref().unwrap();
-    error!("native message()");
+    debug!("native message()");
 
     let api_module = "robot_control_api_internal";
     let private_api = get_api_client(vm, api_module);
