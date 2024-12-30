@@ -5,10 +5,7 @@
 
 use crate::{api_endpoint::WasmApiServerEndpoint, error::ApplicationError};
 use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder};
-use gam3du_framework::{
-    application::{Application, GameLoopRunner},
-    init_logger,
-};
+use gam3du_framework::application::{Application, GameLoopRunner};
 use gam3du_framework_common::{api::ApiDescriptor, event::FrameworkEvent};
 use runtime_python::PythonRuntimeBuilder;
 use std::{

@@ -12,10 +12,9 @@ use gam3du_framework_common::{
 };
 use runtime_python::PythonRuntimeBuilder;
 use std::{cell::RefCell, path::Path};
-use tracing::{debug, info};
+use tracing::info;
 use wasm_bindgen::prelude::*;
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
-use web_sys::MessagePort;
 
 const API_JSON: &str = include_str!("../../../../applications/robot/control.api.json");
 
@@ -65,10 +64,6 @@ pub fn set_channel_buffers(buffers: JsValue) {
             state.receiver.replace(receiver).is_none(),
             "receiver has already been set"
         );
-        // assert!(
-        //     state.sender.replace(sender).is_none(),
-        //     "receiver has already been set"
-        // );
     });
     info!("channel buffers successfully set");
 }
@@ -76,8 +71,6 @@ pub fn set_channel_buffers(buffers: JsValue) {
 #[wasm_bindgen]
 pub fn run(source: &str) -> Result<(), JsValue> {
     info!("run");
-
-    // let source = include_str!("../../../../applications/robot/python/control/robot.py");
 
     info!("creating python runtime builder for engine plugin");
     let mut python_runtime_builder = PythonRuntimeBuilder::new(
@@ -110,15 +103,6 @@ pub fn run(source: &str) -> Result<(), JsValue> {
             return Err(JsValue::from_str("cannot run without a receiver"));
         };
 
-        // let Some(sender) = state.sender.take() else {
-        //     return Err(JsValue::from_str("cannot run without a sender"));
-        // };
-
-        // let send = |request: &[u8]| {
-        //     debug!("sender callback with {} bytes", request.len());
-        //     send_api_client_request(request);
-        // };
-
         let api_client = WasmApiClientEndpoint::new(robot_api, receiver);
 
         python_runtime_builder.add_api_client(Box::from(api_client));
@@ -129,7 +113,6 @@ pub fn run(source: &str) -> Result<(), JsValue> {
         let mut runtime = python_runtime_builder.build();
 
         info!("starting Python runtime for control script");
-        // runtime.enter_main();
         runtime
             .run_source(source)
             .map_err(|err| format!("{err:#?}"))?;

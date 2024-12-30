@@ -2918,7 +2918,6 @@ dependencies = [
  "tracing",
  "wasm-bindgen",
  "wasm-rs-shared-channel",
- "web-sys",
 ]
 
 [[package]]

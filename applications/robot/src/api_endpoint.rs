@@ -32,10 +32,7 @@ impl ApiServerEndpoint for WasmApiServerEndpoint {
 
     #[must_use]
     fn poll_request(&self) -> Option<ClientToServerMessage> {
-        let message = APPLICATION_STATE.with_borrow_mut(|state| {
-            // trace!("polling client message from queue");
-            state.client_messages.pop_front()
-        });
+        let message = APPLICATION_STATE.with_borrow_mut(|state| state.client_messages.pop_front());
 
         message.map(|request_bytes| {
             debug!("received bytes from PythonWorker: {request_bytes:?}");
@@ -43,17 +40,6 @@ impl ApiServerEndpoint for WasmApiServerEndpoint {
             debug!("forwarding request to plugin: {request:#?}");
             request
         })
-
-        // if let Some(request_bytes) = (self.poll)() {
-        //     trace!("received bytes from PythonWorker: {request_bytes:?}");
-        //     let request: ClientToServerMessage = bincode::deserialize(&request_bytes).unwrap();
-        //     trace!("received request from PythonWorker: {request:#?}");
-
-        //     trace!("forwarding message to plugin");
-        //     Some(request)
-        // } else {
-        //     None
-        // }
     }
 
     #[must_use]
