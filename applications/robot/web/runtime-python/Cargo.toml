@@ -1,5 +1,5 @@
 [package]
-name = "runtime-python-wasm"
+name = "application-robot-web-runtime-python"
 description = "wasm module for Python runtimes to extend and control a gam3du engine"
 version.workspace = true
 edition.workspace = true
@@ -12,24 +12,16 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
-runtime-python.workspace = true
 
-serde_json = { workspace = true, features = ["std"] }
-tracing.workspace = true
-# web-time.workspace = true
+bincode.workspace = true
+runtime-python.workspace = true
 rustpython = { workspace = true, features = ["freeze-stdlib", "stdlib"] }
 rustpython-vm = { workspace = true, features = ["compiler", "encodings", "serde"] }
-# runtime-python-bindgen.workspace = true
-# either.workspace = true
-# shared_channel = "0.2"
-# wasm-rs-dbg = "0.1"
-# serde.workspace = true
-# console_error_panic_hook.workspace = true
-
-[target.'cfg(target_family = "wasm")'.dependencies]
+serde_json = { workspace = true, features = ["std"] }
+tracing.workspace = true
 wasm-bindgen.workspace = true
 wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
-# web-sys = { workspace = true, features = ["MessagePort"] }
+web-sys = { workspace = true, features = ["DedicatedWorkerGlobalScope"] }
 
 [lints]
 workspace = true

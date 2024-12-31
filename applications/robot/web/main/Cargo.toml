@@ -20,7 +20,7 @@ rustpython.workspace = true
 serde_json = { workspace = true, features = ["std"] }
 tracing.workspace = true
 wasm-bindgen = { workspace = true, features = ["serde"] }
-wasm-rs-shared-channel = { workspace = true, features = ["serde-bincode"] }
-web-sys = { workspace = true, features = ["MessagePort", "MessageEvent", "WorkerOptions", "WorkerType"] }
+wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
+web-sys = { workspace = true, features = ["MessageChannel", "MessageEvent", "MessagePort", "Worker", "WorkerOptions", "WorkerType"] }
 web-time.workspace = true
 winit = { workspace = true, default-features = true }

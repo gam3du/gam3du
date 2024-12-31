@@ -1,10 +1,5 @@
 mod native;
 
-#[cfg(target_family = "wasm")]
-mod wasm;
-#[cfg(target_family = "wasm")]
-pub use wasm::WasmApiClientEndpoint;
-
 // TODO maybe disable this for WASM or move into own platform specific crate?
 // TODO maybe the entire channel stuff should not be in the common crate as there's too much implementation in them
 pub use native::{native_channel, NativeApiClientEndpoint, NativeApiServerEndpoint};

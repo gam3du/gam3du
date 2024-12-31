@@ -1,13 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["engines/*", "framework", "framework/common", "applications/*", "applications/robot/web/main", "runtimes/*", "runtimes/python/bindgen", "runtimes/python/wasm", "libraries/*", "xtask", "winit"]
+members = ["engines/*", "framework", "framework/common", "applications/*", "applications/robot/web/main", "applications/robot/web/runtime-python", "runtimes/*", "runtimes/python/bindgen", "libraries/*", "xtask", "winit"]
 exclude = ["libraries/ecs"]
-
-# [workspace.target.'cfg(not(target_os = "windows"))'.features]
-# default = ["general_feature"]
-
-# [workspace.target.'cfg(target_os = "windows")'.features]
-# default = ["winonly_replacement"]
 
 [workspace.package]
 version = "0.1.0"
@@ -32,6 +26,7 @@ runtime-python-bindgen = { path = "runtimes/python/bindgen" }
 runtime-python-wasm = { path = "runtimes/python/wasm" }
 application-robot = { path = "applications/robot" }
 application-robot-web-main = { path = "applications/robot/web/main" }
+application-robot-web-runtime-python = { path = "applications/robot/web/runtime-python" }
 
 # from crates.io
 
@@ -67,7 +62,7 @@ wasm-rs-shared-channel = { version = "0.1", default-features = false }
 web-sys = { version = "0.3", default-features = false }
 web-time = { version = "1", default-features = false }
 wgpu = { version = "23", default-features = false }
-winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a9452b72e749a4890db23b92d65abc2", default-features = false }
+winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a9452b72e749a4890db23b92d65abc2", default-features = false, comment = "switch to the official version as soon as the new API becomes stabilized" }
 xshell = { version = "0.2", default-features = false }
 
 # Compile all (non-workspace) dependencies with optimizations.

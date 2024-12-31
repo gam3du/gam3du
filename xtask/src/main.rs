@@ -18,11 +18,11 @@ mod util;
 mod wasm;
 
 #[cfg(not(target_family = "wasm"))]
+#[path = "tasks/robot_web.rs"]
+mod robot_web;
+#[cfg(not(target_family = "wasm"))]
 #[path = "tasks/run_wasm.rs"]
 mod run_wasm;
-#[cfg(not(target_family = "wasm"))]
-#[path = "tasks/web.rs"]
-mod web;
 
 #[cfg(not(target_family = "wasm"))]
 fn main() -> anyhow::Result<std::process::ExitCode> {
@@ -45,8 +45,8 @@ fn main() -> anyhow::Result<std::process::ExitCode> {
     };
 
     match subcommand.as_str() {
-        "web" => {
-            web::run(&shell, args)?;
+        "robot-web" => {
+            robot_web::run(&shell, args)?;
             Ok(ExitCode::SUCCESS)
         }
         "web_legacy" => {

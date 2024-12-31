@@ -69,7 +69,7 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
             .with_context(|| format!("Failed to copy static file \"{}\"", file.display()))?;
     }
 
-    ace::download(Path::new("target/generated"))?;
+    ace::download(shell, Path::new("target/generated"))?;
 
     if !no_serve {
         log::info!("serving on port 8000");

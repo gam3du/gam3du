@@ -26,21 +26,12 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
 
     build_wasm(
         shell,
-        "runtime-python-wasm",
-        "runtime_python_wasm",
+        "application-robot-web-runtime-python",
+        "application_robot_web_runtime_python",
         is_release,
         &target_dir.join("runtime-python/wasm"),
         &cargo_args,
     )?;
-
-    // build_wasm(
-    //     shell,
-    //     "application-robot",
-    //     "application_robot",
-    //     is_release,
-    //     &target_dir.join("application/wasm"),
-    //     &cargo_args,
-    // )?;
 
     build_wasm(
         shell,
@@ -51,7 +42,7 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
         &cargo_args,
     )?;
 
-    ace::download(&target_dir.join("ace"))?;
+    ace::download(shell, &target_dir.join("ace"))?;
 
     let index_html = target_dir.join("index.html");
     let index_html_str = fs::read_to_string(&index_html)?;

@@ -7,17 +7,16 @@ rust-version.workspace = true
 license-file.workspace = true
 
 [dependencies]
-getrandom = { workspace = true, features = ["js"] }
 indexmap = { workspace = true, features = ["serde", "std"] }
 rand = { workspace = true, features = ["getrandom", "std", "std_rng"] }
 serde = { workspace = true, features = ["std", "derive"] }
 winit = { workspace = true, default-features = true }
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+getrandom = { workspace = true }
+
 [target.'cfg(target_family = "wasm")'.dependencies]
-bincode.workspace = true
-tracing.workspace = true
-wasm-rs-shared-channel = { workspace = true, features = ["serde", "serde-bincode"] }
-web-sys = { workspace = true, features = ["MessagePort", "DedicatedWorkerGlobalScope"] }
+getrandom = { workspace = true, features = ["js"] }
 
 [lints]
 workspace = true

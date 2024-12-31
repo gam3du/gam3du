@@ -14,6 +14,7 @@
 mod api_endpoint;
 
 use crate::api_endpoint::WasmApiServerEndpoint;
+use application_robot::WINDOW_TITLE;
 use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder};
 use gam3du_framework::application::{Application, GameLoopRunner};
 use gam3du_framework_common::{
@@ -37,12 +38,10 @@ use wasm_bindgen::{
 use wasm_rs_shared_channel::spsc;
 use web_sys::{
     js_sys::{self, Uint8Array},
-    MessageChannel, MessageEvent, MessagePort, Worker, WorkerOptions,
+    MessageChannel, MessageEvent, MessagePort, Worker, WorkerOptions, WorkerType,
 };
 use web_time::Instant;
 use winit::{event_loop::EventLoop, platform::web::EventLoopExtWeb};
-
-const WINDOW_TITLE: &str = "Robot";
 
 // const CONTROL_API_PATH: &str = "applications/robot/control.api.json";
 const API_JSON: &str = include_str!("../../../control.api.json");
@@ -344,7 +343,7 @@ impl PythonWorker {
 
         debug!("creating new WebWorker");
         let worker_options = WorkerOptions::new();
-        worker_options.set_type(web_sys::WorkerType::Module);
+        worker_options.set_type(WorkerType::Module);
         let worker =
             Worker::new_with_options("./runtime-python/worker.mjs", &worker_options).unwrap();
         let worker = Rc::new(RefCell::new(worker));

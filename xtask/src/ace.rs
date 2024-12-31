@@ -1,8 +1,9 @@
 use std::{fs, io::Write, path::Path};
 
 use anyhow::Context;
+use xshell::Shell;
 
-pub(crate) fn download(target_dir: &Path) -> anyhow::Result<()> {
+pub(crate) fn download(shell: &Shell, target_dir: &Path) -> anyhow::Result<()> {
     log::info!("downloading ACE editor");
 
     let files = [
@@ -10,6 +11,11 @@ pub(crate) fn download(target_dir: &Path) -> anyhow::Result<()> {
         ("https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/theme-monokai.js", target_dir.join("theme-monokai.js")),
         ("https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/mode-python.js", target_dir.join("mode-python.js")),
     ];
+
+    shell.create_dir(target_dir).context(format!(
+        "failed to create destination path: {}",
+        target_dir.display(),
+    ))?;
 
     for (url, ref target) in files {
         let target_str = target.display();

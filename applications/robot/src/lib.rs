@@ -16,6 +16,9 @@
 // // mod api_endpoint;
 // mod error;
 
+/// Name to be used as readable window title for this application
+pub const WINDOW_TITLE: &str = "Robot";
+
 // ///////////////////////// native section /////////////////////////
 
 // #[cfg(not(target_family = "wasm"))]

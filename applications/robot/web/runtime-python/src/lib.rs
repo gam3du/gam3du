@@ -1,22 +1,25 @@
 //! TODO
 #![allow(missing_docs, reason = "TODO")]
 #![expect(
+    clippy::unwrap_used,
+    clippy::unwrap_in_result,
     clippy::missing_panics_doc,
     clippy::missing_errors_doc,
-    reason = "just a demo"
+    reason = "TODO remove before release"
 )]
 
+mod api_client;
+
+use api_client::WasmApiClientEndpoint;
 use gam3du_framework::init_logger;
-use gam3du_framework_common::{
-    api::ApiDescriptor, api_channel::WasmApiClientEndpoint, message::ServerToClientMessage,
-};
+use gam3du_framework_common::{api::ApiDescriptor, message::ServerToClientMessage};
 use runtime_python::PythonRuntimeBuilder;
 use std::{cell::RefCell, path::Path};
 use tracing::info;
 use wasm_bindgen::prelude::*;
 use wasm_rs_shared_channel::spsc::{self, SharedChannel};
 
-const API_JSON: &str = include_str!("../../../../applications/robot/control.api.json");
+const API_JSON: &str = include_str!("../../../control.api.json");
 
 // #[wasm_bindgen(raw_module = "./worker.mjs")]
 // extern "C" {
@@ -80,19 +83,19 @@ pub fn run(source: &str) -> Result<(), JsValue> {
 
     let robot_control_module = rustpython::vm::py_freeze!(
         module_name = "robot",
-        file = "../../../applications/robot/python/control/robot.py"
+        file = "../../python/control/robot.py"
     )
     .decode();
 
     let robot_control_api_module = rustpython::vm::py_freeze!(
         module_name = "robot_control_api",
-        file = "../../../applications/robot/python/control/robot_control_api.py"
+        file = "../../python/control/robot_control_api.py"
     )
     .decode();
 
     let robot_control_api_async_module = rustpython::vm::py_freeze!(
         module_name = "robot_control_api_async",
-        file = "../../../applications/robot/python/control/robot_control_api_async.py"
+        file = "../../python/control/robot_control_api_async.py"
     )
     .decode();
 

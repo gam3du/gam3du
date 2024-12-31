@@ -1,16 +1,14 @@
+use gam3du_framework_common::{
+    api::ApiDescriptor,
+    api_channel::ApiClientEndpoint,
+    message::{ClientToServerMessage, ServerToClientMessage},
+};
 use tracing::debug;
 use wasm_rs_shared_channel::spsc;
 use web_sys::{js_sys, wasm_bindgen::JsCast, DedicatedWorkerGlobalScope};
 
-use crate::{
-    api::ApiDescriptor,
-    message::{ClientToServerMessage, ServerToClientMessage},
-};
-
-use super::ApiClientEndpoint;
-
 /// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
-pub struct WasmApiClientEndpoint {
+pub(crate) struct WasmApiClientEndpoint {
     api: ApiDescriptor,
     /// Used to receive responses from the connected [`ApiServerEndpoint`]
     receiver: spsc::Receiver<ServerToClientMessage>,
@@ -18,7 +16,7 @@ pub struct WasmApiClientEndpoint {
 
 impl WasmApiClientEndpoint {
     #[must_use]
-    pub fn new(api: ApiDescriptor, receiver: spsc::Receiver<ServerToClientMessage>) -> Self {
+    pub(crate) fn new(api: ApiDescriptor, receiver: spsc::Receiver<ServerToClientMessage>) -> Self {
         Self { api, receiver }
     }
 }
