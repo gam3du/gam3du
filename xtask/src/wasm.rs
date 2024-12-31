@@ -38,14 +38,19 @@ pub(crate) fn build_wasm(
 
     log::info!("building robot application");
 
+    shell.change_dir("workspace-web");
+
     xshell::cmd!(
         shell,
-        "cargo build --target wasm32-unknown-unknown --jobs -1 --package {package_name} {release_flag...}"
+        "cargo build --jobs -1 --package {package_name} {release_flag...}"
     )
     .args(cargo_args)
     // .quiet()
     .run()
     .context("Failed to build {package_name} as wasm32")?;
+
+    // back to project root
+    shell.change_dir("..");
 
     // TODO figure out why applications have no name mangling while libs have
     let mangled_name = binary_name; // package_name.replace('-', "_");

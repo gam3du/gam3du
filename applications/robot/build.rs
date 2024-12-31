@@ -49,7 +49,7 @@ fn write_header(out: &mut BufWriter<File>) {
         "# This file has been generated automatically and shall not be edited by hand!"
     )
     .unwrap();
-    writeln!(out, "# generator: {}", file!()).unwrap();
+    writeln!(out, "# generator: applications/robot/build.rs").unwrap();
     writeln!(out, "# api descriptor: {API_DESCRIPTOR}").unwrap();
     writeln!(out).unwrap();
 }

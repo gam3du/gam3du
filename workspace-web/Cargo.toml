@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["engines/*", "framework", "framework/common", "applications/*", "runtimes/*", "runtimes/python/bindgen", "libraries/*", "xtask", "winit"]
+members = ["../applications/robot/web/main", "../applications/robot/web/runtime-python"]
 exclude = ["libraries/ecs"]
 
 [workspace.package]
@@ -14,19 +14,19 @@ readme = "README.md"
 
 # workspace-internal crates
 
-engine-robot = { path = "engines/robot" }
-gam3du-framework = { path = "framework" }
-gam3du-framework-common = { path = "framework/common" }
-lib-file-storage = { path = "libraries/file-storage" }
-lib-geometry = { path = "libraries/geometry" }
-lib-gltf-model = { path = "libraries/gltf-model" }
-lib-time = { path = "libraries/time" }
-runtime-python = { path = "runtimes/python" }
-runtime-python-bindgen = { path = "runtimes/python/bindgen" }
-runtime-python-wasm = { path = "runtimes/python/wasm" }
-application-robot = { path = "applications/robot" }
-application-robot-web-main = { path = "applications/robot/web/main" }
-application-robot-web-runtime-python = { path = "applications/robot/web/runtime-python" }
+engine-robot = { path = "../engines/robot" }
+gam3du-framework = { path = "../framework" }
+gam3du-framework-common = { path = "../framework/common" }
+lib-file-storage = { path = "../libraries/file-storage" }
+lib-geometry = { path = "../libraries/geometry" }
+lib-gltf-model = { path = "../libraries/gltf-model" }
+lib-time = { path = "../libraries/time" }
+runtime-python = { path = "../runtimes/python" }
+runtime-python-bindgen = { path = "../runtimes/python/bindgen" }
+runtime-python-wasm = { path = "../runtimes/python/wasm" }
+application-robot = { path = "../applications/robot" }
+application-robot-web-main = { path = "../applications/robot/web/main" }
+application-robot-web-runtime-python = { path = "../applications/robot/web/runtime-python" }
 
 # from crates.io
 
