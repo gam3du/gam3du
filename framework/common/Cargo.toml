@@ -1,4 +1,5 @@
 [package]
+workspace = "../../workspace-common"
 name = "gam3du-framework-common"
 description = "Common types and traits"
 version = "0.1.0"

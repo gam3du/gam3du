@@ -1,4 +1,5 @@
 [package]
+workspace = "../../workspace-common"
 name = "lib-gltf-model"
 version.workspace = true
 edition.workspace = true

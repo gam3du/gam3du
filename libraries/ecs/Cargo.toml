@@ -1,4 +1,5 @@
 [package]
+workspace = "../../workspace-common"
 name = "lib-ecs"
 description = "An experimental Entity Component System implementation"
 version.workspace = true
@@ -8,6 +9,7 @@ license-file.workspace = true
 
 [dependencies]
 glam.workspace = true
+web-time.workspace = true
 
 [lints]
 workspace = true

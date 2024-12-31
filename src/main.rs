@@ -7,6 +7,8 @@
     )
 )]
 
+// TODO add more tasks for "cargo update/clean/Cargo.toml-refresh"
+
 #[cfg(target_family = "wasm")]
 fn main() {}
 
@@ -37,8 +39,8 @@ fn main() -> anyhow::Result<std::process::ExitCode> {
 
     let mut args = Arguments::from_env();
     let shell = xshell::Shell::new().context("Couldn't create xshell shell")?;
-    let root_dir = format!("{}/..", env!("CARGO_MANIFEST_DIR"));
-    shell.change_dir(root_dir);
+    // let root_dir = format!("{}/..", env!("CARGO_MANIFEST_DIR"));
+    // shell.change_dir(root_dir);
 
     let Some(subcommand) = args.subcommand()? else {
         todo!("print help");

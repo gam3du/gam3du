@@ -99,6 +99,7 @@
     ],
     "rust-analyzer.linkedProjects": [
         "Cargo.toml",
-        "workspace-web/Cargo.toml"
+        "workspace-common/Cargo.toml",
+        "workspace-web/Cargo.toml",
     ],
 }

@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
 members = ["../applications/robot/web/main", "../applications/robot/web/runtime-python"]
-exclude = ["libraries/ecs"]
 
 [workspace.package]
 version = "0.1.0"

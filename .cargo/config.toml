@@ -1,2 +1,3 @@
 [alias]
-xtask = "run --manifest-path xtask/Cargo.toml --"
+# TODO maybe just use run without alias? Update README then
+xtask = "run --"

@@ -1,4 +1,5 @@
 [package]
+workspace = "../../workspace-common"
 name = "engine-robot"
 description = "A robot moving on a 2d grid performing simple tasks"
 version.workspace = true

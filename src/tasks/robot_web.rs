@@ -48,7 +48,7 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
     let index_html_str = fs::read_to_string(&index_html)?;
     let index_html_str = index_html_str.replace(
         "{code}",
-        include_str!("../../../applications/robot/python/control/robot.py"),
+        include_str!("../../applications/robot/python/control/robot.py"),
     );
     fs::write(&index_html, index_html_str)?;
 

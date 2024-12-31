@@ -1,27 +1,8 @@
-[package]
-name = "xtask"
-description = "Provides commands to assist with more complex builds and deployments"
-version.workspace = true
-edition.workspace = true
-rust-version.workspace = true
-license-file.workspace = true
-readme.workspace = true
-publish = false
-
-[dependencies]
-anyhow.workspace = true
-log.workspace = true
-env_logger.workspace = true
-pico-args = { workspace = true, features = ["eq-separator", "short-space-opt", "combined-flags"] }
-xshell.workspace = true
-reqwest = { workspace = true, features = ["blocking", "default-tls"] }
-
-[lints]
-workspace = true
-
 [workspace]
-# TODO make this toml file a template for other workspaces and create an xtask to update the other toml files
 resolver = "2"
+members = ["../engines/*", "../framework", "../framework/common", "../applications/*", "../runtimes/*", "../runtimes/python/bindgen", "../libraries/*"]
+# FIXME exclude doesn't seem to work with a `../` prefix
+exclude = ["../libraries/ecs"]
 
 [workspace.package]
 version = "0.1.0"
@@ -34,19 +15,19 @@ readme = "README.md"
 
 # workspace-internal crates
 
-engine-robot = { path = "engines/robot" }
-gam3du-framework = { path = "framework" }
-gam3du-framework-common = { path = "framework/common" }
-lib-file-storage = { path = "libraries/file-storage" }
-lib-geometry = { path = "libraries/geometry" }
-lib-gltf-model = { path = "libraries/gltf-model" }
-lib-time = { path = "libraries/time" }
-runtime-python = { path = "runtimes/python" }
-runtime-python-bindgen = { path = "runtimes/python/bindgen" }
-runtime-python-wasm = { path = "runtimes/python/wasm" }
-application-robot = { path = "applications/robot" }
-application-robot-web-main = { path = "applications/robot/web/main" }
-application-robot-web-runtime-python = { path = "applications/robot/web/runtime-python" }
+engine-robot = { path = "../engines/robot" }
+gam3du-framework = { path = "../framework" }
+gam3du-framework-common = { path = "../framework/common" }
+lib-file-storage = { path = "../libraries/file-storage" }
+lib-geometry = { path = "../libraries/geometry" }
+lib-gltf-model = { path = "../libraries/gltf-model" }
+lib-time = { path = "../libraries/time" }
+runtime-python = { path = "../runtimes/python" }
+runtime-python-bindgen = { path = "../runtimes/python/bindgen" }
+runtime-python-wasm = { path = "../runtimes/python/wasm" }
+application-robot = { path = "../applications/robot" }
+application-robot-web-main = { path = "../applications/robot/web/main" }
+application-robot-web-runtime-python = { path = "../applications/robot/web/runtime-python" }
 
 # from crates.io
 

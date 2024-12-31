@@ -1,4 +1,5 @@
 [package]
+workspace = "../workspace-common"
 name = "gam3du-framework"
 description = "A game engine written for educational purposes. The main goals are learning/teaching software development, ease of use and having fun!"
 version = "0.1.0"

@@ -1,4 +1,5 @@
 [package]
+workspace = "../../workspace-common"
 name = "application-robot"
 description = "A simple robot moving across a 2D-plane."
 version = "0.1.0"

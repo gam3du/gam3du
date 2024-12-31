@@ -1,4 +1,5 @@
 [package]
+workspace = "../../workspace-common"
 name = "lib-ecs-kawogi"
 description = "An experimental Entity Component System implementation"
 version.workspace = true
