@@ -1,11 +1,10 @@
-use std::{fs, path::Path};
-
-use crate::{
+use crate::main::{
     ace,
     util::copy_content,
     wasm::{build_wasm, check_wasm_programs, start_webserver},
 };
 use pico_args::Arguments;
+use std::{fs, path::Path};
 use xshell::Shell;
 
 pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
@@ -48,7 +47,7 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
     let index_html_str = fs::read_to_string(&index_html)?;
     let index_html_str = index_html_str.replace(
         "{code}",
-        include_str!("../../applications/robot/python/control/robot.py"),
+        include_str!("../../../applications/robot/python/control/robot.py"),
     );
     fs::write(&index_html, index_html_str)?;
 

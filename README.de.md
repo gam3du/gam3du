@@ -75,14 +75,32 @@ Momentan sind wir noch dabei uns zu sortieren. Wir aktualisieren diesen Abschnit
 
 ## Wie man das Projekt baut und startet
 
+Allgemeine Installation und Vorbereitung:
+
 1. [Installation der Rust-Toolchain](https://www.rust-lang.org/learn/get-started)
-2. Dieses Repository klonen: `git clone git@github.com:gam3du/gam3du.git`
-3. In das Projektverzeichnis wechseln: `cd gam3du`
-4. Das Programm bauen und starten: `cargo run --bin=application-robot`
+2. `git clone git@github.com:gam3du/gam3du.git` - dieses Repository klonen
+3. `cd gam3du` - In das Projektverzeichnis wechseln
+
+Jetzt gibt es zwei Möglichkeiten das Projekt zu starten:
+
+### Nativ auf dem lokalen Computer ausführen
+
+- `cargo robot` - das Programm bauen und starten
 
 Es geht ein neues Fenster auf, in welchem sich ein Python-gesteuerter Roboter über eine Ebene bewegt.
 
 Mit `ESC` beenden oder einfach das Fenster schließen.
+
+### Im Web-Browser laufen lassen
+
+- `cargo robot-web` - baut das Programm und startet einen Web-Service.
+- Mit einem `Strg`-Klick auf den angezeigten Link öffnet sich ein Browser.
+
+Im Browser findest du auf der rechten Seite einen Code-Editor und links die wartende Spiele-Engine. Mein einem Klick auf `Start` wird das Skript ausgeführt.
+
+### Andere Optionen
+
+- `cargo run` - zeigt die verfügbaren Start-Befehle an
 
 ## Weiterführende Links
 

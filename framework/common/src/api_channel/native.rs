@@ -4,7 +4,7 @@
     reason = "TODO fix after experimentation phase"
 )]
 
-use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
+use std::sync::mpsc::{Receiver, Sender, TryRecvError};
 
 use crate::{
     api::ApiDescriptor,
@@ -13,23 +13,24 @@ use crate::{
 
 use super::{ApiClientEndpoint, ApiServerEndpoint};
 
-/// creates a connected pair of endpoints
-#[must_use]
-pub fn native_channel(api: ApiDescriptor) -> (NativeApiClientEndpoint, NativeApiServerEndpoint) {
-    let (script_to_engine_sender, script_to_engine_receiver) = mpsc::channel();
-    let (engine_to_script_sender, engine_to_script_receiver) = mpsc::channel();
+// this doesn't work in practice as both ends need to live in different threads, but neither end is `Send`
+// /// creates a connected pair of endpoints
+// #[must_use]
+// pub fn native_channel(api: ApiDescriptor) -> (NativeApiClientEndpoint, NativeApiServerEndpoint) {
+//     let (script_to_engine_sender, script_to_engine_receiver) = mpsc::channel();
+//     let (engine_to_script_sender, engine_to_script_receiver) = mpsc::channel();
 
-    let server_endpoint = NativeApiServerEndpoint::new(
-        api.clone(),
-        script_to_engine_receiver,
-        engine_to_script_sender,
-    );
+//     let server_endpoint = NativeApiServerEndpoint::new(
+//         api.clone(),
+//         script_to_engine_receiver,
+//         engine_to_script_sender,
+//     );
 
-    let client_endpoint =
-        NativeApiClientEndpoint::new(api, script_to_engine_sender, engine_to_script_receiver);
+//     let client_endpoint =
+//         NativeApiClientEndpoint::new(api, script_to_engine_sender, engine_to_script_receiver);
 
-    (client_endpoint, server_endpoint)
-}
+//     (client_endpoint, server_endpoint)
+// }
 
 /// Handles transmission of commands to [`ApiServerEndpoint`]s and provides methods for polling responses.
 pub struct NativeApiClientEndpoint {

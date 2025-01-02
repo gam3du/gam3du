@@ -74,14 +74,32 @@ At the moment we're still trying to get our act together. We'll update this sect
 
 ## How to build and run
 
+Install prerequisites and change into the project directory:
+
 1. [Install the Rust toolchain](https://www.rust-lang.org/learn/get-started)
-2. Clone this repository: `git clone git@github.com:gam3du/gam3du.git`
-3. Change into the project directory: `cd gam3du`
-4. Build and run the code: `cargo run --bin=application-robot`
+2. `git clone git@github.com:gam3du/gam3du.git` - clone this repository
+3. `cd gam3du` - change into the project directory
+
+From here you have two main options to start the example code:
+
+### Run natively on your PC
+
+- `cargo robot` - build and run the code
 
 This will open a new window, showing a plane where a Python-controlled robot is moving across the grid.
 
 Exit with `ESC` or just close the window.
+
+### Run within a Web-Browser
+
+- `cargo robot-web` - build the code and start a Web-Service.
+- Open a browser by `CTRL`-clicking the Link shown in the console output.
+
+This will show a Code editor and the idling game engine. Click the `Start` button to execute the script to the right.
+
+### Other options
+
+- `cargo run` - shows all start options
 
 ## Further reads
 

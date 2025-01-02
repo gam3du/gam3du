@@ -21,6 +21,7 @@ fn target_filter() -> filter::Targets {
         .with_target("rustpython_vm", Level::DEBUG)
         .with_target("rustpython_vm::frame", Level::WARN)
         .with_target("engine_robot::model", Level::INFO)
+        .with_target("polling::epoll", Level::DEBUG)
 }
 
 #[cfg(not(target_family = "wasm"))]

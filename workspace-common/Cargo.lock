@@ -110,6 +110,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "application-robot-native"
+version = "0.1.0"
+dependencies = [
+ "application-robot",
+ "engine-robot",
+ "gam3du-framework",
+ "gam3du-framework-common",
+ "lib-file-storage",
+ "runtime-python",
+ "rustpython",
+ "rustpython-vm",
+ "serde_json",
+ "tracing",
+ "web-time",
+ "winit",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"

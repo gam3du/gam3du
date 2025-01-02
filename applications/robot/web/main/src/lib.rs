@@ -14,7 +14,7 @@
 mod api_endpoint;
 
 use crate::api_endpoint::WasmApiServerEndpoint;
-use application_robot::WINDOW_TITLE;
+use application_robot::APPLICATION_TITLE;
 use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder};
 use gam3du_framework::application::{Application, GameLoopRunner};
 use gam3du_framework_common::{
@@ -282,7 +282,7 @@ pub fn start() -> Result<(), JsValue> {
 
     info!("creating application");
     let application = Application::new(
-        WINDOW_TITLE,
+        APPLICATION_TITLE,
         event_sender,
         renderer_builder,
         framework_event_receiver,

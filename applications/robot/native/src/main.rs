@@ -1,25 +1,35 @@
+//! Native implementation of the Robot game
+
+#![expect(
+    clippy::todo,
+    clippy::unwrap_used,
+    reason = "TODO remove before launch"
+)]
+
+use application_robot::APPLICATION_TITLE;
 use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder};
-use gam3du_framework::{application::Application, init_logger};
+use gam3du_framework::{
+    application::{Application, GameLoopRunner},
+    init_logger,
+};
+use gam3du_framework_common::module::Module;
 use gam3du_framework_common::{
-    api::{self, ApiClientEndpoint, ApiDescriptor, ApiServerEndpoint},
+    api::ApiDescriptor,
+    api_channel::{NativeApiClientEndpoint, NativeApiServerEndpoint},
     event::{ApplicationEvent, FrameworkEvent},
 };
 use lib_file_storage::{FileStorage, StaticStorage};
 use runtime_python::PythonRuntimeBuilder;
 use std::{
     fmt::{self, Display},
-    path::Path,
+    path::{Path, PathBuf},
     process::ExitCode,
     sync::{self, mpsc::channel, Arc},
-    // thread,
+    thread::JoinHandle,
 };
-// use tokio::join;
-// use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info};
 use web_time::Instant;
 use winit::event_loop::{ControlFlow, EventLoop};
-
-const WINDOW_TITLE: &str = "Robot";
 
 fn main() -> ExitCode {
     match guarded_main() {
@@ -51,15 +61,15 @@ fn guarded_main() -> ApplicationResult<()> {
     // runtime.block_on(async_main())
 }
 
-struct GameLoopRunner {
+struct NativeGameLoopRunner {
     timestamp: Instant,
     game_loop: GameLoop<PythonPlugin>,
     event_source: sync::mpsc::Receiver<FrameworkEvent>,
 }
 
-impl GameLoopRunner {
+impl NativeGameLoopRunner {
     fn new(
-        robot_api_engine_endpoint: ApiServerEndpoint,
+        robot_api_engine_endpoint: NativeApiServerEndpoint,
         game_state: Arc<sync::RwLock<Box<GameState>>>,
         event_receiver: sync::mpsc::Receiver<FrameworkEvent>,
     ) -> Self {
@@ -67,7 +77,20 @@ impl GameLoopRunner {
             Path::new("applications/robot/python/plugin"),
             "robot_plugin",
         );
+
+        let robot_plugin_module = rustpython::vm::py_freeze!(
+            module_name = "robot_plugin",
+            // Some how this path makes the Rust-Analyzer emit an error while the compiler accepts it
+            file = "../python/plugin/robot_plugin.py"
+        )
+        .decode();
+
+        python_runtime_builder.add_frozen_module("robot_plugin", robot_plugin_module);
+
+        info!("connecting control channel to plugin");
         python_runtime_builder.add_api_server(robot_api_engine_endpoint);
+
+        info!("creating engine plugin");
         let plugin = PythonPlugin::new(python_runtime_builder);
 
         // the game loop might not be `Send`, so we need to create it from within the thread
@@ -88,6 +111,13 @@ impl GameLoopRunner {
             event_source: event_receiver,
         }
     }
+}
+
+impl GameLoopRunner for NativeGameLoopRunner {
+    fn init(&mut self) {
+        self.timestamp = Instant::now();
+        self.game_loop.init();
+    }
 
     fn update(&mut self) {
         if let Some(timestamp) = self.game_loop.progress(&self.event_source, self.timestamp) {
@@ -105,7 +135,7 @@ fn async_main() -> ApplicationResult<()> {
 
     storage.store(
         Path::new("applications/robot/control.api.json"),
-        include_bytes!("../control.api.json").into(),
+        include_bytes!("../../control.api.json").into(),
     );
 
     let window_event_loop = EventLoop::new().unwrap();
@@ -130,10 +160,10 @@ fn async_main() -> ApplicationResult<()> {
     // );
 
     // let (python_thread, python_signal_handler, robot_api_engine_endpoint) = start_python_robot(
-    let (_keep_me_around, robot_api_engine_endpoint) = start_python_robot(
+    let (_python_thread, engine_server_endpoint) = start_python_robot(
         &storage,
         Path::new("applications/robot/control.api.json"),
-        Path::new("applications/robot/python/control"),
+        Path::new("../applications/robot/python/control").to_path_buf(),
         "robot",
     );
 
@@ -144,26 +174,24 @@ fn async_main() -> ApplicationResult<()> {
     //     thread::spawn(move || {})
     // };
 
-    let mut game_loop_runner = GameLoopRunner::new(
-        robot_api_engine_endpoint,
+    let game_loop_runner = NativeGameLoopRunner::new(
+        engine_server_endpoint,
         Arc::clone(&shared_game_state),
         event_receiver,
     );
 
-    // FIXME on Windows the window will still be unresponsively lingering until the control was given back to the OS (maybe a bug in `winit`)
-    // main_window_task.await.unwrap();
+    // let runner = GameLoopRunner::new(robot_api_engine_endpoint, game_state, event_receiver);
 
     let mut application = Application::new(
-        WINDOW_TITLE,
+        APPLICATION_TITLE,
         event_sender,
         RendererBuilder::new(
             shared_game_state,
-            include_str!("../shaders/robot.wgsl").into(),
+            include_str!("../../shaders/robot.wgsl").into(),
         ),
         window_event_receiver,
-        move || {
-            game_loop_runner.update();
-        },
+        // move || {
+        game_loop_runner, // },
     );
 
     info!("main: Entering event loop...");
@@ -352,27 +380,48 @@ fn async_main() -> ApplicationResult<()> {
 fn start_python_robot(
     storage: &dyn FileStorage,
     robot_api_descriptor_path: &Path,
-    _python_sys_path: &Path,
-    _python_main_module: &str,
-) -> (ApiClientEndpoint, ApiServerEndpoint) {
+    python_sys_path: PathBuf,
+    python_main_module: impl Into<String> + Send + 'static,
+) -> (
+    JoinHandle<()>,
+    // UserSignalSender,
+    NativeApiServerEndpoint,
+) {
     let api_json = storage
         .get_content(Path::new(robot_api_descriptor_path))
         .unwrap();
-    let robot_api: ApiDescriptor = serde_json::from_slice(&api_json).unwrap();
+    let api: ApiDescriptor = serde_json::from_slice(&api_json).unwrap();
 
-    let (robot_api_script_endpoint, robot_api_engine_endpoint) = api::channel(robot_api);
+    let (script_to_engine_sender, script_to_engine_receiver) = channel();
+    let (engine_to_script_sender, engine_to_script_receiver) = channel();
 
-    // let mut python_builder = PythonRuntimeBuilder::new(python_sys_path, python_main_module);
+    let server_endpoint = NativeApiServerEndpoint::new(
+        api.clone(),
+        script_to_engine_receiver,
+        engine_to_script_sender,
+    );
 
-    // let user_signal_sender = python_builder.enable_user_signals();
-    // python_builder.add_api_client(robot_api_script_endpoint);
-    // let python_runner_thread = python_builder.build_runner_thread();
+    let client_endpoint =
+        NativeApiClientEndpoint::new(api, script_to_engine_sender, engine_to_script_receiver);
+
+    let python_runner_thread = std::thread::Builder::new()
+        // .stack_size(10 * 1024 * 1024)
+        .spawn(move || {
+            let mut python_builder =
+                PythonRuntimeBuilder::new(&python_sys_path, python_main_module);
+
+            // let user_signal_sender = python_builder.enable_user_signals();
+            python_builder.add_api_client(Box::from(client_endpoint));
+            debug!("thread[python]: start interpreter");
+            let mut runtime = python_builder.build();
+            runtime.enter_main();
+        })
+        .unwrap();
 
     (
-        // python_runner_thread,
-        // user_signal_sender,
-        robot_api_script_endpoint,
-        robot_api_engine_endpoint,
+        python_runner_thread,
+        //  user_signal_sender,
+        server_endpoint,
     )
 }
 
@@ -380,30 +429,32 @@ type ApplicationResult<T> = Result<T, ApplicationError>;
 
 #[derive(Debug)]
 enum ApplicationError {
-    #[allow(
-        unused,
-        reason = "This is a placeholder for errors that still need to be categorized"
-    )]
-    Todo(String),
-    BuildRuntime(std::io::Error),
+    // #[allow(
+    //     unused,
+    //     reason = "This is a placeholder for errors that still need to be categorized"
+    // )]
+    // Todo(String),
+    // BuildRuntime(std::io::Error),
 }
 
 impl Display for ApplicationError {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ApplicationError::Todo(message) => write!(formatter, "other error: {message}"),
-            ApplicationError::BuildRuntime(error) => {
-                write!(formatter, "failed to build async runtime: {error}")
-            }
-        }
+    fn fmt(&self, _formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // match self {
+        // ApplicationError::Todo(message) => write!(formatter, "other error: {message}"),
+        // ApplicationError::BuildRuntime(error) => {
+        //     write!(formatter, "failed to build async runtime: {error}")
+        // }
+        // }
+        Ok(())
     }
 }
 
 impl From<ApplicationError> for ExitCode {
-    fn from(value: ApplicationError) -> Self {
-        match value {
-            ApplicationError::Todo(_) => ExitCode::FAILURE,
-            ApplicationError::BuildRuntime(_) => ExitCode::from(2),
-        }
+    fn from(_value: ApplicationError) -> Self {
+        todo!();
+        // match value {
+        //     ApplicationError::Todo(_) => ExitCode::FAILURE,
+        //     ApplicationError::BuildRuntime(_) => ExitCode::from(2),
+        // }
     }
 }

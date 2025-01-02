@@ -16,6 +16,7 @@
         "consts",
         "cranelift",
         "datatypes",
+        "Deque",
         "externref",
         "Externref",
         "fract",
@@ -55,6 +56,7 @@
         "spsc",
         "srgb",
         "stdlib",
+        "Strg",
         "struct",
         "subsec",
         "subseconds",
@@ -80,7 +82,6 @@
         "wireframe",
         "xshell",
         "xtask",
-        "Deque",
         "Zeroable"
     ],
     "cSpell.ignorePaths": [

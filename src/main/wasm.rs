@@ -1,9 +1,9 @@
 use std::{ffi::OsString, path::Path};
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 use xshell::Shell;
 
-use crate::util::{check_all_programs, Program};
+use crate::main::util::{check_all_programs, Program};
 
 const WASM_BINDGEN: Program = Program {
     crate_name: "wasm-bindgen-cli",
@@ -47,7 +47,7 @@ pub(crate) fn build_wasm(
     .args(cargo_args)
     // .quiet()
     .run()
-    .context("Failed to build {package_name} as wasm32")?;
+    .context(format!("Failed to build {package_name} as wasm32"))?;
 
     // back to project root
     shell.change_dir("..");
