@@ -1,0 +1,22 @@
+[package]
+name = "runtime-python-wasm"
+description = "wasm module for Python runtimes to extend and control a gam3du engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license-file.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+runtime-python.workspace = true
+wasm-bindgen.workspace = true
+rustpython = { workspace = true, features = [] }
+# log.workspace = true
+# rustpython-vm.workspace = true
+# runtime-python-bindgen.workspace = true
+# either.workspace = true
+
+[lints]
+workspace = true
