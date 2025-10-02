@@ -62,9 +62,9 @@ impl State {
         // temporarily detach systems to obtain mutable access that can be shared
         let mut systems = self.systems.take().unwrap();
 
-        systems
-            .iter_mut()
-            .for_each(|system| system.update(self, &mut components));
+        for system in &mut systems {
+            system.update(self, &mut components);
+        }
 
         // re-attach components and systems
         self.components = Some(components);

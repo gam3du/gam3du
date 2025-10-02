@@ -234,13 +234,13 @@ pub(crate) fn load_model(model_path: &Path, device: &wgpu::Device) -> anyhow::Re
             }
 
             let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{model_path:?} Vertex Buffer")),
+                label: Some(&format!("{} Vertex Buffer", model_path.display())),
                 contents: bytemuck::cast_slice(&vertices),
                 usage: wgpu::BufferUsages::VERTEX,
             });
 
             let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("{model_path:?} Index Buffer")),
+                label: Some(&format!("{} Index Buffer", model_path.display())),
                 contents: bytemuck::cast_slice(&indices),
                 usage: wgpu::BufferUsages::INDEX,
             });

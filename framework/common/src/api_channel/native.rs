@@ -66,12 +66,10 @@ impl ApiClientEndpoint for NativeApiClientEndpoint {
         });
     }
 
-    #[must_use]
     fn api(&self) -> &ApiDescriptor {
         &self.api
     }
 
-    #[must_use]
     fn poll_response(&self) -> Option<ServerToClientMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
@@ -110,7 +108,6 @@ impl ApiServerEndpoint for NativeApiServerEndpoint {
         self.sender.send(message).unwrap();
     }
 
-    #[must_use]
     fn poll_request(&self) -> Option<ClientToServerMessage> {
         match self.receiver.try_recv() {
             Ok(message) => Some(message),
@@ -119,7 +116,6 @@ impl ApiServerEndpoint for NativeApiServerEndpoint {
         }
     }
 
-    #[must_use]
     fn api(&self) -> &ApiDescriptor {
         &self.api
     }

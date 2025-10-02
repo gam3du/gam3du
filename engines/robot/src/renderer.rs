@@ -38,7 +38,6 @@ impl RendererBuilder {
 impl renderer::RendererBuilder for RendererBuilder {
     type Renderer = Renderer;
 
-    #[must_use]
     fn build(
         self,
         _adapter: &wgpu::Adapter,

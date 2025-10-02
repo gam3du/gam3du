@@ -22,7 +22,6 @@ impl WasmApiClientEndpoint {
 }
 
 impl ApiClientEndpoint for WasmApiClientEndpoint {
-    #[must_use]
     fn api(&self) -> &ApiDescriptor {
         &self.api
     }

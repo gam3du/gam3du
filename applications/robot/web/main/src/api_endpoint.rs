@@ -30,7 +30,6 @@ impl ApiServerEndpoint for WasmApiServerEndpoint {
         self.sender.post_message(&bytes.into()).unwrap();
     }
 
-    #[must_use]
     fn poll_request(&self) -> Option<ClientToServerMessage> {
         let message = APPLICATION_STATE.with_borrow_mut(|state| state.client_messages.pop_front());
 
@@ -42,7 +41,6 @@ impl ApiServerEndpoint for WasmApiServerEndpoint {
         })
     }
 
-    #[must_use]
     fn api(&self) -> &ApiDescriptor {
         &self.api
     }

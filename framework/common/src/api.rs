@@ -33,8 +33,11 @@ impl Display for Identifier {
     }
 }
 
+#[expect(
+    clippy::infallible_try_from,
+    reason = "// TODO this will change as soon as the validation is implemented"
+)]
 impl TryFrom<String> for Identifier {
-    // TODO this will change as soon as the validation is implemented
     type Error = Infallible;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {

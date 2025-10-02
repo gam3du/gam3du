@@ -39,7 +39,7 @@ impl Robot {
                 event_registries.robot_stopped.notify();
                 return true;
             }
-        };
+        }
         false
     }
 }
