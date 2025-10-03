@@ -49,10 +49,25 @@ impl<Renderer: renderer::Renderer> RenderSurface<Renderer> {
         let instance_descriptor = wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             flags: wgpu::InstanceFlags::advanced_debugging(),
-            dx12_shader_compiler: wgpu::Dx12Compiler::default(),
-            gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
+            memory_budget_thresholds: wgpu::MemoryBudgetThresholds {
+                for_resource_creation: None,
+                for_device_loss: None,
+            },
+            backend_options: wgpu::BackendOptions {
+                gl: wgpu::GlBackendOptions {
+                    gles_minor_version: wgpu::Gles3MinorVersion::Automatic,
+                    fence_behavior: wgpu::GlFenceBehavior::Normal,
+                },
+                dx12: wgpu::Dx12BackendOptions {
+                    shader_compiler: wgpu::Dx12Compiler::default(),
+                    presentation_system: wgpu::wgt::Dx12SwapchainKind::DxgiFromHwnd,
+                    latency_waitable_object: wgpu::wgt::Dx12UseFrameLatencyWaitableObject::default(
+                    ),
+                },
+                noop: wgpu::NoopBackendOptions { enable: false },
+            },
         };
-        let instance = wgpu::Instance::new(instance_descriptor);
+        let instance = wgpu::Instance::new(&instance_descriptor);
 
         debug!("create wgpu surface for window");
         let surface = instance.create_surface(Arc::clone(&window)).unwrap();
@@ -80,9 +95,11 @@ impl<Renderer: renderer::Renderer> RenderSurface<Renderer> {
             required_features: wgpu::Features::empty(),
             required_limits,
             memory_hints: wgpu::MemoryHints::MemoryUsage,
+            experimental_features: wgpu::ExperimentalFeatures::disabled(),
+            trace: wgpu::Trace::Off,
         };
         let (device, queue) = adapter
-            .request_device(&device_descriptor, None)
+            .request_device(&device_descriptor)
             .await
             .expect("Failed to create device");
 

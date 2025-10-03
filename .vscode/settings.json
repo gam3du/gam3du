@@ -71,6 +71,7 @@
         "upcastable",
         "UVEC",
         "Vsync",
+        "vulkan",
         "wasmtime",
         "wayland",
         "wbindgen",

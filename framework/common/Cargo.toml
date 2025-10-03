@@ -9,15 +9,16 @@ license-file.workspace = true
 
 [dependencies]
 indexmap = { workspace = true, features = ["serde", "std"] }
-rand = { workspace = true, features = ["getrandom", "std", "std_rng"] }
+rand = { workspace = true, features = ["thread_rng"] }
 serde = { workspace = true, features = ["std", "derive"] }
 winit = { workspace = true, default-features = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+# TODO maybe add `features = ["wasm_js"]` to silence a false positive error in the IDE
 getrandom = { workspace = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-getrandom = { workspace = true, features = ["js"] }
+getrandom = { workspace = true, features = ["wasm_js"] }
 
 [lints]
 workspace = true

@@ -2,7 +2,6 @@
 //! Each endpoint creates a single mpsc channel in order to receive commands or events from a single endpoints.
 
 use crate::api::{Identifier, Value};
-use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Display,
@@ -31,7 +30,7 @@ pub struct RequestId(pub NonZeroU128);
 impl RequestId {
     #[must_use]
     fn new_random() -> Self {
-        Self(thread_rng().r#gen())
+        Self(rand::random())
     }
 }
 

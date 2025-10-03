@@ -32,13 +32,13 @@ impl Robot {
     }
 
     pub(crate) fn update(&mut self, event_registries: &mut EventRegistries) -> bool {
-        if let Some(animation) = self.current_animation.as_ref() {
-            if animation.animate(&mut self.animation_position, &mut self.animation_angle) {
-                self.current_animation.take();
-                debug!("notifying `robot_stopped` listeners");
-                event_registries.robot_stopped.notify();
-                return true;
-            }
+        if let Some(animation) = self.current_animation.as_ref()
+            && animation.animate(&mut self.animation_position, &mut self.animation_angle)
+        {
+            self.current_animation.take();
+            debug!("notifying `robot_stopped` listeners");
+            event_registries.robot_stopped.notify();
+            return true;
         }
         false
     }

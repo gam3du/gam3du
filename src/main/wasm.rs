@@ -3,7 +3,7 @@ use std::{ffi::OsString, path::Path};
 use anyhow::Context;
 use xshell::Shell;
 
-use crate::main::util::{check_all_programs, Program};
+use crate::main::util::{Program, check_all_programs};
 
 const WASM_BINDGEN: Program = Program {
     crate_name: "wasm-bindgen-cli",

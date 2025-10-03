@@ -1,7 +1,6 @@
 use super::Tick;
-use crate::tile::{tile, LinePattern, Tile};
+use crate::tile::{LinePattern, Tile, tile};
 use glam::{IVec2, UVec2};
-use rand::{thread_rng, Rng};
 use tracing::trace;
 
 pub struct Floor {
@@ -20,7 +19,7 @@ impl Floor {
             for x in 0..size.x {
                 let xy = pos + UVec2::new(x, y).as_vec2();
                 let line_pattern = 0; //thread_rng.gen();
-                let height = thread_rng().r#gen::<f32>() * 0.2;
+                let height = rand::random::<f32>() * 0.2;
                 tiles.push(tile((xy, height), LinePattern(line_pattern)));
             }
         }

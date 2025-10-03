@@ -2,13 +2,12 @@ use std::{
     cell::RefCell,
     mem,
     num::NonZeroU128,
-    sync::mpsc::{channel, Receiver, Sender, TryRecvError},
+    sync::mpsc::{Receiver, Sender, TryRecvError, channel},
 };
 
 use super::Plugin;
-use crate::{events::GameEvent, GameState};
+use crate::{GameState, events::GameEvent};
 use gam3du_framework_common::module::Module;
-use rand::{thread_rng, Rng};
 use runtime_python::{PythonRuntime, PythonRuntimeBuilder};
 use rustpython_vm::pymodule;
 use tracing::debug;
@@ -36,7 +35,7 @@ impl PythonPlugin {
         let user_signal = runtime_builder.enable_user_signals();
 
         Self {
-            id: thread_rng().r#gen(),
+            id: rand::random(),
             _user_signal: user_signal,
             runtime: runtime_builder.build(),
             sender,

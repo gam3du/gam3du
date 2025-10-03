@@ -7,9 +7,18 @@ pub(crate) fn download(shell: &Shell, target_dir: &Path) -> anyhow::Result<()> {
     log::info!("downloading ACE editor");
 
     let files = [
-        ("https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/ace.js", target_dir.join("ace.js")),
-        ("https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/theme-monokai.js", target_dir.join("theme-monokai.js")),
-        ("https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/mode-python.js", target_dir.join("mode-python.js")),
+        (
+            "https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/ace.js",
+            target_dir.join("ace.js"),
+        ),
+        (
+            "https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/theme-monokai.js",
+            target_dir.join("theme-monokai.js"),
+        ),
+        (
+            "https://raw.githubusercontent.com/ajaxorg/ace-builds/refs/heads/master/src-noconflict/mode-python.js",
+            target_dir.join("mode-python.js"),
+        ),
     ];
 
     shell.create_dir(target_dir).context(format!(

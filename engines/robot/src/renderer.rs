@@ -112,6 +112,7 @@ impl Renderer {
                 load: wgpu::LoadOp::Load,
                 store: wgpu::StoreOp::Store,
             },
+            depth_slice: None,
         };
         let color_attachments = [Some(render_pass_color_attachment)];
         let render_pass_depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
@@ -169,6 +170,7 @@ impl Renderer {
                 load: wgpu::LoadOp::Clear(clear_color),
                 store: wgpu::StoreOp::Store,
             },
+            depth_slice: None,
         };
         let color_attachments = [Some(render_pass_color_attachment)];
         let render_pass_depth_stencil_attachment = wgpu::RenderPassDepthStencilAttachment {
@@ -207,6 +209,7 @@ impl Renderer {
                 load: wgpu::LoadOp::Load,
                 store: wgpu::StoreOp::Store,
             },
+            depth_slice: None,
         };
         let color_attachments = [Some(render_pass_color_attachment)];
 

@@ -372,7 +372,7 @@ fn create_texture_view(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu::Text
     queue.write_texture(
         texture.as_image_copy(),
         &texels,
-        wgpu::ImageDataLayout {
+        wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(size),
             rows_per_image: None,

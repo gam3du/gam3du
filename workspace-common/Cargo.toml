@@ -1,13 +1,13 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = ["../engines/*", "../framework", "../framework/common", "../applications/*", "../applications/robot/native", "../runtimes/*", "../runtimes/python/bindgen", "../libraries/*"]
 # FIXME exclude doesn't seem to work with a `../` prefix
 exclude = ["../libraries/ecs"]
 
 [workspace.package]
 version = "0.1.0"
-edition = "2021"
-rust-version = "1.81.0"
+edition = "2024"
+rust-version = "1.90.0"
 license-file = "LICENSE-MIT"
 readme = "README.md"
 
@@ -33,13 +33,13 @@ application-robot-web-runtime-python = { path = "../applications/robot/web/runti
 
 anyhow = { version = "1", default-features = false }
 async-std = { version = "1", default-features = false }
-bincode = { version = "1", default-features = false }
+bincode = { version = "2", default-features = false }
 bytemuck = { version = "1", default-features = false }
 console_error_panic_hook = { version = "0.1", default-features = false }
 ctrlc = { version = "3", default-features = false }
 env_logger = { version = "0.11", default-features = false }
-getrandom = { version = "0.2", default-features = false }
-glam = { version = "0.29", default-features = false }
+getrandom = { version = "0.3", default-features = false }
+glam = { version = "0.30", default-features = false }
 gltf = { version = "1", default-features = false }
 image = { version = "0.25", default-features = false }
 indexmap = { version = "2", default-features = false }
@@ -47,7 +47,7 @@ js-sys = { version = "0.3", default-features = false }
 log = { version = "0.4", default-features = false }
 pico-args = { version = "0.5", default-features = false }
 pollster = { version = "0.4.0", default-features = false }
-rand = { version = "0.8", default-features = false }
+rand = { version = "0.9", default-features = false }
 regex-lite = { version = "0.1", default-features = false }
 reqwest = { version = "0.12", default-features = false }
 rustpython = { version = "0.4", default-features = false }
@@ -62,8 +62,10 @@ wasm-bindgen = { version = "0.2", default-features = false }
 wasm-rs-shared-channel = { version = "0.1", default-features = false }
 web-sys = { version = "0.3", default-features = false }
 web-time = { version = "1", default-features = false }
-wgpu = { version = "23", default-features = false }
-winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a9452b72e749a4890db23b92d65abc2", default-features = false, _comment = "switch to the official version as soon as the new API becomes stabilized" }
+wgpu = { version = "27", default-features = false }
+# TODO switch to the official version as soon as the new API becomes stabilized
+# winit = { version = "0.30", default-features = false }
+winit = { git = "https://github.com/rust-windowing/winit.git", rev = "3e9b80d47a9452b72e749a4890db23b92d65abc2", default-features = false }
 xshell = { version = "0.2", default-features = false }
 
 # Compile all (non-workspace) dependencies with optimizations.

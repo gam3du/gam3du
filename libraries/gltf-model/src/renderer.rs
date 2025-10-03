@@ -14,7 +14,7 @@ use std::{borrow::Cow, mem::size_of, path::Path};
 use web_time::Instant;
 use wgpu::{self, util::DeviceExt};
 
-use crate::model::{load_model, Mesh, Vertex};
+use crate::model::{Mesh, Vertex, load_model};
 
 pub struct Renderer {
     pipeline: wgpu::RenderPipeline,
@@ -330,7 +330,7 @@ impl Renderer {
         queue.write_texture(
             texture.as_image_copy(),
             &texels,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(size),
                 rows_per_image: None,

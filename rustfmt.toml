@@ -1,5 +1,5 @@
 # ensures the edition will be respected even in cases where cargo isn't used
-edition = "2021"
+edition = "2024"
 
 # Enable 
 
