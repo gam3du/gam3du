@@ -14,7 +14,8 @@ crate-type = ["cdylib", "rlib"]
 gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
 
-bincode.workspace = true
+bincode = { workspace = true, features = ["serde", "alloc"] }
+getrandom = { workspace = true, features = ["wasm_js"] }
 runtime-python.workspace = true
 rustpython = { workspace = true, features = ["freeze-stdlib", "stdlib"] }
 rustpython-vm = { workspace = true, features = ["compiler", "encodings", "serde"] }

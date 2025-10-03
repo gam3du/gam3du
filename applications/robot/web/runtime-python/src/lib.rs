@@ -10,6 +10,10 @@
 
 mod api_client;
 
+// this `use`-clause is required to suppress the warning about unused crates
+// this dependency is required in order to configure the `wasm_js` feature
+use getrandom as _;
+
 use api_client::WasmApiClientEndpoint;
 use gam3du_framework::init_logger;
 use gam3du_framework_common::{api::ApiDescriptor, message::ServerToClientMessage};

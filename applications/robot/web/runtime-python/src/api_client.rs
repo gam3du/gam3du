@@ -5,7 +5,7 @@ use gam3du_framework_common::{
 };
 use tracing::debug;
 use wasm_rs_shared_channel::spsc;
-use web_sys::{js_sys, wasm_bindgen::JsCast, DedicatedWorkerGlobalScope};
+use web_sys::{DedicatedWorkerGlobalScope, js_sys, wasm_bindgen::JsCast};
 
 /// Provides methods for polling on requests from a [`ApiClientEndpoint`]s and sending back responses.
 pub(crate) struct WasmApiClientEndpoint {
@@ -28,7 +28,7 @@ impl ApiClientEndpoint for WasmApiClientEndpoint {
 
     fn send_to_server(&self, message: ClientToServerMessage) {
         debug!("send_to_server: {message:#?}");
-        let bytes = bincode::serialize(&message).unwrap();
+        let bytes = bincode::serde::encode_to_vec(&message, bincode::config::standard()).unwrap();
         debug!("send_to_server: {bytes:?}");
 
         let global = js_sys::global()

@@ -11,10 +11,11 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 application-robot.workspace = true
-bincode.workspace = true
+bincode = { workspace = true, features = ["serde", "alloc"] }
 engine-robot.workspace = true
 gam3du-framework-common.workspace = true
 gam3du-framework.workspace = true
+getrandom = { workspace = true, features = ["wasm_js"] }
 runtime-python.workspace = true
 rustpython-vm.workspace = true
 rustpython.workspace = true

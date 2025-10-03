@@ -25,7 +25,7 @@ impl WasmApiServerEndpoint {
 impl ApiServerEndpoint for WasmApiServerEndpoint {
     fn send_to_client(&self, message: ServerToClientMessage) {
         debug!("send_to_client: {message:#?}");
-        let bytes = bincode::serialize(&message).unwrap();
+        let bytes = bincode::serde::encode_to_vec(&message, bincode::config::standard()).unwrap();
         debug!("send_to_client: {bytes:?}");
         self.sender.post_message(&bytes.into()).unwrap();
     }
@@ -35,7 +35,10 @@ impl ApiServerEndpoint for WasmApiServerEndpoint {
 
         message.map(|request_bytes| {
             debug!("received bytes from PythonWorker: {request_bytes:?}");
-            let request: ClientToServerMessage = bincode::deserialize(&request_bytes).unwrap();
+            let request: ClientToServerMessage =
+                bincode::serde::decode_from_slice(&request_bytes, bincode::config::standard())
+                    .unwrap()
+                    .0;
             debug!("forwarding request to plugin: {request:#?}");
             request
         })

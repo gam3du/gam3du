@@ -23,6 +23,9 @@ pub(crate) fn run(shell: &Shell, mut args: Arguments) -> anyhow::Result<()> {
 
     let cargo_args = args.finish();
 
+    // see https://docs.rs/getrandom/latest/getrandom/#webassembly-support
+    shell.set_var("RUSTFLAGS", r#"--cfg getrandom_backend="wasm_js""#);
+
     build_wasm(
         shell,
         "application-robot-web-runtime-python",

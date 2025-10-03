@@ -15,7 +15,7 @@ mod api_endpoint;
 
 use crate::api_endpoint::WasmApiServerEndpoint;
 use application_robot::APPLICATION_TITLE;
-use engine_robot::{plugin::PythonPlugin, GameLoop, GameState, RendererBuilder};
+use engine_robot::{GameLoop, GameState, RendererBuilder, plugin::PythonPlugin};
 use gam3du_framework::application::{Application, GameLoopRunner};
 use gam3du_framework_common::{
     api::ApiDescriptor, event::FrameworkEvent, message::ServerToClientMessage,
@@ -27,18 +27,18 @@ use std::{
     mem,
     path::Path,
     rc::Rc,
-    sync::{mpsc, Arc, RwLock},
+    sync::{Arc, RwLock, mpsc},
 };
 use tracing::{debug, info, trace};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{
-    prelude::{wasm_bindgen, Closure},
     JsCast,
+    prelude::{Closure, wasm_bindgen},
 };
 use wasm_rs_shared_channel::spsc;
 use web_sys::{
-    js_sys::{self, Uint8Array},
     MessageChannel, MessageEvent, MessagePort, Worker, WorkerOptions, WorkerType,
+    js_sys::{self, Uint8Array},
 };
 use web_time::Instant;
 use winit::{event_loop::EventLoop, platform::web::EventLoopExtWeb};
@@ -378,7 +378,9 @@ impl PythonWorker {
             debug!("on_server_message: {data:?}");
 
             let bytes = Uint8Array::new(&data).to_vec();
-            let message = bincode::deserialize(&bytes).unwrap();
+            let message = bincode::serde::decode_from_slice(&bytes, bincode::config::standard())
+                .unwrap()
+                .0;
 
             sender.send(&message).unwrap();
         })
@@ -475,7 +477,9 @@ impl PythonWorker {
                     *worker_state = WorkerState::Initializing;
                 }
                 WorkerState::Initializing => {
-                    info!("Initializing: initialization acknowledged by Worker; switch mode to `Ready`");
+                    info!(
+                        "Initializing: initialization acknowledged by Worker; switch mode to `Ready`"
+                    );
                     *worker_state = WorkerState::Ready;
                 }
                 WorkerState::Ready => {
@@ -498,7 +502,9 @@ impl PythonWorker {
     // }
 
     pub fn run(&mut self, source: &str) {
-        info!("starting PythonRuntime (this will block the containing WebWorker until the script completes)");
+        info!(
+            "starting PythonRuntime (this will block the containing WebWorker until the script completes)"
+        );
 
         let worker_state = self.worker_state.borrow_mut();
         assert_eq!(

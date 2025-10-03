@@ -57,7 +57,7 @@ bytemuck = { version = "1", default-features = false }
 console_error_panic_hook = { version = "0.1", default-features = false }
 ctrlc = { version = "3", default-features = false }
 env_logger = { version = "0.11", default-features = false }
-getrandom = { version = "0.2", default-features = false }
+getrandom = { version = "0.3", default-features = false }
 glam = { version = "0.30", default-features = false }
 gltf = { version = "1", default-features = false }
 image = { version = "0.25", default-features = false }
